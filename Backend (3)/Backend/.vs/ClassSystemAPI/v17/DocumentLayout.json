@@ -1,0 +1,448 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\controllers\\coursescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\controllers\\coursescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|d:\\iit\\intern\\total solution\\projects\\class system\\new\\backend (3)\\backend\\classsystemapi\\models\\course.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\models\\course.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|d:\\iit\\intern\\total solution\\projects\\class system\\new\\backend (3)\\backend\\classsystemapi\\models\\teacher.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\models\\teacher.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\controllers\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\controllers\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\models\\student.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\models\\student.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\controllers\\studymaterialscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\controllers\\studymaterialscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\controllers\\studentscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\controllers\\studentscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\controllers\\classschedulescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\controllers\\classschedulescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\models\\subject.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\models\\subject.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\models\\attendance.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\models\\attendance.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\models\\usertype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\models\\usertype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\models\\dtos\\studentdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\models\\dtos\\studentdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\controllers\\subjectscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\controllers\\subjectscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\web.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\web.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\views\\web.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\views\\web.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\app_start\\bundleconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\app_start\\bundleconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\app_start\\filterconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\app_start\\filterconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\app_start\\routeconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\app_start\\routeconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\app_start\\webapiconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\app_start\\webapiconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\controllers\\valuescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\controllers\\valuescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\controllers\\attendancescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\controllers\\attendancescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\global.asax.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\global.asax.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\controllers\\announcementscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\controllers\\announcementscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\models\\announcement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\models\\announcement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\controllers\\enrollmentscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\controllers\\enrollmentscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\classsystemapi\\models\\classschedule.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A14AB18D-285D-4FE4-B113-680077CACCF5}|ClassSystemAPI\\ClassSystemAPI.csproj|solutionrelative:classsystemapi\\models\\classschedule.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 212,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 12,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Course.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\Course.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Models\\Course.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\Course.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Models\\Course.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-09T04:19:28.143Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "UserType.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\UserType.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Models\\UserType.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\UserType.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Models\\UserType.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T10:36:11.829Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Subject.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\Subject.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Models\\Subject.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\Subject.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Models\\Subject.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T10:34:56.826Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Student.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\Student.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Models\\Student.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\Student.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Models\\Student.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAkAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T10:34:41.592Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "StudentDto.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\DTOs\\StudentDto.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Models\\DTOs\\StudentDto.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\DTOs\\StudentDto.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Models\\DTOs\\StudentDto.cs",
+              "ViewState": "AgIAACAAAAAAAAAAAAAgwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T10:33:54.911Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Teacher.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\Teacher.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Models\\Teacher.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\Teacher.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Models\\Teacher.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T10:33:46.642Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "BundleConfig.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\App_Start\\BundleConfig.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\App_Start\\BundleConfig.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\App_Start\\BundleConfig.cs",
+              "RelativeToolTip": "ClassSystemAPI\\App_Start\\BundleConfig.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T08:11:29.804Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "ValuesController.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\ValuesController.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Controllers\\ValuesController.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\ValuesController.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Controllers\\ValuesController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T07:54:45.854Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "StudentsController.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\StudentsController.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Controllers\\StudentsController.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\StudentsController.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Controllers\\StudentsController.cs",
+              "ViewState": "AgIAAAYBAAAAAAAAAAAkwKYAAAAuAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T07:54:43.286Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "StudyMaterialsController.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\StudyMaterialsController.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Controllers\\StudyMaterialsController.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\StudyMaterialsController.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Controllers\\StudyMaterialsController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T07:54:42.527Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "SubjectsController.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\SubjectsController.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Controllers\\SubjectsController.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\SubjectsController.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Controllers\\SubjectsController.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T07:54:40.931Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "CoursesController.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\CoursesController.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Controllers\\CoursesController.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\CoursesController.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Controllers\\CoursesController.cs",
+              "ViewState": "AgIAAA0AAAAAAAAAAAAzwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T07:54:28.517Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "ClassSchedulesController.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\ClassSchedulesController.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Controllers\\ClassSchedulesController.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\ClassSchedulesController.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Controllers\\ClassSchedulesController.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T07:54:25.259Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "AttendancesController.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\AttendancesController.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Controllers\\AttendancesController.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\AttendancesController.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Controllers\\AttendancesController.cs",
+              "ViewState": "AgIAADsAAAAAAAAAAAAgwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T07:54:21.6Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "Web.config",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Views\\Web.config",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Views\\Web.config",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Views\\Web.config",
+              "RelativeToolTip": "ClassSystemAPI\\Views\\Web.config",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000601|",
+              "WhenOpened": "2025-10-08T07:54:05.996Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "Global.asax.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Global.asax.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Global.asax.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Global.asax.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Global.asax.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T07:53:47.871Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "RouteConfig.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\App_Start\\RouteConfig.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\App_Start\\RouteConfig.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\App_Start\\RouteConfig.cs",
+              "RelativeToolTip": "ClassSystemAPI\\App_Start\\RouteConfig.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T07:37:04.674Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "WebApiConfig.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\App_Start\\WebApiConfig.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\App_Start\\WebApiConfig.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\App_Start\\WebApiConfig.cs",
+              "RelativeToolTip": "ClassSystemAPI\\App_Start\\WebApiConfig.cs",
+              "ViewState": "AgIAAAUAAABAJWpXynobwAkAAAA9AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T06:25:42.687Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "UsersController.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\UsersController.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Controllers\\UsersController.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\UsersController.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Controllers\\UsersController.cs",
+              "ViewState": "AgIAAGMAAAAAAAAAAAAowDcAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T04:02:41.038Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "Web.config",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Web.config",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Web.config",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Web.config",
+              "RelativeToolTip": "ClassSystemAPI\\Web.config",
+              "ViewState": "AgIAAEEAAAAAAAAAAAAowG0AAAApAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000601|",
+              "WhenOpened": "2025-10-08T05:46:21.135Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "EnrollmentsController.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\EnrollmentsController.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Controllers\\EnrollmentsController.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\EnrollmentsController.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Controllers\\EnrollmentsController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-07T09:15:17.669Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "FilterConfig.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\App_Start\\FilterConfig.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\App_Start\\FilterConfig.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\App_Start\\FilterConfig.cs",
+              "RelativeToolTip": "ClassSystemAPI\\App_Start\\FilterConfig.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-07T09:14:26.866Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "ClassSchedule.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\ClassSchedule.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Models\\ClassSchedule.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\ClassSchedule.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Models\\ClassSchedule.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-07T09:11:47.791Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "Attendance.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\Attendance.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Models\\Attendance.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\Attendance.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Models\\Attendance.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-07T09:11:36.159Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "Announcement.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\Announcement.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Models\\Announcement.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Models\\Announcement.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Models\\Announcement.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-07T09:11:22.157Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "AnnouncementsController.cs",
+              "DocumentMoniker": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\AnnouncementsController.cs",
+              "RelativeDocumentMoniker": "ClassSystemAPI\\Controllers\\AnnouncementsController.cs",
+              "ToolTip": "D:\\IIT\\Intern\\Total Solution\\Projects\\Class System\\NEW\\Backend (3)\\Backend\\ClassSystemAPI\\Controllers\\AnnouncementsController.cs",
+              "RelativeToolTip": "ClassSystemAPI\\Controllers\\AnnouncementsController.cs",
+              "ViewState": "AgIAACMAAAAAAAAAAAAgwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-07T09:10:36.837Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

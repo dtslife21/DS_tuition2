@@ -1,0 +1,79 @@
+# =========================
+# Frontend (2) - React
+# =========================
+
+# Node modules
+Frontend\ \(2\)/node_modules/
+
+# Build output
+Frontend\ \(2\)/build/
+
+# Environment files
+Frontend\ \(2\)/.env
+Frontend\ \(2\)/.env.local
+Frontend\ \(2\)/.env.development.local
+Frontend\ \(2\)/.env.test.local
+Frontend\ \(2\)/.env.production.local
+
+# Logs
+Frontend\ \(2\)/npm-debug.log*
+Frontend\ \(2\)/yarn-debug.log*
+Frontend\ \(2\)/yarn-error.log*
+Frontend\ \(2\)/pnpm-debug.log*
+
+# Editor settings
+Frontend\ \(2\)/.vscode/
+Frontend\ \(2\)/.idea/
+Frontend\ \(2\)/.DS_Store
+
+# Copilot chat/cache
+Frontend\ \(2\)/.copilot/
+Frontend\ \(2\)/copilot-chat/
+Frontend\ \(2\)/copilot-history/
+Frontend\ \(2\)/copilot/
+
+# =========================
+# Backend (3) - .NET C# / Visual Studio
+# =========================
+
+# Build folders
+Backend\ \(3\)/[Bb]in/
+Backend\ \(3\)/[Oo]bj/
+Backend\ \(3\)/[Ll]og/
+Backend\ \(3\)/.vs/
+Backend\ \(3\)/.vscode/
+
+# User-specific files
+Backend\ \(3\)/*.user
+Backend\ \(3\)/*.suo
+Backend\ \(3\)/*.userosscache
+Backend\ \(3\)/*.sln.docstates
+
+# Environment & config
+Backend\ \(3\)/appsettings.*.json
+Backend\ \(3\)/appsettings.local.json
+Backend\ \(3\)/*.dbmdl
+
+# Copilot chat/cache
+Backend\ \(3\)/.copilot/
+Backend\ \(3\)/copilot-chat/
+Backend\ \(3\)/copilot-history/
+Backend\ \(3\)/copilot/
+
+# Temporary files
+Backend\ \(3\)/*.tmp
+Backend\ \(3\)/*.log
+Backend\ \(3\)/.idea/
+Backend\ \(3\)/.DS_Store
+
+# =========================
+# Common / OS-level ignores
+# =========================
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+.copilot/
+copilot-chat/
+copilot-history/
+copilot/

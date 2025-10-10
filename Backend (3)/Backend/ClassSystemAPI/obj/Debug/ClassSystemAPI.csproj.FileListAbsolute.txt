@@ -1,0 +1,390 @@
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\ClassSystemAPI.dll.config
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\ClassSystemAPI.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\ClassSystemAPI.pdb
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\csc.exe
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\csc.exe.config
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\csc.rsp
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\csi.exe
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\csi.exe.config
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\csi.rsp
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.Build.Tasks.CodeAnalysis.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.CSharp.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.CSharp.Scripting.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.Scripting.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.VisualBasic.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.CSharp.Core.targets
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.DiaSymReader.Native.amd64.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.DiaSymReader.Native.x86.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.Managed.Core.targets
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.VisualBasic.Core.targets
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.AppContext.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Collections.Immutable.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Console.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Diagnostics.FileVersionInfo.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Diagnostics.StackTrace.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.IO.Compression.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.IO.FileSystem.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.IO.FileSystem.Primitives.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.IO.Pipes.AccessControl.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.IO.Pipes.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Reflection.Metadata.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.AccessControl.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.Claims.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.Algorithms.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.Encoding.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.Primitives.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.X509Certificates.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.Principal.Windows.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Text.Encoding.CodePages.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.ValueTuple.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Xml.ReaderWriter.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Xml.XmlDocument.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Xml.XPath.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Xml.XPath.XDocument.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\vbc.exe
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\vbc.exe.config
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\vbc.rsp
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\VBCSCompiler.exe
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\roslyn\VBCSCompiler.exe.config
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\Antlr3.Runtime.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\EntityFramework.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\EntityFramework.SqlServer.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\Microsoft.Web.Infrastructure.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\Newtonsoft.Json.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Net.Http.Formatting.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Helpers.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Http.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Http.WebHost.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Mvc.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Optimization.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Razor.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.WebPages.Deployment.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.WebPages.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.WebPages.Razor.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\WebGrease.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\EntityFramework.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\EntityFramework.SqlServer.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\Newtonsoft.Json.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Net.Http.Formatting.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Helpers.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Http.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Http.WebHost.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Mvc.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Optimization.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Razor.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.WebPages.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.WebPages.Deployment.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\System.Web.WebPages.Razor.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\Antlr3.Runtime.pdb
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.xml
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\obj\Debug\ClassSystemAPI.csproj.CoreCompileInputs.cache
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\obj\Debug\ClassSystemAPI.csproj.CopyComplete
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\obj\Debug\ClassSystemAPI.dll
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\obj\Debug\ClassSystemAPI.pdb
+C:\Users\ACER\Desktop\ClassSystemAPI\ClassSystemAPI\bin\QRCoder.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\ClassSystemAPI.dll.config
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\ClassSystemAPI.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\ClassSystemAPI.pdb
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\csc.exe
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\csc.exe.config
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\csc.rsp
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\csi.exe
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\csi.exe.config
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\csi.rsp
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.Build.Tasks.CodeAnalysis.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.CSharp.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.CSharp.Scripting.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.Scripting.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.VisualBasic.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.CSharp.Core.targets
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.DiaSymReader.Native.amd64.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.DiaSymReader.Native.x86.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.Managed.Core.targets
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\Microsoft.VisualBasic.Core.targets
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.AppContext.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Collections.Immutable.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Console.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Diagnostics.FileVersionInfo.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Diagnostics.StackTrace.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.IO.Compression.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.IO.FileSystem.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.IO.FileSystem.Primitives.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.IO.Pipes.AccessControl.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.IO.Pipes.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Reflection.Metadata.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.AccessControl.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.Claims.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.Algorithms.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.Encoding.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.Primitives.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.X509Certificates.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Security.Principal.Windows.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Text.Encoding.CodePages.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.ValueTuple.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Xml.ReaderWriter.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Xml.XmlDocument.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Xml.XPath.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\System.Xml.XPath.XDocument.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\vbc.exe
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\vbc.exe.config
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\vbc.rsp
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\VBCSCompiler.exe
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\roslyn\VBCSCompiler.exe.config
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\Antlr3.Runtime.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\EntityFramework.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\EntityFramework.SqlServer.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\Microsoft.Web.Infrastructure.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\Newtonsoft.Json.Bson.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\Newtonsoft.Json.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\QRCoder.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Buffers.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Memory.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Net.Http.Formatting.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Runtime.CompilerServices.Unsafe.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Threading.Tasks.Extensions.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Cors.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Helpers.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Http.Cors.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Http.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Http.WebHost.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Mvc.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Optimization.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Razor.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.WebPages.Deployment.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.WebPages.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.WebPages.Razor.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\WebGrease.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\EntityFramework.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\EntityFramework.SqlServer.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\Newtonsoft.Json.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\Newtonsoft.Json.Bson.pdb
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\Newtonsoft.Json.Bson.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Buffers.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Memory.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Net.Http.Formatting.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Runtime.CompilerServices.Unsafe.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Threading.Tasks.Extensions.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Helpers.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Http.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Http.Cors.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Http.WebHost.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Mvc.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Razor.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.WebPages.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.WebPages.Deployment.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.WebPages.Razor.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\System.Web.Optimization.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\Antlr3.Runtime.pdb
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.xml
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\obj\Debug\ClassSystemAPI.csproj.CoreCompileInputs.cache
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\obj\Debug\ClassSystemAPI.csproj.CopyComplete
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\obj\Debug\ClassSystemAPI.dll
+D:\SACHITH\02.ON GOING PROJECT\Tuition\Backend\ClassSystemAPI\ClassSystemAPI\obj\Debug\ClassSystemAPI.pdb
+D:\Tuition\Backend\ClassSystemAPI\bin\ClassSystemAPI.dll.config
+D:\Tuition\Backend\ClassSystemAPI\bin\ClassSystemAPI.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\ClassSystemAPI.pdb
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\csc.exe
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\csc.exe.config
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\csc.rsp
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\csi.exe
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\csi.exe.config
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\csi.rsp
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\Microsoft.Build.Tasks.CodeAnalysis.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.CSharp.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.CSharp.Scripting.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.Scripting.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.VisualBasic.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\Microsoft.CSharp.Core.targets
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\Microsoft.DiaSymReader.Native.amd64.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\Microsoft.DiaSymReader.Native.x86.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\Microsoft.Managed.Core.targets
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\Microsoft.VisualBasic.Core.targets
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.AppContext.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Collections.Immutable.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Console.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Diagnostics.FileVersionInfo.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Diagnostics.StackTrace.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.IO.Compression.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.IO.FileSystem.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.IO.FileSystem.Primitives.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.IO.Pipes.AccessControl.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.IO.Pipes.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Reflection.Metadata.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Security.AccessControl.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Security.Claims.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.Algorithms.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.Encoding.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.Primitives.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.X509Certificates.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Security.Principal.Windows.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Text.Encoding.CodePages.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.ValueTuple.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Xml.ReaderWriter.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Xml.XmlDocument.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Xml.XPath.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\System.Xml.XPath.XDocument.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\vbc.exe
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\vbc.exe.config
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\vbc.rsp
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\VBCSCompiler.exe
+D:\Tuition\Backend\ClassSystemAPI\bin\roslyn\VBCSCompiler.exe.config
+D:\Tuition\Backend\ClassSystemAPI\bin\Antlr3.Runtime.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\EntityFramework.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\EntityFramework.SqlServer.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\Microsoft.Web.Infrastructure.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\Newtonsoft.Json.Bson.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\Newtonsoft.Json.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\QRCoder.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Buffers.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Memory.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Net.Http.Formatting.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Runtime.CompilerServices.Unsafe.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Threading.Tasks.Extensions.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Cors.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Helpers.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Http.Cors.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Http.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Http.WebHost.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Mvc.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Optimization.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Razor.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.WebPages.Deployment.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.WebPages.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.WebPages.Razor.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\WebGrease.dll
+D:\Tuition\Backend\ClassSystemAPI\bin\EntityFramework.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\EntityFramework.SqlServer.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\Newtonsoft.Json.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\Newtonsoft.Json.Bson.pdb
+D:\Tuition\Backend\ClassSystemAPI\bin\Newtonsoft.Json.Bson.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Buffers.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Memory.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Net.Http.Formatting.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Runtime.CompilerServices.Unsafe.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Threading.Tasks.Extensions.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Helpers.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Http.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Http.Cors.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Http.WebHost.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Mvc.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Razor.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.WebPages.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.WebPages.Deployment.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.WebPages.Razor.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\System.Web.Optimization.xml
+D:\Tuition\Backend\ClassSystemAPI\bin\Antlr3.Runtime.pdb
+D:\Tuition\Backend\ClassSystemAPI\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.xml
+D:\Tuition\Backend\ClassSystemAPI\obj\Debug\ClassSystemAPI.csprojAssemblyReference.cache
+D:\Tuition\Backend\ClassSystemAPI\obj\Debug\ClassSystemAPI.csproj.CoreCompileInputs.cache
+D:\Tuition\Backend\ClassSystemAPI\obj\Debug\ClassSystemAPI.csproj.CopyComplete
+D:\Tuition\Backend\ClassSystemAPI\obj\Debug\ClassSystemAPI.dll
+D:\Tuition\Backend\ClassSystemAPI\obj\Debug\ClassSystemAPI.pdb
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\ClassSystemAPI.dll.config
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\ClassSystemAPI.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\ClassSystemAPI.pdb
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\csc.exe
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\csc.exe.config
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\csc.rsp
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\csi.exe
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\csi.exe.config
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\csi.rsp
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\Microsoft.Build.Tasks.CodeAnalysis.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.CSharp.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.CSharp.Scripting.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.Scripting.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\Microsoft.CodeAnalysis.VisualBasic.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\Microsoft.CSharp.Core.targets
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\Microsoft.DiaSymReader.Native.amd64.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\Microsoft.DiaSymReader.Native.x86.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\Microsoft.Managed.Core.targets
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\Microsoft.VisualBasic.Core.targets
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.AppContext.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Collections.Immutable.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Console.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Diagnostics.FileVersionInfo.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Diagnostics.StackTrace.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.IO.Compression.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.IO.FileSystem.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.IO.FileSystem.Primitives.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.IO.Pipes.AccessControl.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.IO.Pipes.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Reflection.Metadata.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Security.AccessControl.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Security.Claims.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.Algorithms.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.Encoding.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.Primitives.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Security.Cryptography.X509Certificates.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Security.Principal.Windows.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Text.Encoding.CodePages.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.ValueTuple.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Xml.ReaderWriter.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Xml.XmlDocument.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Xml.XPath.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\System.Xml.XPath.XDocument.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\vbc.exe
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\vbc.exe.config
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\vbc.rsp
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\VBCSCompiler.exe
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\roslyn\VBCSCompiler.exe.config
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\Antlr3.Runtime.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\EntityFramework.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\EntityFramework.SqlServer.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\Microsoft.Web.Infrastructure.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\Newtonsoft.Json.Bson.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\Newtonsoft.Json.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\QRCoder.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Buffers.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Memory.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Net.Http.Formatting.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Runtime.CompilerServices.Unsafe.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Threading.Tasks.Extensions.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Cors.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Helpers.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Http.Cors.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Http.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Http.WebHost.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Mvc.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Optimization.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Razor.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.WebPages.Deployment.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.WebPages.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.WebPages.Razor.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\WebGrease.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\EntityFramework.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\EntityFramework.SqlServer.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\Newtonsoft.Json.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\Newtonsoft.Json.Bson.pdb
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\Newtonsoft.Json.Bson.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Buffers.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Memory.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Net.Http.Formatting.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Runtime.CompilerServices.Unsafe.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Threading.Tasks.Extensions.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Helpers.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Http.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Http.Cors.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Http.WebHost.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Mvc.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Razor.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.WebPages.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.WebPages.Deployment.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.WebPages.Razor.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Web.Optimization.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\Antlr3.Runtime.pdb
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.xml
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\obj\Debug\ClassSystemAPI.csproj.AssemblyReference.cache
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\obj\Debug\ClassSystemAPI.csproj.CoreCompileInputs.cache
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\obj\Debug\ClassSys.3B0CF04D.Up2Date
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\obj\Debug\ClassSystemAPI.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\obj\Debug\ClassSystemAPI.pdb
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Numerics.Vectors.dll
+D:\IIT\Intern\Total Solution\Projects\Class System\NEW\Backend (3)\Backend\ClassSystemAPI\bin\System.Numerics.Vectors.xml
