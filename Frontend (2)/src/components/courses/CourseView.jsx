@@ -1,273 +1,482 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { getCourseDetails } from "../../services/courseService";
+import {
+  getCourseDetails,
+  getCourseStudents,
+} from "../../services/courseService";
 import { getCourseMaterials } from "../../services/materialService";
 import { getCourseAttendance } from "../../services/attendanceService";
-import MaterialList from "../materials/MaterialList";
+import {
+  getCourseComplaints,
+  createComplaint,
+  updateComplaint,
+  deleteComplaint,
+} from "../../services/complaintService";
 import AttendanceList from "../attendance/AttendanceList";
-import Modal from "../common/Modal";
+import MaterialList from "../materials/MaterialList";
 import MaterialForm from "../materials/MaterialForm";
-import QRGenerator from "../attendance/QRGenerator";
-import Loader from "../common/Loader";
+import Modal from "../common/Modal";
 import Button from "../common/Button";
-import { useEffect } from "react";
+import Loader from "../common/Loader";
+import EmptyState from "../common/EmptyState";
 import UserCard from "../users/UserCard";
-import Toast from "../common/Toast";
+import QRGenerator from "../attendance/QRGenerator";
+import ComplaintForm from "../complaints/ComplaintForm";
 
-const CourseView = () => {
+const Stat = ({
+  label,
+  value,
+  color = "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+}) => (
+  <div className={`rounded-lg p-4 ${color}`}>
+    <div className="text-sm opacity-80">{label}</div>
+    <div className="text-2xl font-semibold">{value}</div>
+  </div>
+);
+
+export default function CourseView() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const courseId = String(id || "");
   const { user } = useAuth();
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [course, setCourse] = useState(null);
+  const [students, setStudents] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [attendance, setAttendance] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
-  const [showQRModal, setShowQRModal] = useState(false);
-  const [showStudentModal, setShowStudentModal] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [toast, setToast] = useState("");
+
+  // Students table state
+  const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [page, setPage] = useState(0);
+  const [viewUser, setViewUser] = useState(null);
+
+  // Attendance QR modal
+  const [showQR, setShowQR] = useState(false);
+  const [qrStudent, setQrStudent] = useState(null);
+
+  // Complaints state
+  const [complaints, setComplaints] = useState([]);
+  const [showComplaintModal, setShowComplaintModal] = useState(false);
+  const [editingComplaint, setEditingComplaint] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [courseData, materialsData, attendanceData, studentsData] =
-          await Promise.all([
-            getCourseDetails(id),
-            getCourseMaterials(id),
-            getCourseAttendance(id),
-            // lazy import service to avoid circulars
-            (
-              await import("../../services/courseService")
-            ).getCourseStudents(id),
-          ]);
+    let mounted = true;
+    setLoading(true);
+    setError("");
 
-        setCourse(courseData);
-        setMaterials(materialsData);
-        setAttendance(attendanceData);
-        setStudents(studentsData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
+    Promise.all([
+      getCourseDetails(courseId),
+      getCourseStudents(courseId),
+      getCourseMaterials(courseId),
+      getCourseAttendance(courseId),
+      getCourseComplaints(courseId),
+    ])
+      .then(([c, s, m, a, comp]) => {
+        if (!mounted) return;
+        setCourse(c);
+        setStudents(s || []);
+        setMaterials(m || []);
+        setAttendance(a || []);
+        setComplaints(comp || []);
+      })
+      .catch((e) => {
+        console.error(e);
+        if (!mounted) return;
+        setError("Failed to load course");
+      })
+      .finally(() => mounted && setLoading(false));
+
+    return () => {
+      mounted = false;
     };
+  }, [courseId]);
 
-    fetchData();
-  }, [id]);
+  const totalSessions = attendance.length;
+  const presentCount = useMemo(
+    () => attendance.filter((r) => r.status === "Present").length,
+    [attendance]
+  );
+  const absentCount = useMemo(
+    () => attendance.filter((r) => r.status === "Absent").length,
+    [attendance]
+  );
 
-  const handleMaterialSubmit = (newMaterial) => {
-    setMaterials([newMaterial, ...materials]);
-    setShowMaterialModal(false);
+  const pagedStudents = useMemo(() => {
+    const start = (page - 1) * rowsPerPage;
+    return students.slice(start, start + rowsPerPage);
+  }, [students, page, rowsPerPage]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil((students.length || 0) / rowsPerPage)
+  );
+
+  const handleOpenQR = (student) => {
+    setQrStudent(student || null);
+    setShowQR(true);
   };
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  // From the students list, follow the same flow as Attendance Records: open the QR generator
-  const handleTakeAttendance = () => {
-    setShowQRModal(true)
-  }
-
-  const openStudent = (s) => {
-    setSelectedStudent(s);
-    setShowStudentModal(true);
+  const handleCloseQR = () => {
+    setQrStudent(null);
+    setShowQR(false);
   };
 
-  if (loading || !course) {
-    return <Loader className="py-12" />;
-  }
+  const handleEditComplaint = (c) => {
+    setEditingComplaint(c);
+    setShowComplaintModal(true);
+  };
 
-  const todaysCount = attendance.filter((a) => a.date === today).length;
-  const totalCount = attendance.length;
+  const handleDeleteComplaint = async (complaintId) => {
+    try {
+      await deleteComplaint(complaintId);
+      setComplaints((prev) =>
+        prev.filter((x) => String(x.id) !== String(complaintId))
+      );
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete complaint");
+    }
+  };
 
-  // pagination
-  const totalStudents = students.length;
-  const totalPages = Math.max(1, Math.ceil(totalStudents / rowsPerPage));
-  const currentPage = Math.min(page, totalPages - 1);
-  const startIndex = currentPage * rowsPerPage;
-  const pagedStudents = students.slice(startIndex, startIndex + rowsPerPage);
+  const handleSaveComplaint = async (data) => {
+    try {
+      if (editingComplaint) {
+        const updated = await updateComplaint(editingComplaint.id, data);
+        setComplaints((prev) =>
+          prev.map((c) => (String(c.id) === String(updated.id) ? updated : c))
+        );
+      } else {
+        const created = await createComplaint({ ...data, courseId: courseId });
+        setComplaints((prev) => [created, ...prev]);
+      }
+      setShowComplaintModal(false);
+      setEditingComplaint(null);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save complaint");
+    }
+  };
+
+  if (loading)
+    return (
+      <div className="p-6">
+        <Loader />
+      </div>
+    );
+  if (error) return <div className="p-6 text-red-600">{error}</div>;
+  if (!course)
+    return (
+      <div className="p-6">
+        <EmptyState title="Course not found" />
+      </div>
+    );
 
   return (
-    <div className="space-y-6">
-      {/* Attendance statistics banner */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-400 text-white rounded shadow p-6">
-        <h3 className="text-xl font-semibold">Attendance Statistics</h3>
-        <div className="mt-4 grid grid-cols-2 gap-6">
-          <div className="bg-blue-400 bg-opacity-30 rounded p-6 text-center">
-            <div className="text-4xl font-bold">{todaysCount}</div>
-            <div className="mt-2 text-sm">Today's Attendance</div>
-            <div className="text-xs mt-1">
-              {new Date().toLocaleDateString()}
-            </div>
-          </div>
-          <div className="bg-blue-400 bg-opacity-30 rounded p-6 text-center">
-            <div className="text-4xl font-bold">{totalCount}</div>
-            <div className="mt-2 text-sm">Total Attendance</div>
-            <div className="text-xs mt-1">All Time</div>
-          </div>
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">
+            {course.name || course.title}
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {course.description || "No description"}
+          </p>
         </div>
+        <Button variant="secondary" onClick={() => navigate(-1)}>
+          Back
+        </Button>
       </div>
 
-      <h2 className="text-3xl font-bold text-center text-blue-600">
-        Class Details
-      </h2>
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Stat label="Total Students" value={students.length} />
+        <Stat
+          label="Materials"
+          value={materials.length}
+          color="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+        />
+        <Stat
+          label="Sessions"
+          value={totalSessions}
+          color="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+        />
+        <Stat
+          label="Present/Absent"
+          value={`${presentCount}/${absentCount}`}
+          color="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
+        />
+      </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg p-4">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-          Students List
-        </h3>
+      {/* Students */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Students</h2>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-500 dark:text-gray-400">
+              Rows:
+            </label>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setPage(1);
+              }}
+              className="border dark:border-gray-700 rounded px-2 py-1 bg-white dark:bg-gray-800"
+            >
+              {[5, 10, 20].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-black text-white dark:bg-gray-900">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold">
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold">
-                  Student Number
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Email
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold">
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-              {pagedStudents.map((s) => (
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+              {pagedStudents.map((stu) => (
                 <tr
-                  key={s.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                  key={stu.id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                    {s.firstName} {s.lastName}
+                  <td className="px-4 py-2">
+                    {stu.firstName
+                      ? `${stu.firstName} ${stu.lastName || ""}`.trim()
+                      : stu.name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                    {s.rollNumber || s.rollNo || s.id}
+                  <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300">
+                    {stu.email || "-"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => openStudent(s)}
-                        className="bg-indigo-800 text-white px-4 py-2 rounded"
-                      >
-                        VIEW
-                      </button>
-                      <button
-                        onClick={() => handleTakeAttendance()}
-                        className="bg-blue-500 text-white px-4 py-2 rounded"
-                      >
-                        TAKE ATTENDANCE
-                      </button>
-                    </div>
+                  <td className="px-4 py-2 flex gap-2">
+                    <Button size="sm" onClick={() => setViewUser(stu)}>
+                      View
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleOpenQR(stu)}
+                    >
+                      Take Attendance
+                    </Button>
                   </td>
                 </tr>
               ))}
+              {pagedStudents.length === 0 && (
+                <tr>
+                  <td colSpan="3" className="px-4 py-6">
+                    <EmptyState title="No students" />
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
-        <div className="mt-4 flex flex-wrap justify-end items-center text-sm text-gray-500 dark:text-gray-400 gap-3">
-          <label className="flex items-center gap-2">
-            <span>Rows per page:</span>
-            <select
-              className="border rounded px-2 py-1 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
-              value={rowsPerPage}
-              onChange={(e) => {
-                setRowsPerPage(Number(e.target.value));
-                setPage(0);
-              }}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-            </select>
-          </label>
-          <div>
-            {startIndex + 1}–{Math.min(startIndex + rowsPerPage, totalStudents)}{" "}
-            of {totalStudents}
+        <div className="flex items-center justify-between pt-3">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Page {page} of {totalPages}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              className="px-2 py-1 border rounded disabled:opacity-50 dark:border-gray-700"
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={currentPage === 0}
-              aria-label="Previous page"
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
-              ‹
-            </button>
-            <button
-              className="px-2 py-1 border rounded disabled:opacity-50 dark:border-gray-700"
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={currentPage >= totalPages - 1}
-              aria-label="Next page"
+              Prev
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >
-              ›
-            </button>
+              Next
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Keep materials and attendance sections below */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-          Study Materials
-        </h3>
-        {user.userType === "teacher" && (
-          <Button variant="primary" onClick={() => setShowMaterialModal(true)}>
-            Upload Material
-          </Button>
+      {/* Materials */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Materials</h2>
+          {user?.userType === "teacher" && (
+            <Button
+              variant="primary"
+              onClick={() => setShowMaterialModal(true)}
+            >
+              Add Material
+            </Button>
+          )}
+        </div>
+        <MaterialList materials={materials} onDownload={() => {}} />
+        {materials.length === 0 && (
+          <div className="pt-2">
+            <EmptyState title="No materials yet" />
+          </div>
         )}
       </div>
-      <MaterialList materials={materials} />
 
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-          Attendance Records
-        </h3>
-        {user.userType === "teacher" && (
-          <Button variant="primary" onClick={() => setShowQRModal(true)}>
-            Take Attendance
-          </Button>
+      {/* Attendance Records */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Attendance Records</h2>
+          <Button onClick={() => handleOpenQR(null)}>Take Attendance</Button>
+        </div>
+        <AttendanceList attendance={attendance} students={students} />
+        {attendance.length === 0 && (
+          <div className="pt-2">
+            <EmptyState title="No attendance records" />
+          </div>
         )}
       </div>
-  <AttendanceList attendance={attendance} students={students} />
 
+      {/* Complaints */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Complaints</h2>
+          {/* <Button
+            onClick={() => {
+              setEditingComplaint(null);
+              setShowComplaintModal(true);
+            }}
+          >
+            Add Complaint
+          </Button> */}
+        </div>
+        {complaints.length === 0 ? (
+          <EmptyState title="No complaints" />
+        ) : (
+          <div className="space-y-3">
+            {complaints.map((c) => (
+              <div
+                key={c.id}
+                className="border dark:border-gray-700 rounded p-3"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="font-medium">{c.title || "Complaint"}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                      {c.message || c.description}
+                    </div>
+                    {c.studentId && (
+                      <div className="text-xs mt-1 text-gray-500 dark:text-gray-400">
+                        By:{" "}
+                        {students.find(
+                          (s) => String(s.id) === String(c.studentId)
+                        )?.firstName ||
+                          students.find(
+                            (s) => String(s.id) === String(c.studentId)
+                          )?.name ||
+                          "Unknown"}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => handleEditComplaint(c)}>
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleDeleteComplaint(c.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* View User Modal */}
       <Modal
-        isOpen={showMaterialModal}
-        onClose={() => setShowMaterialModal(false)}
-        title="Upload Study Material"
+        isOpen={!!viewUser}
+        onClose={() => setViewUser(null)}
+        title="Student Info"
       >
-        <MaterialForm
-          courseId={id}
-          onSuccess={handleMaterialSubmit}
-          onCancel={() => setShowMaterialModal(false)}
+        {viewUser && <UserCard user={viewUser} />}
+      </Modal>
+
+      {/* QR Modal */}
+      <Modal
+        isOpen={showQR}
+        onClose={handleCloseQR}
+        title="Take Attendance via QR"
+      >
+        <div className="space-y-3">
+          <div className="text-sm text-gray-600 dark:text-gray-300">
+            {qrStudent
+              ? `Generate/scan for ${
+                  qrStudent.firstName
+                    ? `${qrStudent.firstName} ${
+                        qrStudent.lastName || ""
+                      }`.trim()
+                    : qrStudent.name
+                }`
+              : "Generate a QR for this course and let students scan to mark attendance."}
+          </div>
+          <QRGenerator courseId={courseId} />
+        </div>
+      </Modal>
+
+      {/* Complaint Modal */}
+      <Modal
+        isOpen={showComplaintModal}
+        onClose={() => {
+          setShowComplaintModal(false);
+          setEditingComplaint(null);
+        }}
+        title={editingComplaint ? "Edit Complaint" : "Add Complaint"}
+      >
+        <ComplaintForm
+          initialData={editingComplaint || {}}
+          onAdd={handleSaveComplaint}
+          onCancel={() => {
+            setShowComplaintModal(false);
+            setEditingComplaint(null);
+          }}
         />
       </Modal>
 
+      {/* Add Material Modal */}
       <Modal
-        isOpen={showQRModal}
-        onClose={() => setShowQRModal(false)}
-        title="Generate QR Code for Attendance"
-        size="lg"
+        isOpen={showMaterialModal}
+        onClose={() => setShowMaterialModal(false)}
+        title="Add Study Material"
       >
-        <QRGenerator courseId={id} />
+        <MaterialForm
+          courseId={courseId}
+          onSuccess={(newMaterial) => {
+            setMaterials((prev) => [newMaterial, ...prev]);
+            setShowMaterialModal(false);
+          }}
+          onCancel={() => setShowMaterialModal(false)}
+        />
       </Modal>
-
-      {/* Student view modal */}
-      <Modal
-        isOpen={showStudentModal}
-        onClose={() => setShowStudentModal(false)}
-        title="Student Details"
-      >
-        {selectedStudent && <UserCard user={selectedStudent} />}
-      </Modal>
-
-      {/* Toast */}
-      <Toast message={toast} onClose={() => setToast("")} type="success" />
     </div>
   );
-};
-
-export default CourseView;
+}

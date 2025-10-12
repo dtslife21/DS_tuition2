@@ -1,22 +1,22 @@
-import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
-import { useAuth } from '../../contexts/AuthContext'
-import { getCourseDetails } from '../../services/courseService'
-import { getCourseMaterials } from '../../services/materialService'
-import MaterialList from '../../components/materials/MaterialList'
-import Modal from '../../components/common/Modal'
-import MaterialForm from '../../components/materials/MaterialForm'
-import EmptyState from '../../components/common/EmptyState'
-import Button from '../../components/common/Button'
-import Loader from '../../components/common/Loader'
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { getCourseDetails } from "../../services/courseService";
+import { getCourseMaterials } from "../../services/materialService";
+import MaterialList from "../../components/materials/MaterialList";
+import Modal from "../../components/common/Modal";
+import MaterialForm from "../../components/materials/MaterialForm";
+import EmptyState from "../../components/common/EmptyState";
+import Button from "../../components/common/Button";
+import Loader from "../../components/common/Loader";
 
 const TeacherMaterials = () => {
-  const { id } = useParams()
-  const { user } = useAuth()
-  const [materials, setMaterials] = useState([])
-  const [course, setCourse] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
+  const { id } = useParams();
+  const { user } = useAuth();
+  const [materials, setMaterials] = useState([]);
+  const [course, setCourse] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,28 +24,28 @@ const TeacherMaterials = () => {
         if (id) {
           const [materialsData, courseData] = await Promise.all([
             getCourseMaterials(id),
-            getCourseDetails(id)
-          ])
-          setMaterials(materialsData)
-          setCourse(courseData)
+            getCourseDetails(id),
+          ]);
+          setMaterials(materialsData);
+          setCourse(courseData);
         }
       } catch (error) {
-        console.error('Error fetching data:', error)
+        console.error("Error fetching data:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [id])
+    fetchData();
+  }, [id]);
 
   const handleMaterialSubmit = (newMaterial) => {
-    setMaterials([newMaterial, ...materials])
-    setShowModal(false)
-  }
+    setMaterials([newMaterial, ...materials]);
+    setShowModal(false);
+  };
 
   if (loading) {
-    return <Loader className="py-12" />
+    return <Loader className="py-12" />;
   }
 
   if (!id) {
@@ -59,7 +59,7 @@ const TeacherMaterials = () => {
           description="Please select a course to view or upload materials."
         />
       </div>
-    )
+    );
   }
 
   return (
@@ -69,7 +69,7 @@ const TeacherMaterials = () => {
           Materials for {course?.name}
         </h1>
         <Button variant="primary" onClick={() => setShowModal(true)}>
-          Upload Material
+          Add Material
         </Button>
       </div>
 
@@ -78,7 +78,7 @@ const TeacherMaterials = () => {
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title="Upload Study Material"
+        title="Add Study Material"
       >
         <MaterialForm
           courseId={id}
@@ -87,7 +87,7 @@ const TeacherMaterials = () => {
         />
       </Modal>
     </div>
-  )
-}
+  );
+};
 
-export default TeacherMaterials
+export default TeacherMaterials;
