@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 
 const Sidebar = () => {
@@ -34,6 +35,8 @@ const Sidebar = () => {
       : user?.userType === "teacher"
       ? teacherNavigation
       : studentNavigation;
+
+  const [coursesOpen, setCoursesOpen] = useState(false);
 
   const getIcon = (iconName) => {
     switch (iconName) {
@@ -197,22 +200,45 @@ const Sidebar = () => {
       <div className="flex flex-col w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="h-0 flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
           <nav className="flex-1 px-2 space-y-1">
-            {navigation.map((item) => (
-              <NavLink
-                key={item.name}
-                to={item.href}
-                className={({ isActive }) =>
-                  `group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                    isActive
-                      ? "bg-indigo-100 text-indigo-900 dark:bg-indigo-900 dark:text-indigo-100"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
-                  }`
-                }
-              >
-                <span className="mr-3">{getIcon(item.icon)}</span>
-                {item.name}
-              </NavLink>
-            ))}
+            {navigation.map((item) => {
+              // For teachers, show a single 'Courses' link (no submenu)
+              if (item.name === "Courses" && user?.userType === "teacher") {
+                return (
+                  <NavLink
+                    key={item.name}
+                    to="/teacher/courses"
+                    className={({ isActive }) =>
+                      `group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                        isActive ||
+                        window.location.pathname.startsWith("/teacher/courses")
+                          ? "bg-indigo-100 text-indigo-900 dark:bg-indigo-900 dark:text-indigo-100"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
+                      }`
+                    }
+                  >
+                    <span className="mr-3">{getIcon(item.icon)}</span>
+                    {item.name}
+                  </NavLink>
+                );
+              }
+
+              return (
+                <NavLink
+                  key={item.name}
+                  to={item.href}
+                  className={({ isActive }) =>
+                    `group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                      isActive
+                        ? "bg-indigo-100 text-indigo-900 dark:bg-indigo-900 dark:text-indigo-100"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
+                    }`
+                  }
+                >
+                  <span className="mr-3">{getIcon(item.icon)}</span>
+                  {item.name}
+                </NavLink>
+              );
+            })}
           </nav>
           {/* Profile / Logout section for students and teachers */}
           {(user?.userType === "student" || user?.userType === "teacher") && (

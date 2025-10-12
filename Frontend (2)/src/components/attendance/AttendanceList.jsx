@@ -1,7 +1,19 @@
+import { useMemo } from 'react'
 import { formatDate } from '../../utils/helpers'
 import EmptyState from '../common/EmptyState';  
 
-const AttendanceList = ({ attendance }) => {
+// Props:
+// - attendance: Array<{ id, studentId, date, status }>
+// - students?: Array<{ id, firstName, lastName, rollNumber }>
+const AttendanceList = ({ attendance, students = [] }) => {
+  const studentMap = useMemo(() => {
+    const map = {}
+    for (const s of students) {
+      map[String(s.id)] = s
+    }
+    return map
+  }, [students])
+
   return (
     <div>
       {attendance.length > 0 ? (
@@ -11,9 +23,16 @@ const AttendanceList = ({ attendance }) => {
               <li key={record.id}>
                 <div className="px-4 py-4 sm:px-6">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 truncate">
-                      {formatDate(record.date)}
-                    </p>
+                    <div className="flex flex-col">
+                      <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 truncate">
+                        {formatDate(record.date)}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                        {studentMap[String(record.studentId)]
+                          ? `${studentMap[String(record.studentId)].firstName} ${studentMap[String(record.studentId)].lastName}`
+                          : `Student #${record.studentId}`}
+                      </p>
+                    </div>
                     <div className="ml-2 flex-shrink-0 flex">
                       <p
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${

@@ -71,6 +71,7 @@ const RoutesConfig = () => {
       >
         <Route index element={<TeacherDashboard />} />
         <Route path="courses" element={<TeacherCourses />} />
+        <Route path="courses/:id" element={<TeacherCourses />} />
         <Route path="attendance" element={<TeacherAttendance />} />
         <Route path="materials" element={<TeacherMaterials />} />
         <Route path="students" element={<TeacherStudents />} />

@@ -13,18 +13,21 @@ const TeacherAttendance = () => {
   const { user } = useAuth()
   const [attendance, setAttendance] = useState([])
   const [course, setCourse] = useState(null)
+  const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (id) {
-          const [attendanceData, courseData] = await Promise.all([
+          const [attendanceData, courseData, studentsData] = await Promise.all([
             getCourseAttendance(id),
-            getCourseDetails(id)
+            getCourseDetails(id),
+            (await import('../../services/courseService')).getCourseStudents(id)
           ])
           setAttendance(attendanceData)
           setCourse(courseData)
+          setStudents(studentsData)
         }
       } catch (error) {
         console.error('Error fetching data:', error)
@@ -40,19 +43,19 @@ const TeacherAttendance = () => {
     return <Loader className="py-12" />
   }
 
-  if (!id) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Attendance
-        </h1>
-        <EmptyState
-          title="Select a course"
-          description="Please select a course to view or take attendance."
-        />
-      </div>
-    )
-  }
+  // if (!id) {
+  //   return (
+  //     <div className="space-y-6">
+  //       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+  //         Attendance
+  //       </h1>
+  //       <EmptyState
+  //         title="Select a course"
+  //         description="Please select a course to view or take attendance."
+  //       />
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="space-y-6">
@@ -67,7 +70,7 @@ const TeacherAttendance = () => {
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
         Attendance Records
       </h2>
-      <AttendanceList attendance={attendance} />
+  <AttendanceList attendance={attendance} students={students} />
     </div>
   )
 }
