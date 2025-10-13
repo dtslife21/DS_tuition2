@@ -248,7 +248,15 @@ const Sidebar = () => {
               </div>
               <div className="space-y-1">
                 <button
-                  onClick={() => navigate("/profile")}
+                  onClick={() =>
+                    navigate(
+                      user?.userType === "student"
+                        ? "/student/profile"
+                        : user?.userType === "teacher"
+                        ? "/teacher/profile"
+                        : "/admin"
+                    )
+                  }
                   className="group w-full flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
                 >
                   <span className="mr-3">{getIcon("profile")}</span>

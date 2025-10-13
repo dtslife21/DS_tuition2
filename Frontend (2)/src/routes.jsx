@@ -15,11 +15,13 @@ import TeacherCourses from "./pages/teacher/Courses";
 import TeacherAttendance from "./pages/teacher/Attendance";
 import TeacherMaterials from "./pages/teacher/Materials";
 import TeacherStudents from "./pages/teacher/Students";
+import TeacherProfile from "./pages/teacher/TeacherProfile";
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentCourses from "./pages/student/Courses";
 import StudentAttendance from "./pages/student/Attendance";
 import StudentMaterials from "./pages/student/Materials";
 import StudentComplaints from "./pages/student/Complaints";
+import StudentProfile from "./pages/student/StudentProfile";
 import NotFound from "./pages/404";
 import UserDetailsPage from "./pages/admin/UserDetailsPage";
 
@@ -70,6 +72,7 @@ const RoutesConfig = () => {
         }
       >
         <Route index element={<TeacherDashboard />} />
+        <Route path="profile" element={<TeacherProfile />} />
         <Route path="courses" element={<TeacherCourses />} />
         <Route path="courses/:id" element={<TeacherCourses />} />
         <Route path="attendance" element={<TeacherAttendance />} />
@@ -87,6 +90,7 @@ const RoutesConfig = () => {
         }
       >
         <Route index element={<StudentDashboard />} />
+        <Route path="profile" element={<StudentProfile />} />
         <Route path="courses" element={<StudentCourses />} />
         <Route path="attendance" element={<StudentAttendance />} />
         <Route path="materials" element={<StudentMaterials />} />
