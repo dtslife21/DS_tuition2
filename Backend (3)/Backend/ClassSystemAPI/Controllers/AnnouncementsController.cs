@@ -26,6 +26,51 @@ namespace ClassSystemAPI.Controllers
             return Ok(announcement);
         }
 
+        // GET: api/Announcements/Student/{studentId}
+        // Returns announcements for all courses where the student is currently enrolled.
+        [HttpGet]
+        [Route("api/Announcements/Student/{studentId}")]
+        public IHttpActionResult GetAnnouncementsForStudent(int studentId)
+        {
+            var studentExists = db.Students.Any(s => s.StudentID == studentId);
+            if (!studentExists) return NotFound();
+
+            var courseIds = db.Enrollments
+                .Where(e => e.StudentID == studentId && e.IsActive)
+                .Select(e => e.CourseID);
+
+            var announcements = db.Announcements
+                .Where(a => courseIds.Contains(a.CourseID))
+                .Include(a => a.Course)
+                .Include(a => a.Teacher.User)
+                .OrderByDescending(a => a.PostDate)
+                .Select(a => new
+                {
+                    a.AnnouncementID,
+                    a.Title,
+                    a.Content,
+                    a.PostDate,
+                    a.ExpiryDate,
+                    a.IsImportant,
+                    Course = new
+                    {
+                        a.Course.CourseID,
+                        a.Course.CourseName,
+                        a.Course.CourseCode
+                    },
+                    Teacher = a.Teacher == null ? null : new
+                    {
+                        a.Teacher.TeacherID,
+                        FirstName = a.Teacher.User.FirstName,
+                        LastName = a.Teacher.User.LastName,
+                        Username = a.Teacher.User.Username
+                    }
+                })
+                .ToList();
+
+            return Ok(announcements);
+        }
+
         // POST: api/Announcements
         public IHttpActionResult PostAnnouncement(Announcement announcement)
         {

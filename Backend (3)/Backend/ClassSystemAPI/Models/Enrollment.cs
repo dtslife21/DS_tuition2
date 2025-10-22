@@ -13,7 +13,8 @@ namespace ClassSystemAPI.Models
 
         public int StudentID { get; set; }
 
-        public DateTime EnrollmentDate { get; set; } = DateTime.Now;
+
+        public DateTime EnrollmentDate { get; set; }
 
         public bool IsActive { get; set; } = true;
 

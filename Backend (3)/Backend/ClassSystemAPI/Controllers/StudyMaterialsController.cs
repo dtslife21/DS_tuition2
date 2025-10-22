@@ -47,6 +47,50 @@ namespace ClassSystemAPI.Controllers
             return Ok(materials);
         }
 
+        // NEW: api/studymaterials/student/{studentId}
+        [HttpGet]
+        [Route("student/{studentId}")]
+        public IHttpActionResult GetMaterialsForStudent(int studentId)
+        {
+            var studentExists = db.Students.Any(s => s.StudentID == studentId);
+            if (!studentExists) return NotFound();
+
+            var courseIds = db.Enrollments
+                .Where(e => e.StudentID == studentId && e.IsActive)
+                .Select(e => e.CourseID);
+
+            var materials = db.StudyMaterials
+                .Where(m => m.IsVisible && courseIds.Contains(m.CourseID))
+                .Include(m => m.Course)
+                .Include(m => m.Teacher.User)
+                .OrderByDescending(m => m.UploadDate)
+                .Select(m => new
+                {
+                    m.MaterialID,
+                    m.Title,
+                    m.Description,
+                    m.FilePath,
+                    m.FileType,
+                    m.UploadDate,
+                    Course = new
+                    {
+                        m.Course.CourseID,
+                        m.Course.CourseName,
+                        m.Course.CourseCode
+                    },
+                    Teacher = m.Teacher == null ? null : new
+                    {
+                        m.Teacher.TeacherID,
+                        FirstName = m.Teacher.User.FirstName,
+                        LastName = m.Teacher.User.LastName,
+                        Username = m.Teacher.User.Username
+                    }
+                })
+                .ToList();
+
+            return Ok(materials);
+        }
+
         // GET: api/studymaterials/5
         [HttpGet]
         [Route("{id}")]
@@ -64,6 +108,17 @@ namespace ClassSystemAPI.Controllers
 
             return Ok(material);
         }
+
+
+        //[HttpGet]
+        //[Route("{id}", Name = "GetStudyMaterialById")]
+        //public async Task<IHttpActionResult> GetStudyMaterial(int id)
+        //{
+        //    var material = await db.StudyMaterials.FindAsync(id);
+        //    if (material == null) return NotFound();
+        //    return Ok(material);
+        //}
+
 
         // POST: api/studymaterials
         [HttpPost]
@@ -93,7 +148,9 @@ namespace ClassSystemAPI.Controllers
             db.StudyMaterials.Add(material);
             await db.SaveChangesAsync();
 
-            return CreatedAtRoute("DefaultApi", new { id = material.MaterialID }, material);
+            // return CreatedAtRoute("DefaultApi", new { id = material.MaterialID }, material);
+            return CreatedAtRoute("GetStudyMaterialById", new { id = material.MaterialID }, material);
+
         }
 
         // PUT: api/studymaterials/5
@@ -150,14 +207,14 @@ namespace ClassSystemAPI.Controllers
             return Ok(material);
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                db.Dispose();
-            }
-            base.Dispose(disposing);
-        }
+        //protected override void Dispose(bool disposing)
+        //{
+        //    if (disposing)
+        //    {
+        //        db.Dispose();
+        //    }
+        //    base.Dispose(disposing);
+        //}
 
         private bool StudyMaterialExists(int id)
         {

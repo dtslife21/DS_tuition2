@@ -11,19 +11,105 @@ namespace ClassSystemAPI.Controllers
         private ClassSystemContext db = new ClassSystemContext();
 
         // GET: api/Enrollments
-        public IQueryable<Enrollment> GetEnrollments()
+        //public IQueryable<Enrollment> GetEnrollments()
+        //{
+        //    return db.Enrollments.Include(e => e.Course).Include(e => e.Student);
+        //}
+
+        public IHttpActionResult GetEnrollments()
         {
-            return db.Enrollments.Include(e => e.Course).Include(e => e.Student);
+            var enrollments = db.Enrollments
+                .Include(e => e.Course)
+                .Include(e => e.Student)
+                .Select(e => new
+                {
+                    e.EnrollmentID,
+                    e.EnrollmentDate,
+                    e.IsActive,
+                })
+                .ToList();
+
+            return Ok(enrollments);
         }
 
         // GET: api/Enrollments/5
         public IHttpActionResult GetEnrollment(int id)
         {
-            var enrollment = db.Enrollments.Find(id);
+            var enrollment = db.Enrollments
+                .Include(e => e.Course.Teacher)
+                .Include(e => e.Student)
+                .Where(e => e.EnrollmentID == id)
+                .Select(e => new
+                {
+                    e.EnrollmentID,
+                    e.EnrollmentDate,
+                    e.IsActive,
+
+                    Course = new
+                    {
+                        e.Course.CourseID,
+                        e.Course.CourseName,
+                        e.Course.Description,
+                        Teacher = new
+                        {
+                            e.Course.Teacher.TeacherID,
+                            e.Course.Teacher.User.Username
+                        }
+                    },
+
+                    Student = new
+                    {
+                        e.Student.StudentID,
+                    }
+                })
+                .FirstOrDefault();
+
             if (enrollment == null)
                 return NotFound();
 
             return Ok(enrollment);
+        }
+
+        // NEW: api/Enrollments/Student/{studentId} - Courses for a student
+        [HttpGet]
+        [Route("api/Enrollments/Student/{studentId}")]
+        public IHttpActionResult GetStudentCourses(int studentId)
+        {
+            var studentExists = db.Students.Any(s => s.StudentID == studentId);
+            if (!studentExists) return NotFound();
+
+            var courses = db.Enrollments
+                .Where(e => e.StudentID == studentId && e.IsActive)
+                .Include(e => e.Course.Subject)
+                .Include(e => e.Course.Teacher.User)
+                .Select(e => new
+                {
+                    e.EnrollmentID,
+                    e.EnrollmentDate,
+                    Course = new
+                    {
+                        e.Course.CourseID,
+                        e.Course.CourseName,
+                        e.Course.CourseCode,
+                        e.Course.AcademicYear,
+                        e.Course.Description,
+                        Subject = e.Course.Subject == null ? null : new
+                        {
+                            e.Course.Subject.SubjectID,
+                            e.Course.Subject.Description
+                        },
+                        Teacher = e.Course.Teacher == null ? null : new
+                        {
+                            e.Course.Teacher.TeacherID,
+                            e.Course.Teacher.User.FirstName,
+                            e.Course.Teacher.User.LastName,
+                            e.Course.Teacher.User.Username
+                        }
+                    }
+                })
+                .ToList();
+
+            return Ok(courses);
         }
 
         // POST: api/Enrollments

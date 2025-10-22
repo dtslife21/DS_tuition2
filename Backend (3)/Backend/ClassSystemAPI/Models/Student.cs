@@ -20,7 +20,9 @@ namespace ClassSystemAPI.Models
         public string ParentContact { get; set; }
 
         public virtual User User { get; set; }
-        public DateTime EnrollDate { get; internal set; }
+        public object FullName { get; internal set; }
+        public object Email { get; internal set; }
+        //public DateTime EnrollDate { get; internal set; }
     }
 
 }
