@@ -379,30 +379,65 @@ const UserForm = ({ onSubmit, loading, user, userTypes, forceUserType }) => {
                 Loading courses...
               </div>
             ) : courses && courses.length > 0 ? (
-              <div className="mt-2 grid gap-2">
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {courses.map((c) => {
                   const cid = String(
                     c.id ?? c.CourseID ?? c.CourseId ?? c.courseId ?? ""
                   );
-                  const checked = selectedCourseIds.includes(cid);
+                  const selected = selectedCourseIds.includes(cid);
                   return (
-                    <label key={cid} className="inline-flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => {
+                    <div
+                      key={cid}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        setSelectedCourseIds((prev) =>
+                          prev.includes(cid)
+                            ? prev.filter((x) => x !== cid)
+                            : [...prev, cid]
+                        )
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
                           setSelectedCourseIds((prev) =>
                             prev.includes(cid)
                               ? prev.filter((x) => x !== cid)
                               : [...prev, cid]
                           );
-                        }}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-200">
-                        {c.name || c.CourseName || c.title || c.courseName}
-                      </span>
-                    </label>
+                        }
+                      }}
+                      className={`cursor-pointer p-3 border rounded-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                        selected
+                          ? "border-indigo-600 bg-indigo-50 shadow-sm"
+                          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                            {c.name || c.CourseName || c.title || c.courseName}
+                          </h4>
+                          {c.description && (
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {c.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex-shrink-0">
+                          {selected ? (
+                            <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-indigo-600 text-white text-xs font-bold">
+                              ✓
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 text-xs">
+                              ○
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   );
                 })}
               </div>

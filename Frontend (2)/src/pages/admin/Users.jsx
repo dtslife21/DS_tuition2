@@ -95,6 +95,7 @@ const AdminUsers = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [formError, setFormError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
+  const [forceUserType, setForceUserType] = useState(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -138,6 +139,7 @@ const AdminUsers = () => {
 
       setShowModal(false);
       setSelectedUser(null);
+      setForceUserType(null);
     } catch (error) {
       console.error("Error saving user:", error);
       setFormError(error.message || "Failed to save user");
@@ -177,6 +179,7 @@ const AdminUsers = () => {
     setShowModal(false);
     setSelectedUser(null);
     setFormError("");
+    setForceUserType(null);
   };
 
   if (loading) {
@@ -193,12 +196,6 @@ const AdminUsers = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           User Management
         </h1>
-        <button
-          onClick={handleAddUser}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
-        >
-          <span>+</span> Add User
-        </button>
       </div>
 
       {editLoading && (
@@ -241,10 +238,50 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      {/* Filter users by active tab before passing to UserList */}
+      {/* Filter users by active tab and show role-specific add button */}
       {(() => {
         const filtered = filterUsersByTab(users, activeTab);
-        return <UserList users={filtered} onEdit={handleEditUser} />;
+        const openCreateFor = (typeId) => {
+          setSelectedUser(null);
+          setShowModal(true);
+          setFormError("");
+          setForceUserType(typeId);
+        };
+
+        return (
+          <>
+            <div className="flex justify-end mb-3">
+              {activeTab === "admins" && (
+                <button
+                  onClick={() => openCreateFor(1)}
+                  className="px-3 py-1.5 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors"
+                >
+                  + Add Admin
+                </button>
+              )}
+
+              {activeTab === "teachers" && (
+                <button
+                  onClick={() => openCreateFor(2)}
+                  className="px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                >
+                  + Add Teacher
+                </button>
+              )}
+
+              {activeTab === "students" && (
+                <button
+                  onClick={() => openCreateFor(3)}
+                  className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                >
+                  + Add Student
+                </button>
+              )}
+            </div>
+
+            <UserList users={filtered} onEdit={handleEditUser} />
+          </>
+        );
       })()}
 
       <AnimatePresence>
@@ -289,6 +326,7 @@ const AdminUsers = () => {
                     { id: 2, name: "Teacher" },
                     { id: 3, name: "Student" },
                   ]}
+                  forceUserType={forceUserType}
                 />
               </div>
             </motion.div>
