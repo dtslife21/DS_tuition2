@@ -39,6 +39,8 @@ const AdminSettings = () => {
         </div>
       </Card>
 
+      {/* Complaint form removed from admin settings */}
+
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <div>

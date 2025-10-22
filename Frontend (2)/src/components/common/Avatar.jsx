@@ -1,20 +1,19 @@
-const Avatar = ({ name, size = "md", src }) => {
+const Avatar = ({ name, size = 'md', src }) => {
   const getInitials = (name) => {
-    if (!name) return "";
-    const names = name.split(" ");
-    let initials = names[0].substring(0, 1).toUpperCase();
+    if (!name) return ''
+    const names = name.split(' ')
+    let initials = names[0].substring(0, 1).toUpperCase()
     if (names.length > 1) {
-      initials += names[names.length - 1].substring(0, 1).toUpperCase();
+      initials += names[names.length - 1].substring(0, 1).toUpperCase()
     }
-    return initials;
-  };
+    return initials
+  }
 
   const sizeClasses = {
-    sm: "h-8 w-8 text-xs",
-    md: "h-10 w-10 text-sm",
-    lg: "h-12 w-12 text-base",
-    xl: "h-24 w-24 text-3xl",
-  };
+    sm: 'h-8 w-8 text-xs',
+    md: 'h-10 w-10 text-sm',
+    lg: 'h-12 w-12 text-base',
+  }
 
   return (
     <div
@@ -30,7 +29,7 @@ const Avatar = ({ name, size = "md", src }) => {
         <span>{getInitials(name)}</span>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default Avatar;
+export default Avatar

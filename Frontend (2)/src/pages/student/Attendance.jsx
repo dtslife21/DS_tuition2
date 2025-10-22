@@ -7,6 +7,7 @@ import AttendanceList from "../../components/attendance/AttendanceList";
 import QRScanner from "../../components/attendance/QRScanner";
 import EmptyState from "../../components/common/EmptyState";
 import Loader from "../../components/common/Loader";
+import QRGenerator from "../../components/attendance/QRGenerator";
 
 const StudentAttendance = () => {
   const { id } = useParams();
@@ -55,8 +56,21 @@ const StudentAttendance = () => {
             getCourseDetails(id),
           ]);
 
+          const myId =
+            user?.StudentID ??
+            user?.studentID ??
+            user?.studentId ??
+            user?.UserID ??
+            user?.userID ??
+            user?.userId ??
+            user?.id;
+
           const filteredAttendance = Array.isArray(attendanceData)
-            ? attendanceData.filter((a) => a.studentId === user?.id)
+            ? attendanceData.filter((a) => {
+                const sid =
+                  a.studentId ?? a.StudentID ?? a.userId ?? a.UserID ?? null;
+                return sid != null && String(sid) === String(myId);
+              })
             : [];
 
           setCourse(courseData ?? fallbackCourse);
@@ -78,7 +92,7 @@ const StudentAttendance = () => {
     };
 
     fetchData();
-  }, [id, user?.id]);
+  }, [id, user]);
 
   if (loading) {
     return <Loader className="py-12" />;
@@ -99,16 +113,22 @@ const StudentAttendance = () => {
   // }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-        Attendance for {course?.name}
-      </h1>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white border-l-4 border-indigo-500/60 dark:border-indigo-400/60 pl-3">
+          Attendance for {course?.name}
+        </h1>
+      </div>
 
-      <QRScanner />
+      <div className="bg-gradient-to-br from-white to-indigo-50/70 dark:from-gray-900/70 dark:to-indigo-950/20 backdrop-blur shadow-lg ring-1 ring-indigo-100 dark:ring-indigo-800 rounded-2xl p-4 sm:p-6">
+        <QRGenerator courseId={id} />
+      </div>
 
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-        Your Attendance Records
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white border-l-4 border-violet-500/60 dark:border-violet-400/60 pl-3">
+          Your Attendance Records
+        </h2>
+      </div>
       <AttendanceList attendance={attendance} />
     </div>
   );

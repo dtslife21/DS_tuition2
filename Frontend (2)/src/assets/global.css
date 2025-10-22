@@ -42,3 +42,189 @@ body {
   opacity: 0;
   transition: opacity 300ms;
 }
+
+/* === Modern animations and utility classes === */
+@layer utilities {
+  /* Base transition */
+  .transition-base {
+    transition: all 250ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Hover lift for cards and tiles */
+  .hover-lift {
+    @apply transition-transform duration-300 will-change-transform;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Soft elevated shadow */
+  .soft-shadow {
+    box-shadow: 0 6px 20px -6px rgb(0 0 0 / 0.15);
+  }
+  .soft-shadow-md {
+    box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.18);
+  }
+
+  /* Glass surface (nice for navbars) */
+  .glass-surface {
+    @apply bg-white/70 dark:bg-gray-800/60 backdrop-blur-md border-b border-white/40 dark:border-white/10;
+  }
+
+  /* Keyframes */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes drop-in {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* Animation helpers */
+  .fade-in {
+    animation: fade-in 400ms ease-out both;
+  }
+  .fade-in-up {
+    animation: fade-in-up 450ms ease-out both;
+  }
+  .scale-in {
+    animation: scale-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .drop-in {
+    animation: drop-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  /* Page enter (apply to page main wrappers) */
+  .page-enter {
+    animation: fade-in-up 420ms ease-out both;
+  }
+
+  /* Animated card appearance */
+  .animated-card {
+    animation: fade-in-up 380ms ease-out both;
+  }
+
+  /* Table row subtle hover and entry */
+  .table-animated tbody tr {
+    transition: background-color 180ms ease, transform 180ms ease;
+    animation: fade-in 300ms ease both;
+  }
+  .table-animated tbody tr:hover {
+    @apply bg-gray-50 dark:bg-gray-700;
+  }
+
+  /* Button ripple (CSS-only) */
+  .btn-ripple {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .btn-ripple::after {
+    content: "";
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(
+        circle,
+        rgb(255 255 255 / 0.45) 10%,
+        transparent 11%
+      )
+      center/10px 10px no-repeat;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 600ms ease, width 600ms ease, height 600ms ease;
+    pointer-events: none;
+  }
+  .btn-ripple:active::after {
+    opacity: 1;
+    width: 250px;
+    height: 250px;
+    transition: 0s;
+  }
+
+  /* Subtle shine on hover for primary buttons */
+  .shine-on-hover {
+    background-image: linear-gradient(
+      120deg,
+      transparent 0%,
+      transparent 40%,
+      rgb(255 255 255 / 0.25) 50%,
+      transparent 60%,
+      transparent 100%
+    );
+    background-size: 220% 100%;
+    transition: background-position 0.6s ease;
+  }
+  .shine-on-hover:hover {
+    background-position: 100% 0;
+  }
+
+  /* Stagger helper: apply to a container to stagger children */
+  .stagger-children > * {
+    animation: fade-in-up 420ms ease-out both;
+  }
+  .stagger-children > *:nth-child(1) {
+    animation-delay: 40ms;
+  }
+  .stagger-children > *:nth-child(2) {
+    animation-delay: 80ms;
+  }
+  .stagger-children > *:nth-child(3) {
+    animation-delay: 120ms;
+  }
+  .stagger-children > *:nth-child(4) {
+    animation-delay: 160ms;
+  }
+  .stagger-children > *:nth-child(5) {
+    animation-delay: 200ms;
+  }
+  .stagger-children > *:nth-child(6) {
+    animation-delay: 240ms;
+  }
+  .stagger-children > *:nth-child(7) {
+    animation-delay: 280ms;
+  }
+  .stagger-children > *:nth-child(8) {
+    animation-delay: 320ms;
+  }
+}

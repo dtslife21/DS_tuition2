@@ -1,12 +1,12 @@
-const Card = ({ children, className = '', ...props }) => {
+const Card = ({ children, className = "", ...props }) => {
   return (
     <div
-      className={`bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg ${className}`}
+      className={`bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg hover-lift soft-shadow animated-card ${className}`}
       {...props}
     >
       {children}
     </div>
-  )
-}
+  );
+};
 
-export default Card
+export default Card;

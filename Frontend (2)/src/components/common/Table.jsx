@@ -1,4 +1,4 @@
-const Table = ({ headers, children, className = '' }) => {
+const Table = ({ headers, children, className = "" }) => {
   return (
     <div className={`overflow-x-auto ${className}`}>
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -15,12 +15,12 @@ const Table = ({ headers, children, className = '' }) => {
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700 table-animated">
           {children}
         </tbody>
       </table>
     </div>
-  )
-}
+  );
+};
 
-export default Table
+export default Table;

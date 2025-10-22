@@ -1,6 +1,6 @@
 const StatsCard = ({ icon, title, value, className = "" }) => (
   <div
-    className={`bg-white dark:bg-gray-800 shadow rounded-lg p-6 ${className}`}
+    className={`bg-white dark:bg-gray-800 shadow rounded-lg p-6 hover-lift soft-shadow animated-card ${className}`}
   >
     <div className="flex items-center justify-between">
       <div className="text-sm font-medium text-gray-500 dark:text-gray-300">
@@ -12,4 +12,4 @@ const StatsCard = ({ icon, title, value, className = "" }) => (
   </div>
 );
 
-export default StatsCard
+export default StatsCard;

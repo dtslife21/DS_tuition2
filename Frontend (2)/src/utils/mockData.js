@@ -62,6 +62,11 @@ export const mockCourses = [
     name: "Introduction to Programming",
     code: "CS101",
     subject: "Computer Science",
+    subjects: [
+      "Programming Fundamentals",
+      "Control Structures",
+      "Functions and Modules",
+    ],
     teacherId: 2,
     description: "Basic programming concepts using Python",
     academicYear: "2023-2024",
@@ -71,6 +76,7 @@ export const mockCourses = [
     name: "Web Development",
     code: "CS201",
     subject: "Computer Science",
+    subjects: ["HTML & CSS", "JavaScript Basics", "Server-Side Concepts"],
     teacherId: 2,
     description: "Frontend and backend web development",
     academicYear: "2023-2024",
@@ -134,16 +140,5 @@ export const mockAnnouncements = [
     title: "Assignment Submission",
     content: "Please submit your assignment by Friday, September 22nd.",
     postDate: "2023-09-18T14:30:00Z",
-  },
-];
-
-// Student complaints addressed to the course teacher
-export const mockComplaints = [
-  {
-    id: 1,
-    courseId: 1,
-    studentId: 3,
-    date: "2023-09-22",
-    message: "Having difficulty with assignment 1 requirements.",
   },
 ];

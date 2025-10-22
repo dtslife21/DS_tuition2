@@ -6,7 +6,7 @@ const MaterialList = ({ materials, className = "" }) => {
     <div className={className}>
       {materials.length > 0 ? (
         <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700 stagger-children">
             {materials.map((material) => (
               <li key={material.id}>
                 <div className="px-4 py-4 sm:px-6">

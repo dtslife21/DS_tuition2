@@ -1,38 +1,38 @@
-import { useState, useEffect } from 'react'
-import { getAllCourses } from '../../services/courseService'
-import CourseList from '../../components/courses/CourseList'
-import Modal from '../../components/common/Modal'
-import CourseForm from '../../components/courses/CourseForm'
-import Button from '../../components/common/Button'
-import Loader from '../../components/common/Loader'
+import { useState, useEffect } from "react";
+import { getAllCourses } from "../../services/courseService";
+import CourseList from "../../components/courses/CourseList";
+import Modal from "../../components/common/Modal";
+import CourseForm from "../../components/courses/CourseForm";
+import Button from "../../components/common/Button";
+import Loader from "../../components/common/Loader";
 
 const AdminCourses = () => {
-  const [courses, setCourses] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const data = await getAllCourses()
-        setCourses(data)
+        const data = await getAllCourses();
+        setCourses(data);
       } catch (error) {
-        console.error('Error fetching courses:', error)
+        console.error("Error fetching courses:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchCourses()
-  }, [])
+    fetchCourses();
+  }, []);
 
   const handleCourseSubmit = (newCourse) => {
-    setCourses([...courses, newCourse])
-    setShowModal(false)
-  }
+    setCourses([...courses, newCourse]);
+    setShowModal(false);
+  };
 
   if (loading) {
-    return <Loader className="py-12" />
+    return <Loader className="py-12" />;
   }
 
   return (
@@ -46,7 +46,7 @@ const AdminCourses = () => {
         </Button>
       </div>
 
-      <CourseList courses={courses} />
+      <CourseList courses={courses} basePath="/admin/courses" />
 
       <Modal
         isOpen={showModal}
@@ -59,7 +59,7 @@ const AdminCourses = () => {
         />
       </Modal>
     </div>
-  )
-}
+  );
+};
 
-export default AdminCourses
+export default AdminCourses;

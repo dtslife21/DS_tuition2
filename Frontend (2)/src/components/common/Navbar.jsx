@@ -1,29 +1,57 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import Avatar from "./Avatar";
 import Dropdown from "./Dropdown";
+import Modal from "./Modal";
 const Navbar = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [showLogout, setShowLogout] = useState(false);
+
+  // derive display name for avatar (falls back to email local part / username)
+  const rawName = (
+    user?.name ||
+    user?.fullName ||
+    `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+    ""
+  ).trim();
+  const email = user?.email || user?.Email || user?.username || "-";
+  const emailLocal = email && email !== "-" ? String(email).split("@")[0] : "";
+  const fullName = (
+    rawName ||
+    emailLocal ||
+    user?.username ||
+    user?.userName ||
+    ""
+  ).trim();
+  const capitalize = (s) =>
+    String(s || "")
+      .trim()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  const displayName = capitalize(fullName) || "User";
+
   const userNavigation = [
     {
       name: "Your Profile",
-      href:
-        user?.userType === "teacher"
-          ? "/teacher/profile"
-          : user?.userType === "student"
-          ? "/student/profile"
-          : "/admin",
+      onClick: () =>
+        navigate("/profile", { state: { backgroundLocation: location } }),
     },
-    { name: "Settings", href: "#" },
-    { name: "Sign out", onClick: logout },
+    {
+      name: "Settings",
+      onClick: () =>
+        navigate(user?.userType === "admin" ? "/admin/settings" : "/profile"),
+    },
+    { name: "Sign out", onClick: () => setShowLogout(true) },
   ];
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm">
+    <header className="bg-white dark:bg-gray-800 shadow-sm glass-surface drop-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
+          <div className="flex items-center ml-12 md:ml-0">
             <Link
               to="/"
               className="text-xl font-bold text-gray-900 dark:text-white"
@@ -70,16 +98,40 @@ const Navbar = () => {
               button={
                 <div className="flex items-center space-x-2">
                   <span className="hidden md:inline-block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {user?.firstName} {user?.lastName}
+                    {displayName}
                   </span>
-                  <Avatar
-                    name={`${user?.firstName} ${user?.lastName}`}
-                    size="sm"
-                  />
+                  <Avatar name={displayName} size="sm" />
                 </div>
               }
               items={userNavigation}
             />
+            <Modal
+              isOpen={showLogout}
+              onClose={() => setShowLogout(false)}
+              title="Confirm logout"
+            >
+              <div className="space-y-4">
+                <p>Are you sure you want to sign out?</p>
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setShowLogout(false)}
+                    className="px-3 py-2 rounded bg-gray-200 text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowLogout(false);
+                      logout();
+                      navigate("/login");
+                    }}
+                    className="px-3 py-2 rounded bg-red-600 text-white"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            </Modal>
           </div>
         </div>
       </div>

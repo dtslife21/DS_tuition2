@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import MainLayout from "./layouts/MainLayout";
 import AdminLayout from "./layouts/AdminLayout";
@@ -8,6 +8,7 @@ import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminCourses from "./pages/admin/Courses";
+import AdminCourseDetails from "./pages/admin/CourseDetails";
 import AdminUsers from "./pages/admin/Users";
 import AdminSettings from "./pages/admin/Settings";
 import TeacherDashboard from "./pages/teacher/Dashboard";
@@ -15,18 +16,23 @@ import TeacherCourses from "./pages/teacher/Courses";
 import TeacherAttendance from "./pages/teacher/Attendance";
 import TeacherMaterials from "./pages/teacher/Materials";
 import TeacherStudents from "./pages/teacher/Students";
-import TeacherProfile from "./pages/teacher/TeacherProfile";
+import TeacherComplaints from "./pages/teacher/Complaints";
+import TeacherNotices from "./pages/teacher/Notices";
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentCourses from "./pages/student/Courses";
 import StudentAttendance from "./pages/student/Attendance";
 import StudentMaterials from "./pages/student/Materials";
 import StudentComplaints from "./pages/student/Complaints";
-import StudentProfile from "./pages/student/StudentProfile";
 import NotFound from "./pages/404";
 import UserDetailsPage from "./pages/admin/UserDetailsPage";
+import Profile from "./pages/Profile";
+import ProfileModal from "./pages/ProfileModal";
 
 const RoutesConfig = () => {
   const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
+  const state = location.state;
+  const backgroundLocation = state && state.backgroundLocation;
 
   const ProtectedRoute = ({ children, roles }) => {
     if (!isAuthenticated) {
@@ -41,81 +47,109 @@ const RoutesConfig = () => {
   };
 
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+    <>
+      {/* Base routes; if opened from a background state, render previous location */}
+      <Routes location={backgroundLocation || location}>
+        {/* Public Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-      {/* Admin Routes */}
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute roles={["admin"]}>
-            <AdminLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<AdminDashboard />} />
-        <Route path="courses" element={<AdminCourses />} />
-        <Route path="users" element={<AdminUsers />} />
-        <Route path="users/:id" element={<UserDetailsPage />} />
-        <Route path="settings" element={<AdminSettings />} />
-      </Route>
+        {/* Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="courses" element={<AdminCourses />} />
+          <Route path="courses/:id" element={<AdminCourseDetails />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="users/:id" element={<UserDetailsPage />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
 
-      {/* Teacher Routes */}
-      <Route
-        path="/teacher"
-        element={
-          <ProtectedRoute roles={["teacher"]}>
-            <TeacherLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<TeacherDashboard />} />
-        <Route path="profile" element={<TeacherProfile />} />
-        <Route path="courses" element={<TeacherCourses />} />
-        <Route path="courses/:id" element={<TeacherCourses />} />
-        <Route path="attendance" element={<TeacherAttendance />} />
-        <Route path="materials" element={<TeacherMaterials />} />
-        <Route path="students" element={<TeacherStudents />} />
-      </Route>
+        {/* Teacher Routes */}
+        <Route
+          path="/teacher"
+          element={
+            <ProtectedRoute roles={["teacher"]}>
+              <TeacherLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<TeacherDashboard />} />
+          <Route path="courses" element={<TeacherCourses />} />
+          <Route path="courses/:id" element={<TeacherCourses />} />
+          <Route path="attendance" element={<TeacherAttendance />} />
+          <Route path="materials" element={<TeacherMaterials />} />
+          <Route path="students" element={<TeacherStudents />} />
+          <Route path="complaints" element={<TeacherComplaints />} />
+          <Route path="notices" element={<TeacherNotices />} />
+        </Route>
 
-      {/* Student Routes */}
-      <Route
-        path="/student"
-        element={
-          <ProtectedRoute roles={["student"]}>
-            <StudentLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<StudentDashboard />} />
-        <Route path="profile" element={<StudentProfile />} />
-        <Route path="courses" element={<StudentCourses />} />
-        <Route path="attendance" element={<StudentAttendance />} />
-        <Route path="materials" element={<StudentMaterials />} />
-        <Route path="complaints" element={<StudentComplaints />} />
-      </Route>
+        {/* Student Routes */}
+        <Route
+          path="/student"
+          element={
+            <ProtectedRoute roles={["student"]}>
+              <StudentLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<StudentDashboard />} />
+          <Route path="courses" element={<StudentCourses />} />
+          <Route path="attendance" element={<StudentAttendance />} />
+          <Route path="materials" element={<StudentMaterials />} />
+          <Route path="complaints" element={<StudentComplaints />} />
+        </Route>
 
-      {/* Root Redirect */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            {user?.userType === "admin" ? (
-              <Navigate to="/admin" replace />
-            ) : user?.userType === "teacher" ? (
-              <Navigate to="/teacher" replace />
-            ) : (
-              <Navigate to="/student" replace />
-            )}
-          </ProtectedRoute>
-        }
-      />
+        {/* Profile (full-page fallback when no background) */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* 404 Route */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        {/* Root Redirect */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              {user?.userType === "admin" ? (
+                <Navigate to="/admin" replace />
+              ) : user?.userType === "teacher" ? (
+                <Navigate to="/teacher" replace />
+              ) : (
+                <Navigate to="/student" replace />
+              )}
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 404 Route */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+
+      {/* Modal routes when background exists */}
+      {backgroundLocation && (
+        <Routes>
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfileModal />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      )}
+    </>
   );
 };
 

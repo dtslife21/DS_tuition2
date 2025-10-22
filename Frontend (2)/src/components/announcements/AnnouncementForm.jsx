@@ -1,5 +1,5 @@
-import { useForm } from 'react-hook-form'
-import Button from '../common/Button'
+import { useForm } from "react-hook-form";
+import Button from "../common/Button";
 
 const AnnouncementForm = ({ onSubmit, loading, initialData = {} }) => {
   const {
@@ -8,10 +8,10 @@ const AnnouncementForm = ({ onSubmit, loading, initialData = {} }) => {
     formState: { errors },
   } = useForm({
     defaultValues: initialData,
-  })
+  });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 w-full">
       <div>
         <label
           htmlFor="title"
@@ -23,7 +23,7 @@ const AnnouncementForm = ({ onSubmit, loading, initialData = {} }) => {
           id="title"
           name="title"
           type="text"
-          {...register('title', { required: 'Title is required' })}
+          {...register("title", { required: "Title is required" })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />
         {errors.title && (
@@ -42,7 +42,7 @@ const AnnouncementForm = ({ onSubmit, loading, initialData = {} }) => {
           id="content"
           name="content"
           rows={4}
-          {...register('content', { required: 'Content is required' })}
+          {...register("content", { required: "Content is required" })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />
         {errors.content && (
@@ -52,11 +52,11 @@ const AnnouncementForm = ({ onSubmit, loading, initialData = {} }) => {
 
       <div className="flex justify-end">
         <Button type="submit" variant="primary" disabled={loading}>
-          {loading ? 'Saving...' : 'Save Announcement'}
+          {loading ? "Saving..." : "Save Announcement"}
         </Button>
       </div>
     </form>
-  )
-}
+  );
+};
 
-export default AnnouncementForm
+export default AnnouncementForm;

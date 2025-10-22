@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { getAllCourses, createCourse } from "../../services/courseService";
+import {
+  getTeacherCourses,
+  getCourseDetails,
+  createCourse,
+} from "../../services/courseService";
 import CourseList from "../../components/courses/CourseList";
 import CourseView from "../../components/courses/CourseView";
 import EmptyState from "../../components/common/EmptyState";
@@ -14,14 +18,34 @@ const TeacherCourses = () => {
   const { user } = useAuth();
   const { id } = useParams();
   const [courses, setCourses] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const teacherId =
+    user?.id ??
+    user?.UserID ??
+    user?.userID ??
+    user?.teacherId ??
+    user?.TeacherId ??
+    null;
 
   useEffect(() => {
     const fetchCourses = async () => {
+      if (!teacherId) {
+        setCourses([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
       try {
-        const all = await getAllCourses();
-        setCourses(all);
+        const data = await getTeacherCourses(teacherId);
+        setCourses(data);
+
+        if (id) {
+          const course = await getCourseDetails(id);
+          setSelectedCourse(course);
+        }
       } catch (error) {
         console.error("Error fetching courses:", error);
       } finally {
@@ -30,47 +54,53 @@ const TeacherCourses = () => {
     };
 
     fetchCourses();
-  }, [user.id]);
+  }, [teacherId, id]);
 
   if (loading) {
     return <Loader className="py-12" />;
   }
 
-  // When a course is selected, show the detailed view (CourseView reads id from route)
-  if (id) {
-    return <CourseView />;
+  if (id && selectedCourse) {
+    return <CourseView course={selectedCourse} />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Courses
-        </h1>
-        <Button variant="primary" onClick={() => setShowModal(true)}>
-          Add Course
-        </Button>
-      </div>
+      <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-indigo-700 to-violet-700 dark:from-white dark:via-indigo-300 dark:to-violet-300">
+        My Courses
+      </h1>
 
       {courses.length > 0 ? (
         <CourseList courses={courses} />
       ) : (
         <EmptyState
-          title="No courses found"
-          description="No courses available."
+          title="No courses assigned"
+          description="You don't have any courses assigned to you yet."
+          action={
+            <Button variant="primary" onClick={() => setShowModal(true)}>
+              Request New Course
+            </Button>
+          }
         />
       )}
 
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title="Add New Course"
+        title="Request New Course"
       >
         <CourseForm
           onSubmit={async (data) => {
-            const created = await createCourse({ ...data, teacherId: user.id });
-            setCourses((prev) => [...prev, created]);
-            setShowModal(false);
+            try {
+              const newCourse = await createCourse({
+                ...data,
+                teacherId,
+              });
+              setCourses((prev) => [...prev, newCourse]);
+              setShowModal(false);
+            } catch (err) {
+              console.error("Failed to create course", err);
+            }
           }}
           onCancel={() => setShowModal(false)}
         />

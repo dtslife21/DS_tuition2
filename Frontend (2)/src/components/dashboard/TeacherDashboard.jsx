@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   getTeacherCourses,
@@ -9,67 +9,447 @@ import CourseCard from "../courses/CourseCard";
 import StudentCard from "../users/UserCard";
 import MaterialCard from "../materials/MaterialCard";
 import Card from "../common/Card";
-import StatsCard from "../common/StatsCard";
 import Loader from "../common/Loader";
+import AnnouncementList from "../announcements/AnnouncementList";
+import { getAnnouncementsByTeacher } from "../../services/announcementService";
+import { useTheme } from "../../contexts/ThemeContext";
+
+const resolveTeacherId = (user) => {
+  if (!user || typeof user !== "object") {
+    return null;
+  }
+
+  return (
+    user.TeacherID ??
+    user.teacherID ??
+    user.teacherId ??
+    user.UserID ??
+    user.userID ??
+    user.userId ??
+    user.id ??
+    null
+  );
+};
 
 const TeacherDashboard = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("notices");
   const [courses, setCourses] = useState([]);
   const [students, setStudents] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  // UI state for header actions (search/filters)
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showOptions, setShowOptions] = useState(false);
+  const [sortOrder, setSortOrder] = useState("desc"); // newest first
+  const searchInputRef = useRef(null);
+  const searchBoxRef = useRef(null);
+  const optionsRef = useRef(null);
+  const [activeTab, setActiveTab] = useState("notices");
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const teacherId = resolveTeacherId(user);
+
+    if (!teacherId) {
+      setCourses([]);
+      setStudents([]);
+      setMaterials([]);
+      setAnnouncements([]);
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
     const fetchData = async () => {
       try {
         const [coursesData, studentsData, materialsData] = await Promise.all([
-          getTeacherCourses(user.id),
-          getTeacherStudents(user.id),
-          getRecentMaterials(user.id),
+          getTeacherCourses(teacherId),
+          getTeacherStudents(teacherId),
+          getRecentMaterials(teacherId),
         ]);
-        setCourses(coursesData);
-        setStudents(studentsData);
-        setMaterials(materialsData);
+        if (!isMounted) {
+          return;
+        }
+
+        setCourses(coursesData || []);
+        setStudents(studentsData || []);
+        setMaterials(materialsData || []);
+        // load announcements authored by this teacher
+        const anns = await getAnnouncementsByTeacher(teacherId);
+        if (isMounted) {
+          setAnnouncements(anns || []);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
+        if (isMounted) {
+          setCourses([]);
+          setStudents([]);
+          setMaterials([]);
+          setAnnouncements([]);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
-  }, [user.id]);
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  // Focus search input when opened
+  useEffect(() => {
+    if (showSearch && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [showSearch]);
+
+  // Close overlays when clicking/touching outside
+  useEffect(() => {
+    const handlePointerDown = (e) => {
+      const t = e.target;
+      if (
+        showSearch &&
+        searchBoxRef.current &&
+        !searchBoxRef.current.contains(t)
+      ) {
+        setShowSearch(false);
+      }
+      if (
+        showOptions &&
+        optionsRef.current &&
+        !optionsRef.current.contains(t)
+      ) {
+        setShowOptions(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [showSearch, showOptions]);
 
   if (loading) {
     return <Loader className="py-12" />;
   }
 
+  // Derived stats (safe access in case fields are missing)
+  const totalLessons = courses.reduce(
+    (sum, c) => sum + (c.lessonsCount || c.lessons?.length || 0),
+    0
+  );
+  const totalTests = courses.reduce((sum, c) => sum + (c.testsCount || 0), 0);
+  const totalHours = courses.reduce((sum, c) => sum + (c.totalHours || 0), 0);
+
+  // Prepare announcements list based on search + sort
+  const filteredAnnouncements = (announcements || [])
+    .filter((a) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        a.title?.toLowerCase().includes(q) ||
+        a.content?.toLowerCase().includes(q)
+      );
+    })
+    .slice()
+    .sort((a, b) => {
+      const da = new Date(a.postDate || 0).getTime();
+      const db = new Date(b.postDate || 0).getTime();
+      return sortOrder === "desc" ? db - da : da - db;
+    });
+
   return (
     <div className="space-y-6">
+      {/* Top stat cards - styled like the provided design */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-        <StatsCard
-          title="Class Students"
-          value={students.length}
-          icon={<span className="text-3xl">👨‍🎓</span>}
-        />
-        <StatsCard
-          title="Total Lessons"
-          value={courses.reduce((acc, c) => acc + (c.lessons?.length || 0), 0)}
-          icon={<span className="text-3xl">📘</span>}
-        />
-        <StatsCard
-          title="Tests Taken"
-          value={24}
-          icon={<span className="text-3xl">📝</span>}
-        />
-        <StatsCard
-          title="Total Hours"
-          value={`30 hrs`}
-          icon={<span className="text-3xl">⏰</span>}
-        />
+        <Card className="p-6 flex flex-col items-start transition-base hover-lift soft-shadow">
+          <div className="flex items-center w-full justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
+                <span className="text-2xl">👨‍🎓</span>
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                  Class Students
+                </div>
+                <div className="text-3xl font-bold text-green-500 mt-2">
+                  {students.length}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 flex flex-col items-start transition-base hover-lift soft-shadow">
+          <div className="flex items-center space-x-4">
+            <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
+              <span className="text-2xl">📘</span>
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                Total Lessons
+              </div>
+              <div className="text-3xl font-bold text-green-500 mt-2">
+                {totalLessons}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 flex flex-col items-start transition-base hover-lift soft-shadow">
+          <div className="flex items-center space-x-4">
+            <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
+              <span className="text-2xl">📝</span>
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                Tests Taken
+              </div>
+              <div className="text-3xl font-bold text-green-500 mt-2">
+                {totalTests}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 flex flex-col items-start transition-base hover-lift soft-shadow">
+          <div className="flex items-center space-x-4">
+            <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
+              <span className="text-2xl">⏱️</span>
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                Total Hours
+              </div>
+              <div className="text-3xl font-bold text-green-500 mt-2">
+                {totalHours} hrs
+              </div>
+            </div>
+          </div>
+        </Card>
       </div>
 
+      {/* Big Notices & Announcements style panel */}
+      <Card className="p-0 ">
+        <div
+          className={`p-6 rounded-t-lg text-white flex items-center justify-between relative ${
+            theme === "dark"
+              ? "bg-gradient-to-r from-blue-700 to-indigo-800"
+              : "bg-gradient-to-r from-blue-400 to-indigo-500"
+          }`}
+        >
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+              <span className="text-2xl">🔔</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">Notices & Announcements</h2>
+              <div className="text-sm opacity-90">
+                (Stay updated with the latest information)
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button
+              className="relative"
+              onClick={() => {
+                setActiveTab("notices");
+                setShowSearch(false);
+                setShowOptions(false);
+              }}
+              title="View notices"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5"
+                />
+              </svg>
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">
+                1
+              </span>
+            </button>
+            <button
+              onClick={() => {
+                setShowSearch((v) => !v);
+                setShowOptions(false);
+              }}
+              title="Search notices"
+            >
+              <svg
+                className="w-6 h-6 text-white/90"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => {
+                setShowOptions((v) => !v);
+                setShowSearch(false);
+              }}
+              title="Options"
+            >
+              <svg
+                className="w-6 h-6 text-white/90"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Search input overlay */}
+          {showSearch && (
+            <div ref={searchBoxRef} className="absolute right-4 top-4">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search notices..."
+                className="w-56 sm:w-72 rounded-md bg-white/90 text-gray-800 placeholder-gray-500 px-3 py-1.5 focus:outline-none shadow"
+              />
+            </div>
+          )}
+
+          {/* Options dropdown */}
+          {showOptions && (
+            <div
+              ref={optionsRef}
+              className="absolute right-4 top-14 bg-white text-gray-700 rounded-md shadow w-52 ring-1 ring-black/5"
+            >
+              <div className="py-1 text-sm">
+                <div className="px-3 py-1.5 text-xs uppercase tracking-wide text-gray-500">
+                  Sort
+                </div>
+                <button
+                  className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                    sortOrder === "desc" ? "font-semibold text-gray-900" : ""
+                  }`}
+                  onClick={() => {
+                    setSortOrder("desc");
+                    setShowOptions(false);
+                  }}
+                >
+                  Newest first
+                </button>
+                <button
+                  className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                    sortOrder === "asc" ? "font-semibold text-gray-900" : ""
+                  }`}
+                  onClick={() => {
+                    setSortOrder("asc");
+                    setShowOptions(false);
+                  }}
+                >
+                  Oldest first
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-6">
+          <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 flex items-center justify-between">
+            <div className="flex items-center space-x-8 text-sm">
+              <button
+                onClick={() => setActiveTab("notices")}
+                className={`pb-3 ${
+                  activeTab === "notices"
+                    ? "border-b-2 border-blue-500 text-blue-600"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                }`}
+              >
+                Notices ({announcements.length})
+              </button>
+
+              <button
+                onClick={() => setActiveTab("attachments")}
+                className={`pb-3 ${
+                  activeTab === "attachments"
+                    ? "border-b-2 border-blue-500 text-blue-600"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                }`}
+              >
+                Attachments ({materials.length})
+              </button>
+            </div>
+
+            <div className="w-1/3 text-right text-sm text-gray-500 dark:text-gray-300">
+              {announcements[0]
+                ? new Date(announcements[0].postDate).toLocaleString()
+                : ""}
+            </div>
+          </div>
+
+          <div className="min-h-[200px]">
+            {activeTab === "notices" ? (
+              <AnnouncementList announcements={filteredAnnouncements} />
+            ) : (
+              <div>
+                {materials.length > 0 ? (
+                  <div className="space-y-4 stagger-children">
+                    {materials.map((m) => (
+                      <div
+                        key={m.id}
+                        className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg p-4 transition-base hover-lift"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-md font-medium text-gray-900 dark:text-white">
+                              {m.title}
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              {m.description}
+                            </p>
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {new Date(m.uploadDate).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <AnnouncementList announcements={[]} />
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {/* Existing recent lists (restyled slightly) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
@@ -103,116 +483,6 @@ const TeacherDashboard = () => {
             <MaterialCard key={material.id} material={material} />
           ))}
         </div>
-      </div>
-
-      {/* Notices & Announcements Card (visual only, empty state) */}
-      <div>
-        <Card className="p-0">
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-6 rounded-t-lg flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-white/20 rounded-full w-12 h-12 flex items-center justify-center">
-                <span className="text-white text-xl">🔔</span>
-              </div>
-              <div>
-                <h4 className="text-white text-xl font-semibold">
-                  Notices & Announcements
-                </h4>
-                <div className="text-white/80 text-sm">
-                  (Stay updated with the latest information)
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3 text-white">
-              <button className="p-2 hover:bg-white/10 rounded">🔔</button>
-              <button className="p-2 hover:bg-white/10 rounded">🔍</button>
-              <button className="p-2 hover:bg-white/10 rounded">⋮</button>
-            </div>
-          </div>
-
-          <div className="p-6">
-            <div className="border-b">
-              <nav className="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-300 p-4">
-                <button
-                  onClick={() => setActiveTab("notices")}
-                  className={`flex flex-col items-start focus:outline-none ${
-                    activeTab === "notices" ? "text-blue-600" : "text-gray-500"
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <span className="text-blue-500">🔔</span>
-                    <span className="font-medium">NOTICES (0)</span>
-                  </div>
-                  <div
-                    className={`h-0.5 w-full mt-3 ${
-                      activeTab === "notices" ? "bg-blue-600" : "bg-transparent"
-                    }`}
-                  />
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("attachments")}
-                  className={`flex flex-col items-start focus:outline-none ${
-                    activeTab === "attachments"
-                      ? "text-blue-600"
-                      : "text-gray-500"
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <span className="text-gray-500">📎</span>
-                    <span className="font-medium">ATTACHMENTS (0)</span>
-                  </div>
-                  <div
-                    className={`h-0.5 w-full mt-3 ${
-                      activeTab === "attachments"
-                        ? "bg-blue-600"
-                        : "bg-transparent"
-                    }`}
-                  />
-                </button>
-              </nav>
-            </div>
-
-            {activeTab === "notices" ? (
-              <div className="py-12 flex flex-col items-center justify-center text-center text-gray-500">
-                <div className="text-4xl">🔔</div>
-                <h5 className="mt-4 text-lg font-medium text-gray-700">
-                  No notices available
-                </h5>
-                <p className="mt-2 text-sm">Check back later for updates</p>
-              </div>
-            ) : (
-              <div className="py-12 flex flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400">
-                <div className="bg-white/20 dark:bg-white/10 rounded-full w-20 h-20 flex items-center justify-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-8 w-8 text-gray-300 dark:text-gray-300"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M21.44 11.05l-9.19 9.19a5.5 5.5 0 01-7.78-7.78l8.48-8.48a4 4 0 015.66 5.66L9.5 19.5a2.5 2.5 0 01-3.54-3.54l7.07-7.07"
-                    />
-                  </svg>
-                </div>
-                <h5 className="mt-6 text-lg font-medium text-gray-700 dark:text-gray-200">
-                  No attachments available
-                </h5>
-                <p className="mt-2 text-sm text-gray-400 dark:text-gray-300">
-                  Check back later for updates
-                </p>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* Floating action button */}
-        <button className="fixed right-8 bottom-8 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center">
-          💬
-        </button>
       </div>
     </div>
   );

@@ -3,9 +3,9 @@ import EmptyState from "../common/EmptyState";
 
 const AnnouncementList = ({ announcements }) => {
   return (
-    <div>
+    <div className="w-full">
       {announcements.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-4 stagger-children">
           {announcements.map((announcement) => (
             <AnnouncementCard
               key={announcement.id}

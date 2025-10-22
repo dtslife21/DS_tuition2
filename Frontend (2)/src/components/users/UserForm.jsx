@@ -1,29 +1,43 @@
-import { useForm } from 'react-hook-form';
-import Button from '../common/Button';
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import Button from "../common/Button";
 
-const UserForm = ({ onSubmit, loading, user, userTypes }) => {
+const UserForm = ({ onSubmit, loading, user, userTypes, forceUserType }) => {
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
     reset,
+    setValue,
   } = useForm({
     defaultValues: {
-      Username: user?.Username || user?.username || '',
-      PasswordHash: '',
-      Email: user?.Email || user?.email || '',
-      FirstName: user?.FirstName || user?.firstName || '',
-      LastName: user?.LastName || user?.lastName || '',
-      UserTypeID: user?.UserTypeID || user?.userTypeID || '',
-      RollNumber: user?.RollNumber || user?.rollNumber || '',
-      CurrentGrade: user?.CurrentGrade || user?.currentGrade || '',
-      EmployeeID: user?.EmployeeID || user?.employeeID || '',
-      Department: user?.Department || user?.department || '',
+      Username: user?.Username || user?.username || "",
+      PasswordHash: "",
+      Email: user?.Email || user?.email || "",
+      FirstName: user?.FirstName || user?.firstName || "",
+      LastName: user?.LastName || user?.lastName || "",
+      UserTypeID: forceUserType
+        ? String(forceUserType)
+        : user?.UserTypeID || user?.userTypeID || "",
+      RollNumber: user?.RollNumber || user?.rollNumber || "",
+      CurrentGrade: user?.CurrentGrade || user?.currentGrade || "",
+      EmployeeID: user?.EmployeeID || user?.employeeID || "",
+      Department: user?.Department || user?.department || "",
     },
   });
 
-  const userTypeID = watch('UserTypeID');
+  // If a forced user type is provided, set it as the watched value.
+  const userTypeID = forceUserType
+    ? String(forceUserType)
+    : watch("UserTypeID");
+
+  // Keep form state in sync when forcing user type
+  useEffect(() => {
+    if (forceUserType) {
+      setValue("UserTypeID", String(forceUserType), { shouldValidate: true });
+    }
+  }, [forceUserType, setValue]);
 
   const handleFormSubmit = (data) => {
     const apiData = {
@@ -36,14 +50,14 @@ const UserForm = ({ onSubmit, loading, user, userTypes }) => {
       UserTypeID: Number(data.UserTypeID),
       IsActive: true,
       ProfilePicture: null,
-      ...(data.UserTypeID === '3' && { 
+      ...(data.UserTypeID === "3" && {
         RollNumber: data.RollNumber,
-        CurrentGrade: data.CurrentGrade
+        CurrentGrade: data.CurrentGrade,
       }),
-      ...(data.UserTypeID === '2' && {
+      ...(data.UserTypeID === "2" && {
         EmployeeID: data.EmployeeID,
-        Department: data.Department
-      })
+        Department: data.Department,
+      }),
     };
     onSubmit(apiData);
   };
@@ -62,11 +76,13 @@ const UserForm = ({ onSubmit, loading, user, userTypes }) => {
             id="Username"
             name="Username"
             type="text"
-            {...register('Username', { required: 'Username is required' })}
+            {...register("Username", { required: "Username is required" })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
           {errors.Username && (
-            <p className="mt-1 text-sm text-red-600">{errors.Username.message}</p>
+            <p className="mt-1 text-sm text-red-600">
+              {errors.Username.message}
+            </p>
           )}
         </div>
 
@@ -82,17 +98,19 @@ const UserForm = ({ onSubmit, loading, user, userTypes }) => {
               id="PasswordHash"
               name="PasswordHash"
               type="password"
-              {...register('PasswordHash', { 
-                required: !user ? 'Password is required' : false,
+              {...register("PasswordHash", {
+                required: !user ? "Password is required" : false,
                 minLength: {
                   value: 6,
-                  message: 'Password must be at least 6 characters'
-                }
+                  message: "Password must be at least 6 characters",
+                },
               })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
             {errors.PasswordHash && (
-              <p className="mt-1 text-sm text-red-600">{errors.PasswordHash.message}</p>
+              <p className="mt-1 text-sm text-red-600">
+                {errors.PasswordHash.message}
+              </p>
             )}
           </div>
         )}
@@ -110,11 +128,13 @@ const UserForm = ({ onSubmit, loading, user, userTypes }) => {
             id="FirstName"
             name="FirstName"
             type="text"
-            {...register('FirstName', { required: 'First name is required' })}
+            {...register("FirstName", { required: "First name is required" })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
           {errors.FirstName && (
-            <p className="mt-1 text-sm text-red-600">{errors.FirstName.message}</p>
+            <p className="mt-1 text-sm text-red-600">
+              {errors.FirstName.message}
+            </p>
           )}
         </div>
 
@@ -129,11 +149,13 @@ const UserForm = ({ onSubmit, loading, user, userTypes }) => {
             id="LastName"
             name="LastName"
             type="text"
-            {...register('LastName', { required: 'Last name is required' })}
+            {...register("LastName", { required: "Last name is required" })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
           {errors.LastName && (
-            <p className="mt-1 text-sm text-red-600">{errors.LastName.message}</p>
+            <p className="mt-1 text-sm text-red-600">
+              {errors.LastName.message}
+            </p>
           )}
         </div>
       </div>
@@ -149,11 +171,11 @@ const UserForm = ({ onSubmit, loading, user, userTypes }) => {
           id="Email"
           name="Email"
           type="email"
-          {...register('Email', {
-            required: 'Email is required',
+          {...register("Email", {
+            required: "Email is required",
             pattern: {
               value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-              message: 'Invalid email address',
+              message: "Invalid email address",
             },
           })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -170,23 +192,43 @@ const UserForm = ({ onSubmit, loading, user, userTypes }) => {
         >
           User Type
         </label>
-        <select
-          id="UserTypeID"
-          name="UserTypeID"
-          {...register('UserTypeID', { required: 'User type is required' })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        >
-          <option value="">Select User Type</option>
-          <option value="1">Admin</option>
-          <option value="2">Teacher</option>
-          <option value="3">Student</option>
-        </select>
+        {forceUserType ? (
+          // If a forced user type is provided, keep it hidden and show a read-only label
+          <div className="mt-1">
+            <input
+              type="hidden"
+              defaultValue={String(forceUserType)}
+              {...register("UserTypeID", { required: "User type is required" })}
+            />
+            <div className="px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-200">
+              {forceUserType === 1
+                ? "Admin"
+                : forceUserType === 2
+                ? "Teacher"
+                : "Student"}
+            </div>
+          </div>
+        ) : (
+          <select
+            id="UserTypeID"
+            name="UserTypeID"
+            {...register("UserTypeID", { required: "User type is required" })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          >
+            <option value="">Select User Type</option>
+            <option value="1">Admin</option>
+            <option value="2">Teacher</option>
+            <option value="3">Student</option>
+          </select>
+        )}
         {errors.UserTypeID && (
-          <p className="mt-1 text-sm text-red-600">{errors.UserTypeID.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.UserTypeID.message}
+          </p>
         )}
       </div>
 
-      {userTypeID === '3' && (
+      {userTypeID === "3" && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label
@@ -199,8 +241,8 @@ const UserForm = ({ onSubmit, loading, user, userTypes }) => {
               id="RollNumber"
               name="RollNumber"
               type="text"
-              {...register('RollNumber', {
-                required: 'Roll number is required for students',
+              {...register("RollNumber", {
+                required: "Roll number is required for students",
               })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
@@ -222,14 +264,14 @@ const UserForm = ({ onSubmit, loading, user, userTypes }) => {
               id="CurrentGrade"
               name="CurrentGrade"
               type="text"
-              {...register('CurrentGrade')}
+              {...register("CurrentGrade")}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
         </div>
       )}
 
-      {userTypeID === '2' && (
+      {userTypeID === "2" && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             {/* <label
@@ -273,15 +315,11 @@ const UserForm = ({ onSubmit, loading, user, userTypes }) => {
       )}
 
       <div className="flex justify-end space-x-3">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => reset()}
-        >
+        <Button type="button" variant="secondary" onClick={() => reset()}>
           Reset
         </Button>
         <Button type="submit" variant="primary" disabled={loading}>
-          {loading ? 'Saving...' : user ? 'Update User' : 'Create User'}
+          {loading ? "Saving..." : user ? "Update User" : "Create User"}
         </Button>
       </div>
     </form>

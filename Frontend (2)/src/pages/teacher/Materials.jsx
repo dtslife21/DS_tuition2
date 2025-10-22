@@ -48,37 +48,39 @@ const TeacherMaterials = () => {
     return <Loader className="py-12" />;
   }
 
-  if (!id) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Study Materials
-        </h1>
-        <EmptyState
-          title="Select a course"
-          description="Please select a course to view or upload materials."
-        />
-      </div>
-    );
-  }
+  // if (!id) {
+  //   return (
+  //     <div className="space-y-6">
+  //       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+  //         Study Materials
+  //       </h1>
+  //       <EmptyState
+  //         title="Select a course"
+  //         description="Please select a course to view or upload materials."
+  //       />
+  //     </div>
+  //   )
+  // }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white border-l-4 border-indigo-500/60 dark:border-indigo-400/60 pl-3">
           Materials for {course?.name}
         </h1>
         <Button variant="primary" onClick={() => setShowModal(true)}>
-          Add Material
+          Upload Material
         </Button>
       </div>
 
-      <MaterialList materials={materials} />
+      <div className="bg-gradient-to-br from-white to-indigo-50/70 dark:from-gray-900/70 dark:to-indigo-950/20 backdrop-blur shadow-lg ring-1 ring-indigo-100 dark:ring-indigo-800 rounded-2xl p-4 sm:p-6">
+        <MaterialList materials={materials} />
+      </div>
 
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title="Add Study Material"
+        title="Upload Study Material"
       >
         <MaterialForm
           courseId={id}

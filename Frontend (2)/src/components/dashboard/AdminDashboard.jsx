@@ -1,42 +1,108 @@
-import { useState, useEffect } from 'react'
-import { useAuth } from '../../contexts/AuthContext'
-import { getAllUsers, getStudents } from '../../services/userService'
-import { getAllCourses } from '../../services/courseService'
-import Card from '../common/Card'
-import EmptyState from '../common/EmptyState'
-import Loader from '../common/Loader'
-import Avatar from '../common/Avatar'
+import { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import { getAllUsers } from "../../services/userService";
+import { getAllStudents } from "../../services/studentService";
+import { getAllCourses } from "../../services/courseService";
+import Card from "../common/Card";
+import EmptyState from "../common/EmptyState";
+import Loader from "../common/Loader";
+import Avatar from "../common/Avatar";
 
 const AdminDashboard = () => {
-  const { user } = useAuth()
-  const [users, setUsers] = useState([])
-  const [students, setStudents] = useState([])
-  const [courses, setCourses] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { user } = useAuth();
+  const [users, setUsers] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const normalizeUserDisplay = (item) => {
+    if (!item || typeof item !== "object") {
+      return null;
+    }
+
+    const firstName =
+      item.firstName ??
+      item.FirstName ??
+      item.raw?.firstName ??
+      item.raw?.FirstName ??
+      "";
+    const lastName =
+      item.lastName ??
+      item.LastName ??
+      item.raw?.lastName ??
+      item.raw?.LastName ??
+      "";
+    const email =
+      item.email ?? item.Email ?? item.raw?.email ?? item.raw?.Email ?? "";
+    const userType =
+      item.userType ??
+      item.UserType ??
+      item.raw?.userType ??
+      item.raw?.UserType ??
+      "";
+
+    const id =
+      item.id ??
+      item.UserID ??
+      item.userID ??
+      item.userId ??
+      item.studentId ??
+      item.StudentID ??
+      item.raw?.id ??
+      item.raw?.UserID ??
+      item.raw?.userId ??
+      null;
+
+    return {
+      ...item,
+      id,
+      firstName,
+      lastName,
+      email,
+      userType,
+    };
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [usersData, studentsData, coursesData] = await Promise.all([
           getAllUsers(),
-          getStudents(),
-          getAllCourses()
-        ])
-        setUsers(usersData)
-        setStudents(studentsData)
-        setCourses(coursesData)
-      } catch (error) {
-        console.error('Error fetching data:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
+          getAllStudents(),
+          getAllCourses(),
+        ]);
 
-    fetchData()
-  }, [])
+        setUsers(
+          Array.isArray(usersData)
+            ? usersData
+                .map(normalizeUserDisplay)
+                .filter((item) => Boolean(item))
+            : []
+        );
+
+        const normalizedStudents = Array.isArray(studentsData)
+          ? studentsData
+              .map((student) => normalizeUserDisplay(student))
+              .filter((student) => Boolean(student))
+          : [];
+
+        setStudents(normalizedStudents);
+        setCourses(Array.isArray(coursesData) ? coursesData : []);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setUsers([]);
+        setStudents([]);
+        setCourses([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   if (loading) {
-    return <Loader className="py-12" />
+    return <Loader className="py-12" />;
   }
 
   return (
@@ -54,13 +120,16 @@ const AdminDashboard = () => {
           </h3>
           {users.length > 0 ? (
             <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700 stagger-children">
                 {users.slice(0, 5).map((user) => (
                   <li key={user.id}>
-                    <div className="px-4 py-4 flex items-center sm:px-6">
+                    <div className="px-4 py-4 flex items-center sm:px-6 transition-base hover-lift">
                       <div className="min-w-0 flex-1 flex items-center">
                         <div className="flex-shrink-0">
-                          <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" />
+                          <Avatar
+                            name={`${user.firstName} ${user.lastName}`}
+                            size="sm"
+                          />
                         </div>
                         <div className="min-w-0 flex-1 px-4 md:grid md:grid-cols-2 md:gap-4">
                           <div>
@@ -99,10 +168,10 @@ const AdminDashboard = () => {
           </h3>
           {courses.length > 0 ? (
             <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700 stagger-children">
                 {courses.slice(0, 5).map((course) => (
                   <li key={course.id}>
-                    <div className="px-4 py-4 sm:px-6">
+                    <div className="px-4 py-4 sm:px-6 transition-base hover-lift">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 truncate">
                           {course.name}
@@ -137,7 +206,7 @@ const AdminDashboard = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AdminDashboard
+export default AdminDashboard;

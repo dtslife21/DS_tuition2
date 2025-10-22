@@ -23,38 +23,6 @@ const mockCourse = {
     "Deep dive into algebraic structures, equations, and problem-solving techniques.",
 };
 
-const mockMaterials = [
-  {
-    id: "material-1",
-    title: "Lecture Slides - Week 1",
-    description:
-      "Introduction to linear equations, inequalities, and graph interpretations.",
-    filePath: "#",
-    fileName: "week-1-slides.pdf",
-    fileType: "application/pdf",
-    uploadDate: "2024-09-01T08:30:00Z",
-  },
-  {
-    id: "material-2",
-    title: "Practice Sheet - Quadratic Functions",
-    description:
-      "Problem set covering quadratic functions, vertex form, and applications.",
-    filePath: "#",
-    fileName: "quadratic-practice.pdf",
-    fileType: "application/pdf",
-    uploadDate: "2024-09-05T10:15:00Z",
-  },
-  {
-    id: "material-3",
-    title: "Video Tutorial - Factoring Techniques",
-    description:
-      "Step-by-step walkthrough of factoring polynomials using multiple methods.",
-    filePath: "#",
-    fileName: "factoring-techniques.mp4",
-    fileType: "video/mp4",
-    uploadDate: "2024-09-08T14:45:00Z",
-  },
-];
 
 const StudentMaterials = () => {
   const { id } = useParams();

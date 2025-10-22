@@ -1,48 +1,44 @@
-import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
-import { getCourseDetails } from "../../services/courseService";
-import { getCourseAttendance } from "../../services/attendanceService";
-import AttendanceList from "../../components/attendance/AttendanceList";
-import QRGenerator from "../../components/attendance/QRGenerator";
-import EmptyState from "../../components/common/EmptyState";
-import Loader from "../../components/common/Loader";
+import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+import { getCourseDetails } from '../../services/courseService'
+import { getCourseAttendance } from '../../services/attendanceService'
+import AttendanceList from '../../components/attendance/AttendanceList'
+import QRGenerator from '../../components/attendance/QRGenerator'
+import EmptyState from '../../components/common/EmptyState'
+import Loader from '../../components/common/Loader'
+import QRScanner from '../../components/attendance/QRScanner'
 
 const TeacherAttendance = () => {
-  const { id } = useParams();
-  const { user } = useAuth();
-  const [attendance, setAttendance] = useState([]);
-  const [course, setCourse] = useState(null);
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { id } = useParams()
+  const { user } = useAuth()
+  const [attendance, setAttendance] = useState([])
+  const [course, setCourse] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (id) {
-          const [attendanceData, courseData, studentsData] = await Promise.all([
+          const [attendanceData, courseData] = await Promise.all([
             getCourseAttendance(id),
-            getCourseDetails(id),
-            (
-              await import("../../services/courseService")
-            ).getCourseStudents(id),
-          ]);
-          setAttendance(attendanceData);
-          setCourse(courseData);
-          setStudents(studentsData);
+            getCourseDetails(id)
+          ])
+          setAttendance(attendanceData)
+          setCourse(courseData)
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error('Error fetching data:', error)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchData();
-  }, [id]);
+    fetchData()
+  }, [id])
 
   if (loading) {
-    return <Loader className="py-12" />;
+    return <Loader className="py-12" />
   }
 
   // if (!id) {
@@ -67,14 +63,14 @@ const TeacherAttendance = () => {
         </h1>
       </div>
 
-      <QRGenerator courseId={id} />
+      <QRScanner />
 
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
         Attendance Records
       </h2>
-      <AttendanceList attendance={attendance} students={students} />
+      <AttendanceList attendance={attendance} />
     </div>
-  );
-};
+  )
+}
 
-export default TeacherAttendance;
+export default TeacherAttendance

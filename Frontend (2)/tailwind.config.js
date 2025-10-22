@@ -1,12 +1,9 @@
 // tailwind.config.js
 module.exports = {
-  darkMode: 'class', // Add this line
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  darkMode: "class", // Add this line
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {},
   },
-  plugins: [],
-}
+  plugins: [require("tailwind-scrollbar-hide")],
+};

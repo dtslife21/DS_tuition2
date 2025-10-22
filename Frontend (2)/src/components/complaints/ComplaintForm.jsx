@@ -2,20 +2,16 @@ import React, { useState } from "react";
 import Card from "../common/Card";
 import Button from "../common/Button";
 
-const ComplaintForm = ({ onAdd, onCancel, initialData = {} }) => {
-  const [date, setDate] = useState(initialData.date || "");
-  const [message, setMessage] = useState(initialData.message || "");
+const ComplaintForm = ({ onAdd }) => {
+  const [date, setDate] = useState("");
+  const [message, setMessage] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     // basic validation
     if (!date || !message.trim()) return;
 
-    const payload = {
-      ...(initialData?.id ? { id: initialData.id } : {}),
-      date,
-      message: message.trim(),
-    };
+    const payload = { date, message: message.trim() };
     if (typeof onAdd === "function") onAdd(payload);
     else console.log("Complaint submitted", payload);
 
@@ -70,22 +66,13 @@ const ComplaintForm = ({ onAdd, onCancel, initialData = {} }) => {
           />
         </div>
 
-        <div className="flex gap-3">
+        <div>
           <Button
             type="submit"
-            className="flex-1 bg-[#0b0936] hover:bg-[#080627] text-white py-3"
+            className="w-full bg-[#0b0936] hover:bg-[#080627] text-white py-3"
           >
-            {initialData?.id ? "SAVE" : "ADD"}
+            ADD
           </Button>
-          {onCancel && (
-            <Button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 bg-gray-500 text-white py-3"
-            >
-              Cancel
-            </Button>
-          )}
         </div>
       </form>
     </Card>

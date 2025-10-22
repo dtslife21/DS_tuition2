@@ -1,6 +1,5 @@
-import { Fragment } from "react";
-import { Menu, Transition } from "@headlessui/react";
-import { Link } from "react-router-dom";
+import { Fragment, useState } from 'react'
+import { Menu, Transition } from '@headlessui/react'
 
 const Dropdown = ({ button, items }) => {
   return (
@@ -23,42 +22,26 @@ const Dropdown = ({ button, items }) => {
           <div className="py-1">
             {items.map((item, index) => (
               <Menu.Item key={index}>
-                {({ active }) => {
-                  const className = `${
-                    active
-                      ? "bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white"
-                      : "text-gray-700 dark:text-gray-300"
-                  } block px-4 py-2 text-sm`;
-
-                  if (item.href && String(item.href).startsWith("/")) {
-                    return (
-                      <Link
-                        to={item.href}
-                        onClick={item.onClick}
-                        className={className}
-                      >
-                        {item.name}
-                      </Link>
-                    );
-                  }
-
-                  return (
-                    <a
-                      href={item.href || "#"}
-                      onClick={item.onClick}
-                      className={className}
-                    >
-                      {item.name}
-                    </a>
-                  );
-                }}
+                {({ active }) => (
+                  <a
+                    href={item.href}
+                    onClick={item.onClick}
+                    className={`${
+                      active
+                        ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
+                        : 'text-gray-700 dark:text-gray-300'
+                    } block px-4 py-2 text-sm`}
+                  >
+                    {item.name}
+                  </a>
+                )}
               </Menu.Item>
             ))}
           </div>
         </Menu.Items>
       </Transition>
     </Menu>
-  );
-};
+  )
+}
 
-export default Dropdown;
+export default Dropdown

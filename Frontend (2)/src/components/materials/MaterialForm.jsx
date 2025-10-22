@@ -2,6 +2,24 @@ import { useForm } from "react-hook-form";
 import { useAuth } from "../../contexts/AuthContext";
 import Button from "../common/Button";
 import { useState } from "react";
+import { uploadMaterial } from "../../services/materialService";
+
+const resolveTeacherId = (user) => {
+  if (!user || typeof user !== "object") {
+    return null;
+  }
+
+  return (
+    user.TeacherID ??
+    user.teacherID ??
+    user.teacherId ??
+    user.UserID ??
+    user.userID ??
+    user.userId ??
+    user.id ??
+    null
+  );
+};
 
 const MaterialForm = ({ courseId, onSuccess, onCancel }) => {
   const { user } = useAuth();
@@ -21,36 +39,88 @@ const MaterialForm = ({ courseId, onSuccess, onCancel }) => {
       return;
     }
 
+    const teacherId = resolveTeacherId(user);
+
+    if (!teacherId) {
+      setError("Unable to determine teacher profile. Please re-login.");
+      return;
+    }
+
+    if (!courseId) {
+      setError("Course identifier is missing");
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError("");
-
-      const formData = new FormData();
-      formData.append("title", data.title);
-      formData.append("description", data.description);
-      formData.append("file", file);
-      formData.append("courseId", courseId);
-      formData.append("teacherId", user.id);
-
-      // Simulate upload
-      const newMaterial = {
-        id: Math.random().toString(36).substring(7),
-        title: data.title,
-        description: data.description,
-        fileType: file.type,
-        fileName: file.name,
-        filePath: URL.createObjectURL(file),
-        uploadDate: new Date().toISOString(),
-        courseId,
-        teacherId: user.id,
+      let fallbackFileUrl;
+      const getFallbackFileUrl = () => {
+        if (!fallbackFileUrl) {
+          fallbackFileUrl = URL.createObjectURL(file);
+        }
+        return fallbackFileUrl;
       };
 
-      setIsLoading(false);
-      onSuccess(newMaterial);
+      const numericCourseId = Number(courseId);
+      const resolvedCourseId = Number.isNaN(numericCourseId)
+        ? courseId
+        : numericCourseId;
+      const numericTeacherId = Number(teacherId);
+      const resolvedTeacherId = Number.isNaN(numericTeacherId)
+        ? teacherId
+        : numericTeacherId;
+
+      const apiPayload = {
+        Title: data.title,
+        Description: data.description,
+        CourseID: resolvedCourseId,
+        TeacherID: resolvedTeacherId,
+        FileType: file.type || file.name?.split?.(".").pop() || "",
+        FilePath: file.name,
+        IsVisible: true,
+      };
+
+      const createdMaterial = await uploadMaterial(apiPayload);
+
+      const normalizedMaterial = createdMaterial
+        ? {
+            ...createdMaterial,
+            filePath:
+              createdMaterial.filePath ??
+              createdMaterial.FilePath ??
+              getFallbackFileUrl(),
+            uploadDate:
+              createdMaterial.uploadDate ??
+              createdMaterial.UploadDate ??
+              new Date().toISOString(),
+            courseId:
+              createdMaterial.courseId ??
+              createdMaterial.CourseID ??
+              resolvedCourseId,
+            teacherId:
+              createdMaterial.teacherId ??
+              createdMaterial.TeacherID ??
+              resolvedTeacherId,
+          }
+        : {
+            id: Math.random().toString(36).substring(7),
+            title: data.title,
+            description: data.description,
+            fileType: file.type,
+            fileName: file.name,
+            filePath: getFallbackFileUrl(),
+            uploadDate: new Date().toISOString(),
+            courseId: resolvedCourseId,
+            teacherId: resolvedTeacherId,
+          };
+
+      onSuccess(normalizedMaterial);
       reset({ title: "", description: "" });
       setFile(null);
     } catch (err) {
       setError("Failed to upload material. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };
