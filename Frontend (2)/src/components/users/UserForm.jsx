@@ -1,6 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import Button from "../common/Button";
+import Modal from "../common/Modal";
+import CourseForm from "../courses/CourseForm";
+import { getAllCourses, createCourse } from "../../services/courseService";
 
 const UserForm = ({ onSubmit, loading, user, userTypes, forceUserType }) => {
   const {
@@ -24,6 +27,10 @@ const UserForm = ({ onSubmit, loading, user, userTypes, forceUserType }) => {
       CurrentGrade: user?.CurrentGrade || user?.currentGrade || "",
       EmployeeID: user?.EmployeeID || user?.employeeID || "",
       Department: user?.Department || user?.department || "",
+      AssignedCourseIDs:
+        (user?.Courses && Array.isArray(user.Courses)
+          ? user.Courses.map((c) => c.id ?? c.CourseID ?? c.id)
+          : user?.assignedCourseIds || user?.CourseIDs || []) || [],
     },
   });
 
@@ -38,6 +45,50 @@ const UserForm = ({ onSubmit, loading, user, userTypes, forceUserType }) => {
       setValue("UserTypeID", String(forceUserType), { shouldValidate: true });
     }
   }, [forceUserType, setValue]);
+
+  // Courses state for teacher assignment
+  const [courses, setCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [showCourseModal, setShowCourseModal] = useState(false);
+  const [selectedCourseIds, setSelectedCourseIds] = useState(
+    user?.CourseIDs && Array.isArray(user.CourseIDs)
+      ? user.CourseIDs.map((c) => String(c))
+      : (user?.AssignedCourseIDs || []).map((c) => String(c)) || []
+  );
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        setLoadingCourses(true);
+        const all = await getAllCourses();
+        if (!mounted) return;
+        setCourses(all || []);
+      } catch (err) {
+        console.error("Failed to load courses for user form", err);
+        setCourses([]);
+      } finally {
+        if (mounted) setLoadingCourses(false);
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // initialize selectedCourseIds from form default if present
+    const defaultAssigned =
+      (Array.isArray(watch("AssignedCourseIDs")) &&
+        watch("AssignedCourseIDs").map((v) => String(v))) ||
+      [];
+    if (defaultAssigned.length && selectedCourseIds.length === 0) {
+      setSelectedCourseIds(defaultAssigned);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFormSubmit = (data) => {
     const apiData = {
@@ -57,6 +108,12 @@ const UserForm = ({ onSubmit, loading, user, userTypes, forceUserType }) => {
       ...(data.UserTypeID === "2" && {
         EmployeeID: data.EmployeeID,
         Department: data.Department,
+      }),
+      ...(data.UserTypeID === "2" && {
+        // include selected course ids when creating/updating a teacher
+        CourseIDs: selectedCourseIds.map((id) =>
+          isNaN(Number(id)) ? id : Number(id)
+        ),
       }),
     };
     onSubmit(apiData);
@@ -311,8 +368,92 @@ const UserForm = ({ onSubmit, loading, user, userTypes, forceUserType }) => {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             /> */}
           </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Assigned Courses
+            </label>
+
+            {loadingCourses ? (
+              <div className="mt-2 text-sm text-gray-500">
+                Loading courses...
+              </div>
+            ) : courses && courses.length > 0 ? (
+              <div className="mt-2 grid gap-2">
+                {courses.map((c) => {
+                  const cid = String(
+                    c.id ?? c.CourseID ?? c.CourseId ?? c.courseId ?? ""
+                  );
+                  const checked = selectedCourseIds.includes(cid);
+                  return (
+                    <label key={cid} className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedCourseIds((prev) =>
+                            prev.includes(cid)
+                              ? prev.filter((x) => x !== cid)
+                              : [...prev, cid]
+                          );
+                        }}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-200">
+                        {c.name || c.CourseName || c.title || c.courseName}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="mt-2 text-sm text-gray-500">
+                No courses available.
+              </div>
+            )}
+
+            <div className="mt-3 flex gap-2 justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowCourseModal(true)}
+              >
+                Add Course
+              </Button>
+            </div>
+          </div>
         </div>
       )}
+
+      <Modal
+        isOpen={showCourseModal}
+        onClose={() => setShowCourseModal(false)}
+        title="Add New Course"
+      >
+        <CourseForm
+          onSubmit={async (data) => {
+            try {
+              const newCourse = await createCourse(data);
+              // normalize id to string
+              const newId = String(
+                newCourse.id ??
+                  newCourse.CourseID ??
+                  newCourse.CourseId ??
+                  newCourse.id ??
+                  ""
+              );
+              setCourses((prev) => [newCourse, ...(prev || [])]);
+              setSelectedCourseIds((prev) =>
+                Array.from(new Set([...(prev || []), newId]))
+              );
+              setShowCourseModal(false);
+            } catch (err) {
+              console.error("Failed to create course from user form", err);
+            }
+          }}
+          onCancel={() => setShowCourseModal(false)}
+        />
+      </Modal>
 
       <div className="flex justify-end space-x-3">
         <Button type="button" variant="secondary" onClick={() => reset()}>

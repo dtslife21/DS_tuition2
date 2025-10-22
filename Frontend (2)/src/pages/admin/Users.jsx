@@ -2,8 +2,8 @@
 // import { useParams, Link } from 'react-router-dom'
 // import { getAllUsers, getUserDetails } from '../../services/userService'
 // import UserList from '../../components/users/UserList'
-// import UserForm from '../../components/users/UserForm'  
-// import Modal from '../../components/common/Modal'      
+// import UserForm from '../../components/users/UserForm'
+// import Modal from '../../components/common/Modal'
 // import Button from '../../components/common/Button'
 // import Loader from '../../components/common/Loader'
 
@@ -67,32 +67,34 @@
 //         </Button>
 //       </div>
 
-
 //       <UserList users={users} onEdit={handleEditUser} />
 
-      
 //     </div>
 //   )
 // }
 
 // export default AdminUsers
 
-
-
-import { useState, useEffect } from 'react';
-import { getAllUsers, createUser, updateUser, getUserById } from '../../services/userService';  
-import UserList from '../../components/users/UserList';
-import UserForm from '../../components/users/UserForm';  
-import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect } from "react";
+import {
+  getAllUsers,
+  createUser,
+  updateUser,
+  getUserById,
+} from "../../services/userService";
+import UserList from "../../components/users/UserList";
+import UserForm from "../../components/users/UserForm";
+import { motion, AnimatePresence } from "framer-motion";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
+  const [activeTab, setActiveTab] = useState("all");
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [formError, setFormError] = useState('');
-  const [editLoading, setEditLoading] = useState(false);  
+  const [formError, setFormError] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -100,7 +102,7 @@ const AdminUsers = () => {
         const data = await getAllUsers();
         setUsers(data);
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error("Error fetching users:", error);
       } finally {
         setLoading(false);
       }
@@ -111,68 +113,70 @@ const AdminUsers = () => {
 
   const handleUserSubmit = async (userData) => {
     try {
-      setFormError('');
-      
+      setFormError("");
+
       if (!selectedUser) {
         const newUser = {
           ...userData,
           IsActive: true,
-          ProfilePicture: null
+          ProfilePicture: null,
         };
-        
+
         const createdUser = await createUser(newUser);
         setUsers([...users, createdUser]);
       } else {
         const userId = selectedUser.UserID || selectedUser.id;
         const updatedUser = await updateUser(userId, userData);
-        setUsers(users.map(user => {
-          const currentUserId = user.UserID || user.id;
-          const updatedUserId = updatedUser.UserID || updatedUser.id;
-          return currentUserId === updatedUserId ? updatedUser : user;
-        }));
+        setUsers(
+          users.map((user) => {
+            const currentUserId = user.UserID || user.id;
+            const updatedUserId = updatedUser.UserID || updatedUser.id;
+            return currentUserId === updatedUserId ? updatedUser : user;
+          })
+        );
       }
-      
+
       setShowModal(false);
       setSelectedUser(null);
     } catch (error) {
-      console.error('Error saving user:', error);
-      setFormError(error.message || 'Failed to save user');
+      console.error("Error saving user:", error);
+      setFormError(error.message || "Failed to save user");
     }
   };
 
-const handleEditUser = async (userID) => {
-  try {
-    setEditLoading(true);
-    setFormError('');
-    setSelectedUser(null);
-     
-    const user = await getUserById(userID);
-    setSelectedUser(user);
-    setShowModal(true);
-  } catch (error) {
-    console.error('Error fetching user details:', error);
-    const fallbackUser = users.find(u => (u.UserID || u.id) === userID);
-    if (fallbackUser) {
-      setSelectedUser(fallbackUser);
+  const handleEditUser = async (userID) => {
+    try {
+      setEditLoading(true);
+      setFormError("");
+      setSelectedUser(null);
+
+      const user = await getUserById(userID);
+      setSelectedUser(user);
       setShowModal(true);
-    } else {
-      setFormError('Failed to fetch user details. Please try again.');
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+      const fallbackUser = users.find((u) => (u.UserID || u.id) === userID);
+      if (fallbackUser) {
+        setSelectedUser(fallbackUser);
+        setShowModal(true);
+      } else {
+        setFormError("Failed to fetch user details. Please try again.");
+      }
+    } finally {
+      setEditLoading(false);
     }
-  } finally {
-    setEditLoading(false);
-  }
-};
+  };
 
   const handleAddUser = () => {
     setSelectedUser(null);
     setShowModal(true);
-    setFormError('');
+    setFormError("");
   };
-  
+
   const closeModal = () => {
     setShowModal(false);
     setSelectedUser(null);
-    setFormError('');
+    setFormError("");
   };
 
   if (loading) {
@@ -201,12 +205,47 @@ const handleEditUser = async (userID) => {
         <div className="fixed inset-0 bg-black bg-opacity-25 z-40 flex items-center justify-center">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 flex items-center gap-3">
             <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-indigo-500"></div>
-            <span className="text-gray-700 dark:text-gray-300">Loading user details...</span>
+            <span className="text-gray-700 dark:text-gray-300">
+              Loading user details...
+            </span>
           </div>
         </div>
       )}
 
-      <UserList users={users} onEdit={handleEditUser} />
+      {/* Tabs for filtering users by role */}
+      <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm">
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { key: "all", label: "All" },
+            { key: "admins", label: "Admins" },
+            { key: "teachers", label: "Teachers" },
+            { key: "students", label: "Students" },
+          ].map((tab) => {
+            const count = getCountForTab(users, tab.key);
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-indigo-600 text-white"
+                    : "bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+                title={`${tab.label} (${count})`}
+              >
+                {tab.label} <span className="ml-2 text-xs">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Filter users by active tab before passing to UserList */}
+      {(() => {
+        const filtered = filterUsersByTab(users, activeTab);
+        return <UserList users={filtered} onEdit={handleEditUser} />;
+      })()}
 
       <AnimatePresence>
         {showModal && (
@@ -224,7 +263,7 @@ const handleEditUser = async (userID) => {
             >
               <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {selectedUser ? 'Edit User' : 'Create New User'}
+                  {selectedUser ? "Edit User" : "Create New User"}
                 </h2>
                 <button
                   onClick={closeModal}
@@ -233,7 +272,7 @@ const handleEditUser = async (userID) => {
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
-              
+
               {formError && (
                 <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 px-4 py-3">
                   {formError}
@@ -246,9 +285,9 @@ const handleEditUser = async (userID) => {
                   user={selectedUser}
                   loading={editLoading}
                   userTypes={[
-                    { id: 1, name: 'Admin' },
-                    { id: 2, name: 'Teacher' },
-                    { id: 3, name: 'Student' }
+                    { id: 1, name: "Admin" },
+                    { id: 2, name: "Teacher" },
+                    { id: 3, name: "Student" },
                   ]}
                 />
               </div>
@@ -259,5 +298,37 @@ const handleEditUser = async (userID) => {
     </div>
   );
 };
+
+// Helper: returns filtered users array based on selected tab
+const filterUsersByTab = (users, tabKey) => {
+  if (!users || users.length === 0) return [];
+  switch (tabKey) {
+    case "admins":
+      return users.filter(
+        (u) =>
+          String(u.UserTypeID || u.userTypeID || u.UserType || u.userType) ===
+            "1" || String(u.userType)?.toLowerCase?.() === "admin"
+      );
+    case "teachers":
+      return users.filter(
+        (u) =>
+          String(u.UserTypeID || u.userTypeID || u.UserType || u.userType) ===
+            "2" || String(u.userType)?.toLowerCase?.() === "teacher"
+      );
+    case "students":
+      return users.filter(
+        (u) =>
+          String(u.UserTypeID || u.userTypeID || u.UserType || u.userType) ===
+            "3" || String(u.userType)?.toLowerCase?.() === "student"
+      );
+    case "all":
+    default:
+      return users;
+  }
+};
+
+// Helper: count users for a tab
+const getCountForTab = (users, tabKey) =>
+  filterUsersByTab(users, tabKey).length;
 
 export default AdminUsers;
