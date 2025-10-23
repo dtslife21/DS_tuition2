@@ -244,7 +244,7 @@ const TableView = ({ items = [], selected = [], onToggle }) => {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => handleChoose(cid)}
-                    className="px-4 py-2 bg-purple-800 hover:bg-purple-900 text-white rounded-md shadow-md text-sm"
+                    className="px-4 py-2 bg-gray-800 hover:bg-purple-900 text-white rounded-md shadow-md text-sm"
                   >
                     {isSelected ? "CHOSEN" : "CHOOSE"}
                   </button>
