@@ -280,7 +280,7 @@ const AdminUsers = () => {
               {activeTab === "admins" && (
                 <button
                   onClick={() => openCreateFor(1)}
-                  className="px-3 py-1.5 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors"
+                  className="px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
                 >
                   + Add Admin
                 </button>
@@ -298,7 +298,7 @@ const AdminUsers = () => {
               {activeTab === "students" && (
                 <button
                   onClick={() => openCreateFor(3)}
-                  className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                  className="px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
                 >
                   + Add Student
                 </button>

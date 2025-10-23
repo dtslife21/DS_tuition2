@@ -91,6 +91,7 @@ const normalizeCourse = (course) => {
   }
 
   const teacher = course.teacher || course.Teacher || {};
+  const teacherUser = teacher.user || teacher.User || {};
   const subjectObj = course.subject || course.Subject || {};
 
   const subjectName =
@@ -100,6 +101,8 @@ const normalizeCourse = (course) => {
       ? course.Subject
       : subjectObj.name ||
         subjectObj.Name ||
+        subjectObj.subjectName ||
+        subjectObj.SubjectName ||
         course.subjectName ||
         course.SubjectName ||
         subjectObj.title ||
@@ -114,10 +117,91 @@ const normalizeCourse = (course) => {
     teacher.id ??
     teacher.Id ??
     teacher.teacherId ??
+    teacher.teacherID ??
     teacher.TeacherId ??
+    teacher.TeacherID ??
+    teacherUser.id ??
+    teacherUser.Id ??
+    teacherUser.userId ??
+    teacherUser.UserId ??
+    teacherUser.userID ??
+    teacherUser.UserID ??
     null;
 
   const subjects = collectSubjects(course);
+
+  const normalizedTeacher =
+    teacher && typeof teacher === "object"
+      ? {
+          id:
+            teacherId ??
+            teacher.TeacherID ??
+            teacher.teacherID ??
+            teacher.id ??
+            teacher.Id ??
+            null,
+          teacherId:
+            teacherId ??
+            teacher.TeacherID ??
+            teacher.teacherID ??
+            teacher.id ??
+            teacher.Id ??
+            null,
+          userId:
+            teacher.UserID ??
+            teacher.userID ??
+            teacher.userId ??
+            teacherUser.UserID ??
+            teacherUser.userID ??
+            teacherUser.userId ??
+            null,
+          firstName:
+            teacherUser.firstName ??
+            teacherUser.FirstName ??
+            teacher.firstName ??
+            teacher.FirstName ??
+            "",
+          lastName:
+            teacherUser.lastName ??
+            teacherUser.LastName ??
+            teacher.lastName ??
+            teacher.LastName ??
+            "",
+          username:
+            teacherUser.username ??
+            teacherUser.Username ??
+            teacher.username ??
+            teacher.Username ??
+            "",
+        }
+      : null;
+
+  const normalizedSubject =
+    subjectObj && typeof subjectObj === "object"
+      ? {
+          id:
+            subjectObj.id ??
+            subjectObj.Id ??
+            subjectObj.subjectId ??
+            subjectObj.subjectID ??
+            subjectObj.SubjectId ??
+            subjectObj.SubjectID ??
+            null,
+          name:
+            subjectName ||
+            subjectObj.name ||
+            subjectObj.Name ||
+            subjectObj.subjectName ||
+            subjectObj.SubjectName ||
+            "",
+          code:
+            subjectObj.code ??
+            subjectObj.Code ??
+            subjectObj.subjectCode ??
+            subjectObj.SubjectCode ??
+            "",
+        }
+      : null;
 
   return {
     id:
@@ -137,8 +221,14 @@ const normalizeCourse = (course) => {
       course.SubjectID ??
       subjectObj.id ??
       subjectObj.Id ??
+      subjectObj.subjectId ??
+      subjectObj.subjectID ??
+      subjectObj.SubjectId ??
+      subjectObj.SubjectID ??
       null,
     teacherId,
+    teacher: normalizedTeacher,
+    subjectDetails: normalizedSubject,
     academicYear:
       course.academicYear ?? course.AcademicYear ?? course.academic_year ?? "",
     description:
