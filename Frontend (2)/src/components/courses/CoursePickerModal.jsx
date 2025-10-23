@@ -1,0 +1,296 @@
+import { useEffect, useMemo, useState } from "react";
+import Modal from "../common/Modal";
+import Button from "../common/Button";
+import CourseForm from "./CourseForm";
+import { getAllCourses, createCourse } from "../../services/courseService";
+
+const CoursePickerModal = ({
+  isOpen,
+  onClose,
+  initialSelected = [],
+  onProceed,
+  title = "Select Courses",
+  description = "Choose one or more courses.",
+  multiSelect = true,
+  // allowCreate: when false, hide the + Add New Course button (useful for student enrollment)
+  allowCreate = true,
+  // excludedIds: array of course ids (string/number) to hide from the picker (remaining courses logic)
+  excludedIds = [],
+}) => {
+  const [courses, setCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [selectedCourseIds, setSelectedCourseIds] = useState(
+    (initialSelected || []).map((c) => String(c))
+  );
+  const [showCourseModal, setShowCourseModal] = useState(false);
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        setLoadingCourses(true);
+        const all = await getAllCourses();
+        if (!mounted) return;
+        setCourses(all || []);
+      } catch (err) {
+        console.error("Failed to load courses for picker", err);
+        setCourses([]);
+      } finally {
+        if (mounted) setLoadingCourses(false);
+      }
+    };
+
+    if (isOpen) load();
+    return () => {
+      mounted = false;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    setSelectedCourseIds((initialSelected || []).map((c) => String(c)));
+  }, [initialSelected]);
+
+  const filtered = useMemo(() => {
+    const q = String(query || "")
+      .toLowerCase()
+      .trim();
+    // compute base list by excluding any provided ids
+    const excludeSet = new Set((excludedIds || []).map((id) => String(id)));
+    const base = (courses || []).filter((c) => {
+      const cid = String(c.id ?? c.CourseID ?? c.CourseId ?? c.courseId ?? "");
+      return !excludeSet.has(cid);
+    });
+
+    if (!q) return base || [];
+    return (base || []).filter((c) => {
+      const name = (
+        c.name ||
+        c.CourseName ||
+        c.title ||
+        c.courseName ||
+        ""
+      ).toLowerCase();
+      const desc = (c.description || "").toLowerCase();
+      return name.includes(q) || desc.includes(q);
+    });
+  }, [courses, query]);
+
+  const toggle = (cid) => {
+    if (multiSelect) {
+      setSelectedCourseIds((prev) =>
+        prev.includes(cid) ? prev.filter((x) => x !== cid) : [...prev, cid]
+      );
+    } else {
+      setSelectedCourseIds((prev) => (prev.includes(cid) ? [] : [cid]));
+    }
+  };
+
+  const clearSearch = () => setQuery("");
+
+  const handleProceed = () => onProceed(selectedCourseIds);
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={title}>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1">
+            <div className="relative">
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search courses by name or description..."
+                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              {query && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label="Clear search"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            {description && (
+              <p className="mt-2 text-xs text-gray-500">{description}</p>
+            )}
+          </div>
+
+          <div className="flex-shrink-0">
+            <div className="text-right text-sm text-gray-600">
+              <div className="font-medium text-gray-900 dark:text-gray-200">
+                {selectedCourseIds.length}
+              </div>
+              <div className="text-xs text-gray-500">selected</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          {loadingCourses ? (
+            <div className="py-6 text-center text-sm text-gray-500">
+              Loading courses…
+            </div>
+          ) : filtered && filtered.length > 0 ? (
+            <TableView
+              items={filtered}
+              selected={selectedCourseIds}
+              onToggle={toggle}
+            />
+          ) : (
+            <div className="py-6 text-center text-sm text-gray-500">
+              No courses found. You can add a new course.
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-3 pt-2 border-t dark:border-gray-700">
+          <div>
+            {allowCreate && (
+              <Button
+                variant="secondary"
+                onClick={() => setShowCourseModal(true)}
+              >
+                + Add New Course
+              </Button>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleProceed}>
+              Proceed
+            </Button>
+          </div>
+        </div>
+
+        <Modal
+          isOpen={showCourseModal}
+          onClose={() => setShowCourseModal(false)}
+          title="Add New Course"
+        >
+          <CourseForm
+            onSubmit={async (data) => {
+              try {
+                const newCourse = await createCourse(data);
+                const newId = String(
+                  newCourse.id ?? newCourse.CourseID ?? newCourse.CourseId ?? ""
+                );
+                setCourses((prev) => [newCourse, ...(prev || [])]);
+                setSelectedCourseIds((prev) =>
+                  Array.from(new Set([...(prev || []), newId]))
+                );
+                setShowCourseModal(false);
+              } catch (err) {
+                console.error("Failed to create course from picker", err);
+              }
+            }}
+            onCancel={() => setShowCourseModal(false)}
+          />
+        </Modal>
+      </div>
+    </Modal>
+  );
+};
+
+export default CoursePickerModal;
+
+// --- Internal TableView component ---
+const TableView = ({ items = [], selected = [], onToggle }) => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const pageCount = Math.max(1, Math.ceil(items.length / rowsPerPage));
+
+  const paged = items.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  useEffect(() => {
+    if (page >= pageCount) setPage(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowsPerPage, pageCount]);
+
+  const handleChoose = (id) => {
+    // toggle selection and move to next page if desired
+    onToggle(id);
+  };
+
+  return (
+    <div>
+      <div className="overflow-hidden rounded-md border">
+        <div className="bg-black text-white text-sm px-4 py-2 font-semibold">
+          Class Name
+        </div>
+        <div>
+          {paged.map((c) => {
+            const cid = String(
+              c.id ?? c.CourseID ?? c.CourseId ?? c.courseId ?? ""
+            );
+            const isSelected = selected.includes(cid);
+            return (
+              <div
+                key={cid}
+                className="flex items-center justify-between px-4 py-4 border-b bg-white dark:bg-gray-900"
+              >
+                <div className="text-sm text-gray-700 dark:text-gray-200">
+                  {c.name || c.CourseName || c.title || c.courseName}
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleChoose(cid)}
+                    className="px-4 py-2 bg-purple-800 hover:bg-purple-900 text-white rounded-md shadow-md text-sm"
+                  >
+                    {isSelected ? "CHOSEN" : "CHOOSE"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-end gap-4 text-sm text-gray-600">
+        <div className="flex items-center gap-2">
+          Rows per page:
+          <select
+            value={rowsPerPage}
+            onChange={(e) => setRowsPerPage(Number(e.target.value))}
+            className="ml-1 text-sm bg-white dark:bg-gray-800 border rounded px-2 py-1"
+          >
+            {[5, 10, 25].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          {page * rowsPerPage + 1}-
+          {Math.min((page + 1) * rowsPerPage, items.length)} of {items.length}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800"
+          >
+            ◀
+          </button>
+          <button
+            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+            className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800"
+          >
+            ▶
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

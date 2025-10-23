@@ -1,0 +1,132 @@
+import axios from "axios";
+import { getAllCourses } from "./courseService";
+
+// In-memory mock subjects (fallback when API not available).
+const mockSubjects = [];
+
+const normalizeSubject = (raw) => {
+  if (!raw) return null;
+  return {
+    id: raw.id ?? raw.SubjectID ?? raw.subjectId ?? raw.id ?? null,
+    name:
+      raw.name ??
+      raw.subjectName ??
+      raw.SubjectName ??
+      raw.title ??
+      raw.Title ??
+      "",
+    courseName:
+      raw.courseName ?? raw.CourseName ?? raw.course ?? raw.courseTitle ?? "",
+    description: raw.description ?? raw.Description ?? raw.details ?? "",
+  };
+};
+
+export const getAllSubjects = async () => {
+  try {
+    const resp = await axios.get("/Subjects");
+    const raw = Array.isArray(resp.data)
+      ? resp.data
+      : resp.data?.subjects || [];
+    const normalized = raw.map(normalizeSubject).filter(Boolean);
+    if (normalized.length) return normalized;
+  } catch (err) {
+    // ignore and fallback
+  }
+
+  // Derive from courses + include mockSubjects
+  try {
+    const courses = await getAllCourses();
+    const fromCourses = [];
+    for (const c of courses || []) {
+      const subjects =
+        c.subjects ||
+        c.Subjects ||
+        c.subjectList ||
+        c.subjectNames ||
+        c.SubjectNames ||
+        [];
+      // if course has a primary subject
+      if (c.subject || c.Subject) {
+        const sname = c.subject || c.Subject;
+        fromCourses.push({
+          id: `${c.id}-primary-${sname}`,
+          name: sname,
+          courseName: c.name || c.CourseName || "",
+        });
+      }
+      if (Array.isArray(subjects) && subjects.length) {
+        for (const s of subjects) {
+          const name =
+            typeof s === "string"
+              ? s
+              : s.name ?? s.subjectName ?? s.SubjectName ?? s.Title ?? s.title;
+          if (name)
+            fromCourses.push({
+              id: `${c.id}-${name}`,
+              name,
+              courseName: c.name || c.CourseName || "",
+            });
+        }
+      }
+    }
+
+    // Merge dedupe by name+courseName
+    const combined = [...mockSubjects, ...fromCourses];
+    const map = new Map();
+    for (const s of combined) {
+      const key = `${String(s.name || "").toLowerCase()}|${String(
+        s.courseName || ""
+      ).toLowerCase()}`;
+      if (!map.has(key)) map.set(key, normalizeSubject(s));
+    }
+    return Array.from(map.values());
+  } catch (err) {
+    // last resort, return mockSubjects normalized
+    return mockSubjects.map(normalizeSubject);
+  }
+};
+
+export const createSubject = async (subjectData) => {
+  try {
+    const resp = await axios.post("/Subjects", subjectData);
+    return normalizeSubject(resp.data);
+  } catch (err) {
+    // fallback: push to mockSubjects
+    const nextId =
+      (mockSubjects.reduce((m, s) => Math.max(m, Number(s.id) || 0), 0) || 0) +
+      1;
+    const newSub = { id: nextId, ...subjectData };
+    mockSubjects.push(newSub);
+    return normalizeSubject(newSub);
+  }
+};
+
+export const deleteSubject = async (subjectId) => {
+  try {
+    await axios.delete(`/Subjects/${subjectId}`);
+    return true;
+  } catch (err) {
+    // fallback: remove from mockSubjects
+    const idx = mockSubjects.findIndex(
+      (s) => String(s.id) === String(subjectId)
+    );
+    if (idx !== -1) {
+      mockSubjects.splice(idx, 1);
+      return true;
+    }
+    return false;
+  }
+};
+
+export const getSubjectById = async (subjectId) => {
+  try {
+    const resp = await axios.get(`/Subjects/${subjectId}`);
+    return normalizeSubject(resp.data);
+  } catch (err) {
+    // fallback: search in mockSubjects or derived list
+    const all = await getAllSubjects();
+    return all.find((s) => String(s.id) === String(subjectId)) || null;
+  }
+};
+
+export default { getAllSubjects, createSubject, deleteSubject, getSubjectById };

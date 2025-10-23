@@ -86,6 +86,7 @@ import UserList from "../../components/users/UserList";
 import UserForm from "../../components/users/UserForm";
 import { motion, AnimatePresence } from "framer-motion";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import CoursePickerModal from "../../components/courses/CoursePickerModal";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -96,6 +97,9 @@ const AdminUsers = () => {
   const [formError, setFormError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   const [forceUserType, setForceUserType] = useState(null);
+  const [showCoursePicker, setShowCoursePicker] = useState(false);
+  const [initialCourseSelection, setInitialCourseSelection] = useState([]);
+  const [pendingUserData, setPendingUserData] = useState(null); // holds student payload awaiting course pick
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -117,6 +121,21 @@ const AdminUsers = () => {
       setFormError("");
 
       if (!selectedUser) {
+        // Creation flow
+        const typeId = String(userData.UserTypeID || userData.userTypeID || "");
+        // If it's a student, ask to choose course(s) first via popup
+        if (typeId === "3") {
+          setPendingUserData({
+            ...userData,
+            IsActive: true,
+            ProfilePicture: null,
+          });
+          setShowModal(false); // close form to show picker
+          setInitialCourseSelection([]);
+          setShowCoursePicker(true);
+          return; // defer actual creation until after course picking
+        }
+
         const newUser = {
           ...userData,
           IsActive: true,
@@ -173,6 +192,19 @@ const AdminUsers = () => {
     setSelectedUser(null);
     setShowModal(true);
     setFormError("");
+  };
+
+  const openCreateFor = (typeId) => {
+    // For teachers, first open the course picker modal
+    setForceUserType(typeId);
+    setSelectedUser(null);
+    setFormError("");
+    if (typeId === 2) {
+      // show course picker first
+      setShowCoursePicker(true);
+    } else {
+      setShowModal(true);
+    }
   };
 
   const closeModal = () => {
@@ -241,12 +273,6 @@ const AdminUsers = () => {
       {/* Filter users by active tab and show role-specific add button */}
       {(() => {
         const filtered = filterUsersByTab(users, activeTab);
-        const openCreateFor = (typeId) => {
-          setSelectedUser(null);
-          setShowModal(true);
-          setFormError("");
-          setForceUserType(typeId);
-        };
 
         return (
           <>
@@ -280,6 +306,65 @@ const AdminUsers = () => {
             </div>
 
             <UserList users={filtered} onEdit={handleEditUser} />
+
+            <CoursePickerModal
+              isOpen={showCoursePicker}
+              onClose={() => setShowCoursePicker(false)}
+              initialSelected={initialCourseSelection}
+              title={
+                pendingUserData
+                  ? "Select Course for Student"
+                  : "Select Courses for Teacher"
+              }
+              description={
+                pendingUserData
+                  ? "Choose a course to enroll the new student in."
+                  : "Select one or more courses to assign to the new teacher."
+              }
+              multiSelect={!pendingUserData}
+              // when enrolling a student, disallow creating new courses from the picker
+              allowCreate={!pendingUserData}
+              // when enrolling a pending student, hide courses already passed in (if any)
+              excludedIds={pendingUserData?.CourseIDs || []}
+              onProceed={async (selectedIds) => {
+                // Two modes:
+                // 1) Teacher pre-pick: no pending user yet -> open form with preselected
+                // 2) Student post-form: pending user -> create user with chosen CourseIDs
+                const ids = (selectedIds || []).map((id) =>
+                  isNaN(Number(id)) ? id : Number(id)
+                );
+
+                if (!pendingUserData) {
+                  // Teacher flow: pass selection into form and open it
+                  setInitialCourseSelection(ids.map(String));
+                  setShowCoursePicker(false);
+                  setShowModal(true);
+                  return;
+                }
+
+                try {
+                  const newUser = {
+                    ...pendingUserData,
+                    CourseIDs: ids,
+                    IsActive: true,
+                    ProfilePicture: null,
+                  };
+                  const createdUser = await createUser(newUser);
+                  setUsers([...users, createdUser]);
+                } catch (err) {
+                  console.error("Error creating student with course IDs", err);
+                  setFormError(
+                    err?.message ||
+                      "Failed to create student with selected course"
+                  );
+                } finally {
+                  setPendingUserData(null);
+                  setShowCoursePicker(false);
+                  setShowModal(false);
+                  setForceUserType(null);
+                }
+              }}
+            />
           </>
         );
       })()}
@@ -327,6 +412,7 @@ const AdminUsers = () => {
                     { id: 3, name: "Student" },
                   ]}
                   forceUserType={forceUserType}
+                  initialCourseSelection={initialCourseSelection}
                 />
               </div>
             </motion.div>

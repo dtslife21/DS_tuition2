@@ -12,6 +12,7 @@ const Sidebar = () => {
   const adminNavigation = [
     { name: "Dashboard", href: "/admin", icon: "home" },
     { name: "Courses", href: "/admin/courses", icon: "book" },
+    { name: "Subjects", href: "/admin/subjects", icon: "document-text" },
     { name: "Users", href: "/admin/users", icon: "users" },
     { name: "Settings", href: "/admin/settings", icon: "cog" },
   ];
