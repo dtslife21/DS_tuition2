@@ -11,15 +11,79 @@ namespace ClassSystemAPI.Controllers
         private ClassSystemContext db = new ClassSystemContext();
 
         // GET: api/Courses
-        public IQueryable<Course> GetCourses()
+        // Returns courses with their subject (projected to avoid lazy-loading / reference loops)
+        public IHttpActionResult GetCourses()
         {
-            return db.Courses.Include(c => c.Subject).Include(c => c.Teacher);
+            var courses = db.Courses
+                .Include(c => c.Subject)
+                .Include(c => c.Teacher)
+                .Select(c => new
+                {
+                    c.CourseID,
+                    c.CourseName,
+                    c.CourseCode,
+                    c.AcademicYear,
+                    c.Description,
+                    c.IsActive,
+                    Subject = c.Subject == null ? null : new
+                    {
+                        c.Subject.SubjectID,
+                        c.Subject.SubjectName,
+                        c.Subject.SubjectCode
+                    },
+                    Teacher = c.Teacher == null ? null : new
+                    {
+                        c.Teacher.TeacherID,
+                        // include basic teacher/user info if desired
+                        User = c.Teacher.User == null ? null : new
+                        {
+                            c.Teacher.User.UserID,
+                            c.Teacher.User.Username,
+                            c.Teacher.User.FirstName,
+                            c.Teacher.User.LastName
+                        }
+                    }
+                })
+                .ToList();
+
+            return Ok(courses);
         }
 
         // GET: api/Courses/5
         public IHttpActionResult GetCourse(int id)
         {
-            var course = db.Courses.Find(id);
+            var course = db.Courses
+                .Where(c => c.CourseID == id)
+                .Include(c => c.Subject)
+                .Include(c => c.Teacher)
+                .Select(c => new
+                {
+                    c.CourseID,
+                    c.CourseName,
+                    c.CourseCode,
+                    c.AcademicYear,
+                    c.Description,
+                    c.IsActive,
+                    Subject = c.Subject == null ? null : new
+                    {
+                        c.Subject.SubjectID,
+                        c.Subject.SubjectName,
+                        c.Subject.SubjectCode
+                    },
+                    Teacher = c.Teacher == null ? null : new
+                    {
+                        c.Teacher.TeacherID,
+                        User = c.Teacher.User == null ? null : new
+                        {
+                            c.Teacher.User.UserID,
+                            c.Teacher.User.Username,
+                            c.Teacher.User.FirstName,
+                            c.Teacher.User.LastName
+                        }
+                    }
+                })
+                .FirstOrDefault();
+
             if (course == null)
                 return NotFound();
 
