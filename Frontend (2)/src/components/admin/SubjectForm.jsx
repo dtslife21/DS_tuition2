@@ -1,10 +1,10 @@
 import { useState } from "react";
 import Button from "../common/Button";
 
-const SubjectForm = ({ onSubmit, onCancel, initial = {} }) => {
+const SubjectForm = ({ onSubmit, onCancel, initial = {}, loading = false }) => {
   // Accept both possible initial shapes: id or SubjectID
   const [subjectId] = useState(
-    initial.id ?? initial.id ?? initial.SubjectID ?? initial.subjectId ?? ""
+    initial.id ?? initial.SubjectID ?? initial.subjectId ?? ""
   );
   const [name, setName] = useState(
     initial.name || initial.subjectName || initial.SubjectName || ""
@@ -83,11 +83,16 @@ const SubjectForm = ({ onSubmit, onCancel, initial = {} }) => {
       </div>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="secondary" onClick={onCancel}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onCancel}
+          disabled={loading}
+        >
           Cancel
         </Button>
-        <Button type="submit" variant="primary">
-          Save
+        <Button type="submit" variant="primary" disabled={loading}>
+          {loading ? "Saving..." : "Save"}
         </Button>
       </div>
     </form>

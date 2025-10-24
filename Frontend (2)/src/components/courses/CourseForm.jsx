@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import Button from '../common/Button'
 
-const CourseForm = ({ onSubmit, loading, initialData = {} }) => {
+const CourseForm = ({ onSubmit, onCancel, loading, initialData = {} }) => {
   const {
     register,
     handleSubmit,
@@ -50,7 +50,7 @@ const CourseForm = ({ onSubmit, loading, initialData = {} }) => {
         )}
       </div>
 
-      <div>
+      {/* <div>
         <label
           htmlFor="subject"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -67,7 +67,7 @@ const CourseForm = ({ onSubmit, loading, initialData = {} }) => {
         {errors.subject && (
           <p className="mt-1 text-sm text-red-600">{errors.subject.message}</p>
         )}
-      </div>
+      </div> */}
 
       <div>
         <label
@@ -106,7 +106,17 @@ const CourseForm = ({ onSubmit, loading, initialData = {} }) => {
         />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {onCancel ? (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+        ) : null}
         <Button type="submit" variant="primary" disabled={loading}>
           {loading ? 'Saving...' : 'Save Course'}
         </Button>

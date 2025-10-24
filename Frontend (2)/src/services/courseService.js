@@ -556,6 +556,12 @@ const mapCourseToApiPayload = (courseData) => {
       courseData.subject?.name ??
       courseData.subject?.Name ??
       (typeof courseData.subject === "string" ? courseData.subject : undefined),
+    IsActive:
+      courseData.isActive ??
+      courseData.IsActive ??
+      courseData.is_active ??
+      courseData.isActive ??
+      true,
   };
 
   return Object.fromEntries(
@@ -1083,7 +1089,47 @@ export const createCourse = async (courseData) => {
   try {
     const payload = mapCourseToApiPayload(courseData);
     const response = await axios.post("/Courses", payload);
-    return normalizeCourse(response.data);
+    // Normalize API response first
+    let created = normalizeCourse(response.data);
+
+    // If API didn't return an identifier, generate one based on existing courses.
+    const hasId =
+      created &&
+      ((created.id !== null &&
+        created.id !== undefined &&
+        String(created.id).trim() !== "") ||
+        (created.CourseID !== null &&
+          created.CourseID !== undefined &&
+          String(created.CourseID).trim() !== ""));
+
+    if (!hasId) {
+      try {
+        // Prefer fetching the authoritative list to compute next id
+        const all = await getAllCourses();
+        const maxId = Math.max(
+          0,
+          ...(all || []).map(
+            (c) => Number(c.id ?? c.CourseID ?? c.courseId ?? 0) || 0
+          )
+        );
+        const nextId = maxId + 1;
+        if (!created) created = {};
+        created.id = nextId;
+        created.CourseID = nextId;
+        created.courseId = nextId;
+      } catch (e) {
+        // If fetching fails, fall back to mock data
+        const nextId =
+          Math.max(0, ...mockCourses.map((course) => Number(course.id) || 0)) +
+          1;
+        if (!created) created = {};
+        created.id = nextId;
+        created.CourseID = nextId;
+        created.courseId = nextId;
+      }
+    }
+
+    return created;
   } catch (error) {
     console.error(
       "Failed to create course via API, using mock fallback",
@@ -1098,6 +1144,133 @@ export const createCourse = async (courseData) => {
     };
     mockCourses.push(newCourse);
     return newCourse;
+  }
+};
+
+// Update an existing course by id. Sends only provided fields mapped to the API shape.
+export const updateCourse = async (courseId, updates = {}) => {
+  const idCandidate =
+    courseId ??
+    updates?.CourseID ??
+    updates?.courseID ??
+    updates?.courseId ??
+    updates?.id ??
+    updates?.Id;
+
+  const idStr = String(idCandidate ?? "").trim();
+  if (!idStr) {
+    throw new Error("updateCourse requires a valid courseId");
+  }
+
+  let existing = null;
+  try {
+    existing = await getCourseDetails(idStr);
+  } catch (err) {
+    console.warn("Unable to load existing course before update", err);
+  }
+
+  if (!existing) {
+    throw new Error(`Course ${idStr} not found for update`);
+  }
+
+  const normalizedExisting = normalizeCourse(existing) || {};
+  const normalizedUpdates = normalizeCourse({ id: idStr, ...updates }) || {};
+
+  const merged = {
+    ...normalizedExisting,
+    ...normalizedUpdates,
+  };
+
+  const subjectId =
+    updates?.SubjectID ??
+    updates?.subjectID ??
+    updates?.subjectId ??
+    normalizedUpdates.subjectId ??
+    normalizedExisting.subjectId ??
+    null;
+
+  const teacherId =
+    updates?.TeacherID ??
+    updates?.teacherID ??
+    updates?.teacherId ??
+    normalizedUpdates.teacherId ??
+    normalizedExisting.teacherId ??
+    normalizedExisting.teacher?.teacherId ??
+    normalizedExisting.teacher?.id ??
+    null;
+
+  const resolvedCourseId =
+    merged.CourseID ??
+    merged.courseID ??
+    merged.courseId ??
+    merged.id ??
+    Number(idStr);
+
+  const payload = {
+    CourseID:
+      resolvedCourseId !== undefined && resolvedCourseId !== null
+        ? resolvedCourseId
+        : idStr,
+    CourseName:
+      updates?.CourseName ??
+      updates?.courseName ??
+      updates?.name ??
+      merged.name ??
+      merged.CourseName ??
+      merged.courseName ??
+      "",
+    CourseCode:
+      updates?.CourseCode ??
+      updates?.courseCode ??
+      updates?.code ??
+      merged.code ??
+      merged.CourseCode ??
+      merged.courseCode ??
+      "",
+    Description:
+      updates?.Description ??
+      updates?.description ??
+      merged.description ??
+      merged.Description ??
+      "",
+    AcademicYear:
+      updates?.AcademicYear ??
+      updates?.academicYear ??
+      merged.academicYear ??
+      merged.AcademicYear ??
+      "",
+    TeacherID: teacherId,
+    SubjectID: subjectId,
+    SubjectName:
+      updates?.SubjectName ??
+      updates?.subjectName ??
+      merged.subject ??
+      merged.subjectName ??
+      undefined,
+    IsActive:
+      updates?.IsActive ??
+      updates?.isActive ??
+      merged.isActive ??
+      merged.IsActive ??
+      true,
+  };
+
+  // Remove undefined/null fields except SubjectID which backend needs even if null
+  const cleanedPayload = Object.fromEntries(
+    Object.entries(payload).filter(([key, value]) => {
+      if (key === "SubjectID") return true;
+      return value !== undefined && value !== null;
+    })
+  );
+
+  try {
+    await axios.put(`/Courses/${idStr}`, cleanedPayload);
+    const refreshed = await getCourseDetails(idStr);
+    return refreshed ?? merged;
+  } catch (error) {
+    console.error("Failed to update course via API", error);
+    // Fallback to merged state so caller at least has local update
+    return { ...merged, subjectId };
   }
 };
 
