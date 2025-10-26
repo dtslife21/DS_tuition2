@@ -17,6 +17,25 @@ namespace ClassSystemAPI.Controllers
             return db.Subjects.ToList();
         }
 
+        // GET: api/Subjects/LatestId
+        [HttpGet]
+        [Route("api/Subjects/LatestId")]
+        public IHttpActionResult GetLatestSubjectId()
+        {
+            // Order by SubjectID descending and take the first ID.
+            // If there are no subjects, return an object with a null value so the frontend can handle it gracefully.
+            var latestId = db.Subjects
+                             .OrderByDescending(s => s.SubjectID)
+                             .Select(s => s.SubjectID)
+                             .FirstOrDefault();
+
+            // FirstOrDefault returns 0 when sequence is empty (SubjectID is assumed to be positive).
+            if (latestId == 0)
+                return Ok(new { latestSubjectId = (int?)null });
+
+            return Ok(new { latestSubjectId = latestId });
+        }
+
         // GET: api/Subjects/5
         public IHttpActionResult GetSubject(int id)
         {
