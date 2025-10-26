@@ -1,14 +1,37 @@
-import { useForm } from 'react-hook-form'
-import Button from '../common/Button'
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import Button from "../common/Button";
+import { getLatestSubjectId } from "../../services/subjectService";
 
 const CourseForm = ({ onSubmit, onCancel, loading, initialData = {} }) => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm({
     defaultValues: initialData,
-  })
+  });
+
+  // Auto-fill the Subject ID with the latest from backend if not provided
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (initialData && initialData.subjectId) return;
+      try {
+        const latest = await getLatestSubjectId();
+        if (!cancelled && latest) {
+          setValue("subjectId", String(latest), { shouldValidate: true });
+        }
+      } catch (_) {
+        // ignore; user can type manually
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialData, setValue]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -23,7 +46,7 @@ const CourseForm = ({ onSubmit, onCancel, loading, initialData = {} }) => {
           id="name"
           name="name"
           type="text"
-          {...register('name', { required: 'Course name is required' })}
+          {...register("name", { required: "Course name is required" })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />
         {errors.name && (
@@ -42,7 +65,7 @@ const CourseForm = ({ onSubmit, onCancel, loading, initialData = {} }) => {
           id="code"
           name="code"
           type="text"
-          {...register('code', { required: 'Course code is required' })}
+          {...register("code", { required: "Course code is required" })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />
         {errors.code && (
@@ -50,24 +73,32 @@ const CourseForm = ({ onSubmit, onCancel, loading, initialData = {} }) => {
         )}
       </div>
 
-      {/* <div>
+      <div>
         <label
-          htmlFor="subject"
+          htmlFor="subjectId"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Subject
+          Subject ID
         </label>
         <input
-          id="subject"
-          name="subject"
+          id="subjectId"
+          name="subjectId"
           type="text"
-          {...register('subject', { required: 'Subject is required' })}
+          {...register("subjectId", { required: "Subject ID is required" })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          readOnly={Boolean(initialData?.subjectId)}
         />
-        {errors.subject && (
-          <p className="mt-1 text-sm text-red-600">{errors.subject.message}</p>
+        {initialData?.subjectId ? (
+          <p className="mt-1 text-xs text-gray-500">
+            Prefilled from newly created subject
+          </p>
+        ) : null}
+        {errors.subjectId && (
+          <p className="mt-1 text-sm text-red-600">
+            {errors.subjectId.message}
+          </p>
         )}
-      </div> */}
+      </div>
 
       <div>
         <label
@@ -80,7 +111,9 @@ const CourseForm = ({ onSubmit, onCancel, loading, initialData = {} }) => {
           id="academicYear"
           name="academicYear"
           type="text"
-          {...register('academicYear', { required: 'Academic year is required' })}
+          {...register("academicYear", {
+            required: "Academic year is required",
+          })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />
         {errors.academicYear && (
@@ -101,7 +134,7 @@ const CourseForm = ({ onSubmit, onCancel, loading, initialData = {} }) => {
           id="description"
           name="description"
           rows={3}
-          {...register('description')}
+          {...register("description")}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />
       </div>
@@ -118,11 +151,11 @@ const CourseForm = ({ onSubmit, onCancel, loading, initialData = {} }) => {
           </Button>
         ) : null}
         <Button type="submit" variant="primary" disabled={loading}>
-          {loading ? 'Saving...' : 'Save Course'}
+          {loading ? "Saving..." : "Save Course"}
         </Button>
       </div>
     </form>
-  )
-}
+  );
+};
 
-export default CourseForm
+export default CourseForm;
