@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { getCourseDetails } from "../../services/courseService";
+import { getCourseDetails, updateCourse } from "../../services/courseService";
 import { getCourseMaterials } from "../../services/materialService";
 import { getCourseAttendance } from "../../services/attendanceService";
 import { getUserById } from "../../services/userService";
 import MaterialList from "../materials/MaterialList";
 import AttendanceList from "../attendance/AttendanceList";
 import Modal from "../common/Modal";
+import CourseForm from "./CourseForm";
 import MaterialForm from "../materials/MaterialForm";
 import QRGenerator from "../attendance/QRGenerator";
 import Loader from "../common/Loader";
@@ -22,6 +23,8 @@ const CourseView = () => {
   const [loading, setLoading] = useState(true);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [teacher, setTeacher] = useState(null);
   const [teacherLoading, setTeacherLoading] = useState(false);
   const [teacherError, setTeacherError] = useState(null);
@@ -136,9 +139,19 @@ const CourseView = () => {
               {formattedSubjects ? ` - ${formattedSubjects}` : ""}
             </p>
           </div>
-          <span className="px-3 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60 dark:bg-emerald-900/40 dark:text-emerald-300 dark:ring-emerald-800">
-            Active
-          </span>
+          <div className="flex items-center gap-3">
+            {isAdmin && (
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Edit
+              </button>
+            )}
+            <span className="px-3 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60 dark:bg-emerald-900/40 dark:text-emerald-300 dark:ring-emerald-800">
+              Active
+            </span>
+          </div>
         </div>
         <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
           <dl className="sm:divide-y sm:divide-gray-100 dark:sm:divide-gray-800">
@@ -275,6 +288,38 @@ const CourseView = () => {
         size="lg"
       >
         <QRGenerator courseId={id} />
+      </Modal>
+      {/* Edit Course Modal (admin) */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title={`Edit course — ${course.name}`}
+        size="lg"
+      >
+        <CourseForm
+          initialData={{
+            name: course.name,
+            code: course.code,
+            description: course.description,
+            academicYear: course.academicYear,
+            subjectId: course.subjectId,
+            teacherId: course.teacherId,
+          }}
+          onCancel={() => setShowEditModal(false)}
+          loading={savingEdit}
+          onSubmit={async (values) => {
+            setSavingEdit(true);
+            try {
+              const updated = await updateCourse(id, values);
+              setCourse(updated);
+              setShowEditModal(false);
+            } catch (err) {
+              console.error("Failed to update course:", err);
+            } finally {
+              setSavingEdit(false);
+            }
+          }}
+        />
       </Modal>
     </div>
   );

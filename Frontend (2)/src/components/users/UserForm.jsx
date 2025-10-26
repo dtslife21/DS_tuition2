@@ -47,7 +47,17 @@ const UserForm = ({
       RollNumber: user?.RollNumber || user?.rollNumber || "",
       CurrentGrade: user?.CurrentGrade || user?.currentGrade || "",
       EmployeeID: user?.EmployeeID || user?.employeeID || "",
+      TeacherID:
+        user?.TeacherID ||
+        user?.teacherID ||
+        user?.teacherId ||
+        user?.UserID ||
+        user?.id ||
+        "",
       Department: user?.Department || user?.department || "",
+      Qualification: user?.Qualification || user?.qualification || "",
+      JoiningDate: user?.JoiningDate || user?.joiningDate || "",
+      Bio: user?.Bio || user?.bio || "",
       AssignedCourseIDs:
         (user?.Courses && Array.isArray(user.Courses)
           ? user.Courses.map((c) => c.id ?? c.CourseID ?? c.id)
@@ -67,6 +77,15 @@ const UserForm = ({
     }
   }, [forceUserType, setValue]);
 
+  // Keep TeacherID in sync with the underlying user id when editing or when the
+  // parent provides the created user object back to this form.
+  useEffect(() => {
+    if (!user) return;
+    const id = user.UserID ?? user.id ?? user.UserId ?? user.ID ?? null;
+    if (id != null) {
+      setValue("TeacherID", String(id), { shouldValidate: false });
+    }
+  }, [user, setValue]);
   // Courses state for teacher assignment
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
@@ -223,6 +242,14 @@ const UserForm = ({
       ...(synthesized.UserTypeID === "2" && {
         EmployeeID: synthesized.EmployeeID,
         Department: synthesized.Department,
+      }),
+      ...(synthesized.UserTypeID === "2" && {
+        TeacherID: isNaN(Number(synthesized.TeacherID))
+          ? synthesized.TeacherID
+          : Number(synthesized.TeacherID),
+        Qualification: synthesized.Qualification,
+        JoiningDate: synthesized.JoiningDate,
+        Bio: synthesized.Bio,
       }),
       ...(synthesized.UserTypeID === "2" && {
         // include selected course ids when creating/updating a teacher
@@ -673,21 +700,44 @@ const UserForm = ({
       {userTypeID === "2" && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            {/* <label
+            <label
+              htmlFor="TeacherID"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Teacher ID
+            </label>
+            <input
+              id="TeacherID"
+              name="TeacherID"
+              type="text"
+              readOnly
+              placeholder="Auto-filled from User ID"
+              {...register("TeacherID")}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-gray-50"
+            />
+            {errors.TeacherID && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.TeacherID.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
               htmlFor="EmployeeID"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
               Employee ID
-            </label> */}
-            {/* <input
+            </label>
+            <input
               id="EmployeeID"
               name="EmployeeID"
               type="text"
-              {...register('EmployeeID', {
-                required: 'Employee ID is required for teachers',
+              {...register("EmployeeID", {
+                required: "Employee ID is recommended for teachers",
               })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            /> */}
+            />
             {errors.EmployeeID && (
               <p className="mt-1 text-sm text-red-600">
                 {errors.EmployeeID.message}
@@ -696,7 +746,7 @@ const UserForm = ({
           </div>
 
           <div>
-            {/* <label
+            <label
               htmlFor="Department"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
@@ -706,9 +756,62 @@ const UserForm = ({
               id="Department"
               name="Department"
               type="text"
-              {...register('Department')}
+              {...register("Department")}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            /> */}
+            />
+            {errors.Department && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.Department.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="Qualification"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Qualification
+            </label>
+            <input
+              id="Qualification"
+              name="Qualification"
+              type="text"
+              {...register("Qualification")}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="JoiningDate"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Joining Date
+            </label>
+            <input
+              id="JoiningDate"
+              name="JoiningDate"
+              type="date"
+              {...register("JoiningDate")}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label
+              htmlFor="Bio"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Bio
+            </label>
+            <textarea
+              id="Bio"
+              name="Bio"
+              rows={3}
+              {...register("Bio")}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
           </div>
         </div>
       )}

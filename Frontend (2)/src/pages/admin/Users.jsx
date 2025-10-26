@@ -82,6 +82,7 @@ import {
   updateUser,
   getUserById,
 } from "../../services/userService";
+import { createTeacher } from "../../services/teacherService";
 import UserList from "../../components/users/UserList";
 import UserForm from "../../components/users/UserForm";
 import { motion, AnimatePresence } from "framer-motion";
@@ -143,7 +144,46 @@ const AdminUsers = () => {
         };
 
         const createdUser = await createUser(newUser);
-        setUsers([...users, createdUser]);
+
+        // If this is a teacher, post only the teacher-specific fields to the
+        // Teachers API so the backend's TeachersController can persist them.
+        if (typeId === "2") {
+          try {
+            const teacherPayload = {
+              TeacherID:
+                createdUser.UserID ??
+                createdUser.id ??
+                createdUser.userID ??
+                createdUser.userId,
+              EmployeeID: newUser.EmployeeID || undefined,
+              Department: newUser.Department || undefined,
+              Qualification: newUser.Qualification || undefined,
+              JoiningDate: newUser.JoiningDate || undefined,
+              Bio: newUser.Bio || undefined,
+            };
+
+            const createdTeacher = await createTeacher(teacherPayload);
+
+            // merge teacher info into the created user for UI convenience
+            const merged = {
+              ...createdUser,
+              TeacherID:
+                createdTeacher.TeacherID ??
+                createdTeacher.teacherId ??
+                createdTeacher.Teacher?.TeacherID ??
+                createdUser.TeacherID,
+              Teacher: createdTeacher,
+            };
+
+            setUsers([...users, merged]);
+          } catch (err) {
+            // If teacher creation fails, still show created user but surface error
+            setUsers([...users, createdUser]);
+            setFormError(err?.message || "Failed to create teacher record");
+          }
+        } else {
+          setUsers([...users, createdUser]);
+        }
       } else {
         const userId = selectedUser.UserID || selectedUser.id;
         const updatedUser = await updateUser(userId, userData);
