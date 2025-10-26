@@ -3,7 +3,13 @@ import { useForm } from "react-hook-form";
 import Button from "../common/Button";
 import { getLatestSubjectId } from "../../services/subjectService";
 
-const CourseForm = ({ onSubmit, onCancel, loading, initialData = {} }) => {
+const CourseForm = ({
+  onSubmit,
+  onCancel,
+  loading,
+  initialData = {},
+  step,
+}) => {
   const {
     register,
     handleSubmit,
@@ -20,8 +26,10 @@ const CourseForm = ({ onSubmit, onCancel, loading, initialData = {} }) => {
       if (initialData && initialData.subjectId) return;
       try {
         const latest = await getLatestSubjectId();
-        if (!cancelled && latest) {
-          setValue("subjectId", String(latest), { shouldValidate: true });
+        // If backend returns the latest existing SubjectID, show the next available id (latest + 1)
+        if (!cancelled && typeof latest === "number" && !Number.isNaN(latest)) {
+          const nextId = latest + 1;
+          setValue("subjectId", String(nextId), { shouldValidate: true });
         }
       } catch (_) {
         // ignore; user can type manually
@@ -35,6 +43,11 @@ const CourseForm = ({ onSubmit, onCancel, loading, initialData = {} }) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {step ? (
+        <div className="text-sm font-medium text-indigo-600">
+          Step {step} of 2
+        </div>
+      ) : null}
       <div>
         <label
           htmlFor="name"
@@ -70,6 +83,27 @@ const CourseForm = ({ onSubmit, onCancel, loading, initialData = {} }) => {
         />
         {errors.code && (
           <p className="mt-1 text-sm text-red-600">{errors.code.message}</p>
+        )}
+      </div>
+
+      <div>
+        <label
+          htmlFor="teacherId"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Teacher ID
+        </label>
+        <input
+          id="teacherId"
+          name="teacherId"
+          type="text"
+          {...register("teacherId")}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        />
+        {errors.teacherId && (
+          <p className="mt-1 text-sm text-red-600">
+            {errors.teacherId.message}
+          </p>
         )}
       </div>
 

@@ -1,7 +1,13 @@
 import { useState } from "react";
 import Button from "../common/Button";
 
-const SubjectForm = ({ onSubmit, onCancel, initial = {}, loading = false }) => {
+const SubjectForm = ({
+  onSubmit,
+  onCancel,
+  initial = {},
+  loading = false,
+  step,
+}) => {
   // Accept both possible initial shapes: id or SubjectID
   const [subjectId] = useState(
     initial.id ?? initial.SubjectID ?? initial.subjectId ?? ""
@@ -33,6 +39,11 @@ const SubjectForm = ({ onSubmit, onCancel, initial = {}, loading = false }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
+      {step ? (
+        <div className="text-sm font-medium text-indigo-600">
+          Step {step} of 2
+        </div>
+      ) : null}
       {subjectId ? (
         <div>
           <label className="block text-sm font-medium text-gray-700">

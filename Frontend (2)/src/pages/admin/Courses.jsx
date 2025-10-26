@@ -13,7 +13,10 @@ const AdminCourses = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false); // Course form modal
   const [showSubjectModal, setShowSubjectModal] = useState(false); // Subject form modal
+  // createdSubject stores an already-persisted subject (with id) when available.
   const [createdSubject, setCreatedSubject] = useState(null);
+  // tempSubjectPayload holds the subject data submitted in step 1 but not yet persisted.
+  const [tempSubjectPayload, setTempSubjectPayload] = useState(null);
   const [savingCourse, setSavingCourse] = useState(false);
   const [savingSubject, setSavingSubject] = useState(false);
 
@@ -33,43 +36,64 @@ const AdminCourses = () => {
   }, []);
 
   const handleCourseSubmit = async (formValues) => {
+    // Persist the subject first (if we only have a temp payload), then create the course.
+    // If course creation fails, attempt to delete the newly created subject (rollback).
+    setSavingCourse(true);
+    let persistedSubject = null;
     try {
-      setSavingCourse(true);
-      // Ensure subjectId is present (prefilled from created subject)
+      if (tempSubjectPayload && !tempSubjectPayload.id) {
+        setSavingSubject(true);
+        persistedSubject = await createSubject(tempSubjectPayload);
+        setSavingSubject(false);
+      } else if (createdSubject && createdSubject.id) {
+        persistedSubject = createdSubject;
+      }
+
+      // Prefer the subject we just persisted (if any). Fall back to any value the user entered.
+      const subjectIdToUse =
+        persistedSubject?.id ??
+        persistedSubject?.SubjectID ??
+        persistedSubject?.subjectId ??
+        formValues.subjectId ??
+        undefined;
+
       const payload = {
         ...formValues,
-        subjectId:
-          formValues.subjectId ??
-          createdSubject?.id ??
-          createdSubject?.SubjectID ??
-          createdSubject?.subjectId ??
-          undefined,
+        subjectId: subjectIdToUse,
       };
+
       const created = await createCourse(payload);
+
       setCourses((prev) => [...prev, created]);
       setShowModal(false);
       setCreatedSubject(null);
+      setTempSubjectPayload(null);
     } catch (err) {
-      console.error("Error creating course:", err);
+      console.error(
+        "Error creating course (subject persisted may be rolled back):",
+        err
+      );
+      // rollback subject if it was persisted above
+      try {
+        if (persistedSubject && persistedSubject.id) {
+          const subjectService = await import("../../services/subjectService");
+          await subjectService.deleteSubject(persistedSubject.id);
+        }
+      } catch (delErr) {
+        console.warn("Failed to rollback created subject:", delErr);
+      }
     } finally {
       setSavingCourse(false);
+      setSavingSubject(false);
     }
   };
 
   const handleSubjectSubmit = async (subjectData) => {
-    try {
-      setSavingSubject(true);
-      const created = await createSubject(subjectData);
-
-      // Save created subject, close subject modal, open course modal with prefilled subjectId
-      setCreatedSubject(created);
-      setShowSubjectModal(false);
-      setShowModal(true);
-    } catch (err) {
-      console.error("Error creating subject:", err);
-    } finally {
-      setSavingSubject(false);
-    }
+    // Do NOT persist subject immediately. Keep payload in temp state and open the course form.
+    setTempSubjectPayload(subjectData);
+    setCreatedSubject(null);
+    setShowSubjectModal(false);
+    setShowModal(true);
   };
 
   if (loading) {
@@ -100,9 +124,10 @@ const AdminCourses = () => {
       <Modal
         isOpen={showSubjectModal}
         onClose={() => setShowSubjectModal(false)}
-        title="Add Subject"
+        title="Step 1 of 2 — Add Subject"
       >
         <SubjectForm
+          step={1}
           onSubmit={handleSubjectSubmit}
           onCancel={() => setShowSubjectModal(false)}
           loading={savingSubject}
@@ -116,9 +141,10 @@ const AdminCourses = () => {
           setShowModal(false);
           setCreatedSubject(null);
         }}
-        title="Add New Course"
+        title="Step 2 of 2 — Add Course"
       >
         <CourseForm
+          step={2}
           onSubmit={handleCourseSubmit}
           onCancel={() => {
             setShowModal(false);
