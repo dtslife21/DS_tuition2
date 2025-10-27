@@ -81,6 +81,7 @@ import {
   createUser,
   updateUser,
   getUserById,
+  deleteUser,
 } from "../../services/userService";
 import { createStudent } from "../../services/studentService";
 import { createEnrollmentsForStudent } from "../../services/enrollmentService";
@@ -204,6 +205,21 @@ const AdminUsers = () => {
     } catch (error) {
       console.error("Error saving user:", error);
       setFormError(error.message || "Failed to save user");
+    }
+  };
+
+  const handleDeleteUser = async (userID) => {
+    try {
+      setFormError("");
+      // Optional: confirm before delete
+      // eslint-disable-next-line no-restricted-globals
+      const ok = window.confirm("Are you sure you want to delete this user?");
+      if (!ok) return;
+      await deleteUser(userID);
+      setUsers((prev) => prev.filter((u) => (u.UserID || u.id) !== userID));
+    } catch (err) {
+      console.error("Failed to delete user", err);
+      setFormError(err?.message || "Failed to delete user");
     }
   };
 
@@ -347,7 +363,11 @@ const AdminUsers = () => {
               )}
             </div>
 
-            <UserList users={filtered} onEdit={handleEditUser} />
+            <UserList
+              users={filtered}
+              onEdit={handleEditUser}
+              onDelete={handleDeleteUser}
+            />
 
             <CoursePickerModal
               isOpen={showCoursePicker}

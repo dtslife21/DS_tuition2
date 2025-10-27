@@ -5,15 +5,20 @@ import Modal from "../common/Modal";
 import CourseForm from "../courses/CourseForm";
 import { getAllCourses, createCourse } from "../../services/courseService";
 import { getAllStudents } from "../../services/studentService";
+import CoursePickerModal from "../courses/CoursePickerModal";
 
 const UserForm = ({
   onSubmit,
   loading,
   user,
+  initialData, // alias used by some callers (UserFormDialog)
   userTypes,
   forceUserType,
   initialCourseSelection = [],
+  onCancel,
 }) => {
+  // support either `user` or `initialData` prop for backwards compatibility
+  const initialUser = user || initialData || null;
   const {
     register,
     handleSubmit,
@@ -22,50 +27,52 @@ const UserForm = ({
     reset,
     setValue,
   } = useForm({
-    defaultValues: {
+    defaultValues: getDefaults(initialUser, forceUserType),
+  });
+
+  // derive default form values from a user object (or empty for create)
+  function getDefaults(u, forcedType) {
+    return {
       // generic user defaults
-      Username: user?.Username || user?.username || "",
+      Username: u?.Username || u?.username || "",
       PasswordHash: "",
-      Email: user?.Email || user?.email || "",
-      FirstName: user?.FirstName || user?.firstName || "",
-      LastName: user?.LastName || user?.lastName || "",
-      UserTypeID: forceUserType
-        ? String(forceUserType)
-        : user?.UserTypeID || user?.userTypeID || "",
+      Email: u?.Email || u?.email || "",
+      FirstName: u?.FirstName || u?.firstName || "",
+      LastName: u?.LastName || u?.lastName || "",
+      UserTypeID: forcedType
+        ? String(forcedType)
+        : u?.UserTypeID || u?.userTypeID || "",
       // student specific defaults (for the redesigned student form)
-      Class: user?.CurrentGrade || user?.currentGrade || "",
-      IDNumber: user?.RollNumber || user?.rollNumber || "",
-      Name: `${user?.FirstName || user?.firstName || ""} ${
-        user?.LastName || user?.lastName || ""
+      Class: u?.CurrentGrade || u?.currentGrade || "",
+      IDNumber: u?.RollNumber || u?.rollNumber || "",
+      Name: `${u?.FirstName || u?.firstName || ""} ${
+        u?.LastName || u?.lastName || ""
       }`.trim(),
       EnrollmentDate:
-        user?.EnrollmentDate ||
-        user?.enrollmentDate ||
-        user?.enrollment_date ||
-        "",
-      GuardianName: user?.ParentName || user?.parentName || "",
-      GuardianPhone: user?.ParentContact || user?.parentContact || "",
+        u?.EnrollmentDate || u?.enrollmentDate || u?.enrollment_date || "",
+      GuardianName: u?.ParentName || u?.parentName || "",
+      GuardianPhone: u?.ParentContact || u?.parentContact || "",
       // legacy student fields retained for compatibility
-      RollNumber: user?.RollNumber || user?.rollNumber || "",
-      CurrentGrade: user?.CurrentGrade || user?.currentGrade || "",
-      EmployeeID: user?.EmployeeID || user?.employeeID || "",
+      RollNumber: u?.RollNumber || u?.rollNumber || "",
+      CurrentGrade: u?.CurrentGrade || u?.currentGrade || "",
+      EmployeeID: u?.EmployeeID || u?.employeeID || "",
       TeacherID:
-        user?.TeacherID ||
-        user?.teacherID ||
-        user?.teacherId ||
-        user?.UserID ||
-        user?.id ||
+        u?.TeacherID ||
+        u?.teacherID ||
+        u?.teacherId ||
+        u?.UserID ||
+        u?.id ||
         "",
-      Department: user?.Department || user?.department || "",
-      Qualification: user?.Qualification || user?.qualification || "",
-      JoiningDate: user?.JoiningDate || user?.joiningDate || "",
-      Bio: user?.Bio || user?.bio || "",
+      Department: u?.Department || u?.department || "",
+      Qualification: u?.Qualification || u?.qualification || "",
+      JoiningDate: u?.JoiningDate || u?.joiningDate || "",
+      Bio: u?.Bio || u?.bio || "",
       AssignedCourseIDs:
-        (user?.Courses && Array.isArray(user.Courses)
-          ? user.Courses.map((c) => c.id ?? c.CourseID ?? c.id)
-          : user?.assignedCourseIds || user?.CourseIDs || []) || [],
-    },
-  });
+        (u?.Courses && Array.isArray(u.Courses)
+          ? u.Courses.map((c) => c.id ?? c.CourseID ?? c.id)
+          : u?.assignedCourseIds || u?.CourseIDs || []) || [],
+    };
+  }
 
   // If a forced user type is provided, set it as the watched value.
   const userTypeID = forceUserType
@@ -82,24 +89,63 @@ const UserForm = ({
   // Keep TeacherID in sync with the underlying user id when editing or when the
   // parent provides the created user object back to this form.
   useEffect(() => {
-    if (!user) return;
-    const id = user.UserID ?? user.id ?? user.UserId ?? user.ID ?? null;
+    const u = initialUser;
+    if (!u) return;
+    const id = u.UserID ?? u.id ?? u.UserId ?? u.ID ?? null;
     if (id != null) {
       setValue("TeacherID", String(id), { shouldValidate: false });
     }
-  }, [user, setValue]);
+  }, [initialUser, setValue]);
+
+  // When an existing user is loaded asynchronously, reset the form with their data
+  useEffect(() => {
+    const defaults = getDefaults(initialUser, forceUserType);
+    reset(defaults);
+    // Also sync selected courses from the user object
+    const nextSelected = (defaults.AssignedCourseIDs || []).map((v) =>
+      String(v)
+    );
+    setSelectedCourseIds(nextSelected);
+    // Prefill student course selection from user if available
+    const nextStudentSelected = (
+      (initialUser?.StudentCourseIDs &&
+      Array.isArray(initialUser.StudentCourseIDs)
+        ? initialUser.StudentCourseIDs
+        : initialUser?.CourseIDs && Array.isArray(initialUser.CourseIDs)
+        ? initialUser.CourseIDs
+        : (initialUser?.Courses || []).map((c) => c.id ?? c.CourseID)) || []
+    ).map((v) => String(v));
+    setStudentSelectedCourseIds(nextStudentSelected);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUser, forceUserType]);
   // Courses state for teacher assignment
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [showCourseModal, setShowCourseModal] = useState(false);
+  const [showTeacherCoursePicker, setShowTeacherCoursePicker] = useState(false);
+  const [showStudentCoursePicker, setShowStudentCoursePicker] = useState(false);
   const [selectedCourseIds, setSelectedCourseIds] = useState(() => {
     if (initialCourseSelection && initialCourseSelection.length) {
       return (initialCourseSelection || []).map((c) => String(c));
     }
-    return user?.CourseIDs && Array.isArray(user.CourseIDs)
-      ? user.CourseIDs.map((c) => String(c))
-      : (user?.AssignedCourseIDs || []).map((c) => String(c)) || [];
+    const u = initialUser;
+    return u?.CourseIDs && Array.isArray(u.CourseIDs)
+      ? u.CourseIDs.map((c) => String(c))
+      : (u?.AssignedCourseIDs || []).map((c) => String(c)) || [];
   });
+
+  const [studentSelectedCourseIds, setStudentSelectedCourseIds] = useState(
+    () => {
+      const u = initialUser;
+      return u?.StudentCourseIDs && Array.isArray(u.StudentCourseIDs)
+        ? u.StudentCourseIDs.map((c) => String(c))
+        : u?.CourseIDs && Array.isArray(u.CourseIDs)
+        ? u.CourseIDs.map((c) => String(c))
+        : u?.Courses && Array.isArray(u.Courses)
+        ? u.Courses.map((c) => String(c.id ?? c.CourseID ?? c.id))
+        : [];
+    }
+  );
 
   const [loadingStudents, setLoadingStudents] = useState(false);
 
@@ -231,6 +277,10 @@ const UserForm = ({
         ParentName: synthesized.ParentName,
         ParentContact: synthesized.ParentContact,
         EnrollmentDate: synthesized.EnrollmentDate,
+        // Include selected course IDs for student enrollment editing
+        StudentCourseIDs: studentSelectedCourseIds.map((id) =>
+          isNaN(Number(id)) ? id : Number(id)
+        ),
       }),
       ...(synthesized.UserTypeID === "2" && {
         EmployeeID: synthesized.EmployeeID,
@@ -575,7 +625,7 @@ const UserForm = ({
               </label>
               <div className="mt-1">
                 <input
-                  disabled
+                  disabled={false}
                   id="IDNumber"
                   type="text"
                   placeholder={
@@ -681,6 +731,68 @@ const UserForm = ({
                   {errors.GuardianPhone.message}
                 </p>
               )}
+            </div>
+          </div>
+
+          {/* Student: Manage enrolled courses */}
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Enrolled Courses
+              </label>
+              <div className="mt-2 rounded-md border dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
+                {studentSelectedCourseIds.length ? (
+                  <ul className="flex flex-wrap gap-2">
+                    {studentSelectedCourseIds.map((cid) => {
+                      const c = (courses || []).find(
+                        (x) =>
+                          String(
+                            x.id ?? x.CourseID ?? x.CourseId ?? x.courseId ?? ""
+                          ) === String(cid)
+                      );
+                      const label =
+                        c?.name ||
+                        c?.CourseName ||
+                        c?.title ||
+                        c?.courseName ||
+                        `Course ${cid}`;
+                      return (
+                        <li
+                          key={cid}
+                          className="inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-200"
+                        >
+                          {label}
+                          <button
+                            type="button"
+                            className="text-green-600 hover:text-green-800 dark:text-green-300"
+                            onClick={() =>
+                              setStudentSelectedCourseIds((prev) =>
+                                prev.filter((id) => id !== cid)
+                              )
+                            }
+                          >
+                            ✕
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="text-xs text-gray-500">
+                    No courses enrolled yet.
+                  </div>
+                )}
+
+                <div className="mt-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowStudentCoursePicker(true)}
+                  >
+                    Manage Enrolled Courses
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -835,6 +947,73 @@ const UserForm = ({
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
+
+          {/* Teacher: Manage assigned courses */}
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Assigned Courses
+            </label>
+            <div className="mt-2 rounded-md border dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
+              {selectedCourseIds.length ? (
+                <ul className="flex flex-wrap gap-2">
+                  {selectedCourseIds.map((cid) => {
+                    const c = (courses || []).find(
+                      (x) =>
+                        String(
+                          x.id ?? x.CourseID ?? x.CourseId ?? x.courseId ?? ""
+                        ) === String(cid)
+                    );
+                    const label =
+                      c?.name ||
+                      c?.CourseName ||
+                      c?.title ||
+                      c?.courseName ||
+                      `Course ${cid}`;
+                    return (
+                      <li
+                        key={cid}
+                        className="inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200"
+                      >
+                        {label}
+                        <button
+                          type="button"
+                          className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
+                          onClick={() =>
+                            setSelectedCourseIds((prev) =>
+                              prev.filter((id) => id !== cid)
+                            )
+                          }
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div className="text-xs text-gray-500">
+                  No courses assigned yet.
+                </div>
+              )}
+
+              <div className="mt-3 flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowTeacherCoursePicker(true)}
+                >
+                  Manage Courses
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowCourseModal(true)}
+                >
+                  + Add New Course
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -868,14 +1047,48 @@ const UserForm = ({
         />
       </Modal>
 
+      {/* Course pickers for teacher and student */}
+      <CoursePickerModal
+        isOpen={showTeacherCoursePicker}
+        onClose={() => setShowTeacherCoursePicker(false)}
+        initialSelected={selectedCourseIds}
+        onProceed={(ids) => {
+          setSelectedCourseIds(ids.map((v) => String(v)));
+          setShowTeacherCoursePicker(false);
+        }}
+        title="Assign Courses to Teacher"
+        description="Choose one or more courses to assign to this teacher."
+        multiSelect={true}
+        allowCreate={true}
+      />
+
+      <CoursePickerModal
+        isOpen={showStudentCoursePicker}
+        onClose={() => setShowStudentCoursePicker(false)}
+        initialSelected={studentSelectedCourseIds}
+        onProceed={(ids) => {
+          setStudentSelectedCourseIds(ids.map((v) => String(v)));
+          setShowStudentCoursePicker(false);
+        }}
+        title="Enroll Student in Courses"
+        description="Select courses for the student to be enrolled in."
+        multiSelect={true}
+        allowCreate={false}
+      />
+
       <div className="flex justify-end space-x-3">
         <Button type="button" variant="secondary" onClick={() => reset()}>
           Reset
         </Button>
+        {onCancel && (
+          <Button type="button" variant="ghost" onClick={() => onCancel()}>
+            Cancel
+          </Button>
+        )}
         <Button type="submit" variant="primary" disabled={loading}>
           {loading
             ? "Saving..."
-            : user
+            : initialUser
             ? "Update User"
             : userTypeID === "3"
             ? "Add Student"

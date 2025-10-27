@@ -229,20 +229,68 @@ export const createUser = async (userData) => {
 };
 
 export const updateUser = async (userID, userData) => {
+  // Fetch current server record to avoid nulling unspecified fields (backend uses Modified state)
+  let current = null;
+  try {
+    current = await getUserById(userID);
+  } catch (e) {
+    // proceed without if GET fails
+  }
+
+  const base = current?.raw || current || {};
+  const merged = {
+    // Ensure server-required fields are present
+    UserID: userID,
+    Username: userData.Username ?? base.Username ?? base.username ?? "",
+    PasswordHash:
+      userData.PasswordHash !== undefined
+        ? userData.PasswordHash
+        : base.PasswordHash ?? base.passwordHash ?? "",
+    Email: userData.Email ?? base.Email ?? base.email ?? "",
+    FirstName: userData.FirstName ?? base.FirstName ?? base.firstName ?? "",
+    LastName: userData.LastName ?? base.LastName ?? base.lastName ?? "",
+    UserTypeID:
+      userData.UserTypeID ??
+      base.UserTypeID ??
+      base.userTypeID ??
+      base.userTypeId ??
+      null,
+    IsActive: userData.IsActive ?? base.IsActive ?? base.isActive ?? true,
+    ProfilePicture:
+      userData.ProfilePicture ??
+      base.ProfilePicture ??
+      base.profilePicture ??
+      null,
+    // pass through any extra fields (backend may ignore)
+    ...userData,
+  };
+
   const response = await fetch(`${API_URL}/${userID}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(userData),
+    body: JSON.stringify(merged),
   });
 
   if (!response.ok) {
     throw new Error("Failed to update user");
   }
 
-  const payload = await response.json();
-  return normalizeUser(payload) ?? payload;
+  // Backend returns 204 No Content on success; handle gracefully
+  if (response.status === 204) {
+    // Return a normalized combination of base and userData
+    return normalizeUser({ ...base, ...merged });
+  }
+
+  // Some implementations may return the updated entity
+  try {
+    const payload = await response.json();
+    return normalizeUser(payload) ?? payload;
+  } catch {
+    // Fallback
+    return normalizeUser({ ...base, ...merged });
+  }
 };
 
 export const deleteUser = async (userID) => {
