@@ -41,9 +41,13 @@ const UserList = ({
                     />
                   </div>
                   <div className="min-w-0 flex-1 px-4 md:grid md:grid-cols-2 md:gap-4">
-                    <div className="min-w-0">
+                    {/* Clickable area navigates to user details */}
+                    <Link
+                      to={`/admin/users/${user.UserID || user.id}`}
+                      className="min-w-0 block group"
+                    >
                       <p
-                        className="text-sm font-medium text-indigo-600 dark:text-indigo-400 truncate max-w-full"
+                        className="text-sm font-medium text-indigo-600 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300 truncate max-w-full"
                         title={`${user.FirstName || user.firstName || ""} ${
                           user.LastName || user.lastName || ""
                         }`.trim()}
@@ -59,7 +63,7 @@ const UserList = ({
                           {user.Email || user.email}
                         </span>
                       </p>
-                    </div>
+                    </Link>
                     <div className="hidden md:block">
                       <div>
                         <p className="text-sm text-gray-900 dark:text-white">
