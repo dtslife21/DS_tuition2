@@ -38,9 +38,11 @@ const UserForm = ({
       Name: `${user?.FirstName || user?.firstName || ""} ${
         user?.LastName || user?.lastName || ""
       }`.trim(),
-      Birthday: user?.Birthday || "",
-      PhoneNumber: user?.Phone || user?.phone || "",
-      Address: user?.Address || "",
+      EnrollmentDate:
+        user?.EnrollmentDate ||
+        user?.enrollmentDate ||
+        user?.enrollment_date ||
+        "",
       GuardianName: user?.ParentName || user?.parentName || "",
       GuardianPhone: user?.ParentContact || user?.parentContact || "",
       // legacy student fields retained for compatibility
@@ -147,13 +149,13 @@ const UserForm = ({
 
         const max = nums.length ? Math.max(...nums) : 0;
         const next = max + 1;
-        const nextId = String(next).padStart(3, "0");
+        // Prefix student ID with 'R' (e.g. R001) as requested
+        const numeric = String(next).padStart(3, "0");
+        const nextId = `R${numeric}`;
         setValue("IDNumber", nextId, { shouldValidate: true });
+        // store RollNumber with same format (keeps R prefix)
         setValue("RollNumber", nextId, { shouldValidate: false });
-        // if username empty, set a sensible default
-        if (!watch("Username")) {
-          setValue("Username", `student${nextId}`);
-        }
+        // Do NOT auto-fill Username here; require manual entry for clarity
       } catch (err) {
         console.error("Failed to auto-generate next student ID", err);
       } finally {
@@ -200,13 +202,7 @@ const UserForm = ({
         synthesized.FirstName = parts.shift() || "";
         synthesized.LastName = parts.join(" ");
       }
-      // Username/Email auto-fill if missing
-      if (!data.Username) {
-        synthesized.Username = `student${(synthesized.RollNumber || "").replace(
-          /\s+/g,
-          ""
-        )}`;
-      }
+      // Do NOT auto-fill Username on submit; require explicit username from the user
       if (!data.Email) {
         const localId = (synthesized.RollNumber || "unknown").toString();
         synthesized.Email = `student+${localId}@school.local`;
@@ -215,9 +211,8 @@ const UserForm = ({
       synthesized.ParentName = data.GuardianName || "";
       synthesized.ParentContact = data.GuardianPhone || "";
       // Optional student extras
-      synthesized.Phone = data.PhoneNumber || data.Phone || "";
-      synthesized.Address = data.Address || "";
-      synthesized.Birthday = data.Birthday || "";
+      synthesized.EnrollmentDate =
+        data.EnrollmentDate || data.enrollmentDate || "";
     }
 
     const apiData = {
@@ -235,9 +230,7 @@ const UserForm = ({
         CurrentGrade: synthesized.CurrentGrade,
         ParentName: synthesized.ParentName,
         ParentContact: synthesized.ParentContact,
-        Phone: synthesized.Phone,
-        Address: synthesized.Address,
-        Birthday: synthesized.Birthday,
+        EnrollmentDate: synthesized.EnrollmentDate,
       }),
       ...(synthesized.UserTypeID === "2" && {
         EmployeeID: synthesized.EmployeeID,
@@ -438,6 +431,110 @@ const UserForm = ({
 
       {userTypeID === "3" && (
         <>
+          {/* Core account fields for students (same as admin/teacher) */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Username */}
+            <div>
+              <label
+                htmlFor="Username"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Username *
+              </label>
+              <input
+                id="Username"
+                name="Username"
+                type="text"
+                placeholder="Enter username"
+                {...register("Username", { required: "Username is required" })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              {errors.Username && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.Username.message}
+                </p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="Email"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Email *
+              </label>
+              <input
+                id="Email"
+                name="Email"
+                type="email"
+                placeholder="student@example.com"
+                {...register("Email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Invalid email address",
+                  },
+                })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              {errors.Email && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.Email.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* First/Last name instead of single Full Name */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label
+                htmlFor="FirstName"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                First Name *
+              </label>
+              <input
+                id="FirstName"
+                name="FirstName"
+                type="text"
+                placeholder="Enter first name"
+                {...register("FirstName", {
+                  required: "First name is required",
+                })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              {errors.FirstName && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.FirstName.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="LastName"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Last Name *
+              </label>
+              <input
+                id="LastName"
+                name="LastName"
+                type="text"
+                placeholder="Enter last name"
+                {...register("LastName", { required: "Last name is required" })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              {errors.LastName && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.LastName.message}
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Class */}
             <div>
@@ -488,15 +585,16 @@ const UserForm = ({
                   {...register("IDNumber", {
                     required: "ID number is required",
                     pattern: {
-                      value: /^\d{3,}$/,
-                      message: "Use numbers like 001, 002",
+                      // enforce leading 'R' followed by at least 3 digits (R001)
+                      value: /^R\d{3,}$/i,
+                      message: "Use format R001, R002...",
                     },
                   })}
                   className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                Format: 001, 002, 003...
+                Format: R001, R002, R003...
               </p>
               {errors.IDNumber && (
                 <p className="mt-1 text-sm text-red-600">
@@ -507,104 +605,28 @@ const UserForm = ({
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Name */}
+            {/* Enrollment Date (replaces Birthday) */}
             <div>
               <label
-                htmlFor="Name"
+                htmlFor="EnrollmentDate"
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
-                Name *
+                Enrollment Date *
               </label>
               <input
-                id="Name"
-                type="text"
-                placeholder="Enter student's name"
-                {...register("Name", {
-                  required: "Name is required",
-                  minLength: { value: 2, message: "Name is too short" },
-                })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              {errors.Name && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.Name.message}
-                </p>
-              )}
-            </div>
-
-            {/* Birthday */}
-            <div>
-              <label
-                htmlFor="Birthday"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Birthday *
-              </label>
-              <input
-                id="Birthday"
+                id="EnrollmentDate"
                 type="date"
-                {...register("Birthday", {
-                  required: "Birthday is required",
+                {...register("EnrollmentDate", {
+                  required: "Enrollment date is required",
                   validate: (v) =>
                     (v && new Date(v) <= new Date()) ||
-                    "Birthday can't be in the future",
+                    "Enrollment date can't be in the future",
                 })}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
-              {errors.Birthday && (
+              {errors.EnrollmentDate && (
                 <p className="mt-1 text-sm text-red-600">
-                  {errors.Birthday.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Address */}
-            <div>
-              <label
-                htmlFor="Address"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Address *
-              </label>
-              <input
-                id="Address"
-                type="text"
-                placeholder="Enter address"
-                {...register("Address", { required: "Address is required" })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              {errors.Address && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.Address.message}
-                </p>
-              )}
-            </div>
-
-            {/* Phone */}
-            <div>
-              <label
-                htmlFor="PhoneNumber"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Phone Number *
-              </label>
-              <input
-                id="PhoneNumber"
-                type="tel"
-                placeholder="(+947) 456-7890"
-                {...register("PhoneNumber", {
-                  required: "Phone number is required",
-                  validate: (v) =>
-                    String(v).replace(/\D/g, "").length >= 10 ||
-                    "Enter at least 10 digits",
-                })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              {errors.PhoneNumber && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.PhoneNumber.message}
+                  {errors.EnrollmentDate.message}
                 </p>
               )}
             </div>

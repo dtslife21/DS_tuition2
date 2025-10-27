@@ -82,6 +82,7 @@ import {
   updateUser,
   getUserById,
 } from "../../services/userService";
+import { createStudent } from "../../services/studentService";
 import { createTeacher } from "../../services/teacherService";
 import UserList from "../../components/users/UserList";
 import UserForm from "../../components/users/UserForm";
@@ -390,6 +391,53 @@ const AdminUsers = () => {
                     ProfilePicture: null,
                   };
                   const createdUser = await createUser(newUser);
+                  // Persist student record in Students table as well
+                  try {
+                    const studentPayload = {
+                      UserID:
+                        createdUser.UserID ??
+                        createdUser.id ??
+                        createdUser.userID ??
+                        createdUser.userId,
+                      RollNumber:
+                        pendingUserData.RollNumber ??
+                        pendingUserData.IDNumber ??
+                        undefined,
+                      EnrollmentDate:
+                        pendingUserData.EnrollmentDate ?? undefined,
+                      CurrentGrade:
+                        pendingUserData.CurrentGrade ??
+                        pendingUserData.Class ??
+                        undefined,
+                      ParentName:
+                        pendingUserData.ParentName ??
+                        pendingUserData.GuardianName ??
+                        undefined,
+                      ParentContact:
+                        pendingUserData.ParentContact ??
+                        pendingUserData.GuardianPhone ??
+                        undefined,
+                    };
+
+                    // Only include defined fields in payload
+                    await createStudent(
+                      Object.fromEntries(
+                        Object.entries(studentPayload).filter(
+                          ([, v]) => v !== undefined
+                        )
+                      )
+                    );
+                  } catch (studentErr) {
+                    console.error(
+                      "Failed to create student record:",
+                      studentErr
+                    );
+                    setFormError(
+                      studentErr?.message ||
+                        "Student created but failed to create student record"
+                    );
+                  }
+
                   setUsers([...users, createdUser]);
                 } catch (err) {
                   console.error("Error creating student with course IDs", err);
