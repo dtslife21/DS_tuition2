@@ -83,6 +83,7 @@ import {
   getUserById,
 } from "../../services/userService";
 import { createStudent } from "../../services/studentService";
+import { createEnrollmentsForStudent } from "../../services/enrollmentService";
 import { createTeacher } from "../../services/teacherService";
 import UserList from "../../components/users/UserList";
 import UserForm from "../../components/users/UserForm";
@@ -420,13 +421,41 @@ const AdminUsers = () => {
                     };
 
                     // Only include defined fields in payload
-                    await createStudent(
+                    const createdStudent = await createStudent(
                       Object.fromEntries(
                         Object.entries(studentPayload).filter(
                           ([, v]) => v !== undefined
                         )
                       )
                     );
+
+                    // If user selected course(s), create enrollments for the student
+                    const studentId =
+                      createdStudent?.StudentID ??
+                      createdStudent?.studentId ??
+                      createdStudent?.UserID ??
+                      createdStudent?.id ??
+                      null;
+
+                    if (studentId && ids && ids.length) {
+                      try {
+                        await createEnrollmentsForStudent(studentId, ids, {
+                          EnrollmentDate:
+                            studentPayload.EnrollmentDate || undefined,
+                          IsActive: true,
+                        });
+                      } catch (enrollErr) {
+                        console.error(
+                          "Failed to create enrollments:",
+                          enrollErr
+                        );
+                        // surface a friendly message but don't block the user creation
+                        setFormError(
+                          enrollErr?.message ||
+                            "Student created but failed to enroll to selected course(s)"
+                        );
+                      }
+                    }
                   } catch (studentErr) {
                     console.error(
                       "Failed to create student record:",
