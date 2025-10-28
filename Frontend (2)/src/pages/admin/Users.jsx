@@ -83,9 +83,14 @@ import {
   getUserById,
   deleteUser,
 } from "../../services/userService";
-import { createStudent } from "../../services/studentService";
+import { createStudent, updateStudent } from "../../services/studentService";
 import { createEnrollmentsForStudent } from "../../services/enrollmentService";
-import { createTeacher } from "../../services/teacherService";
+import { createTeacher, updateTeacher } from "../../services/teacherService";
+import { getTeacherCourses, updateCourse } from "../../services/courseService";
+import {
+  getEnrollmentsByStudent,
+  deleteEnrollment,
+} from "../../services/enrollmentService";
 import UserList from "../../components/users/UserList";
 import UserForm from "../../components/users/UserForm";
 import { motion, AnimatePresence } from "framer-motion";
@@ -98,6 +103,7 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [editStep, setEditStep] = useState(1); // 1: core details, 2: role-specific
   const [formError, setFormError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   const [forceUserType, setForceUserType] = useState(null);
@@ -178,6 +184,27 @@ const AdminUsers = () => {
               Teacher: createdTeacher,
             };
 
+            // If courses were selected in the form, assign them to this teacher
+            try {
+              const teacherId =
+                merged.UserID ?? merged.id ?? merged.userID ?? merged.userId;
+              const selectedCourseIds = (newUser.CourseIDs || []).map((v) =>
+                Number(v)
+              );
+              if (teacherId && selectedCourseIds.length) {
+                // Assign each selected course to this teacher
+                for (const cid of selectedCourseIds) {
+                  await updateCourse(cid, { TeacherID: teacherId });
+                }
+              }
+            } catch (assignErr) {
+              console.error("Failed to assign courses to teacher", assignErr);
+              setFormError(
+                assignErr?.message ||
+                  "Teacher created, but failed to assign selected courses"
+              );
+            }
+
             setUsers([...users, merged]);
           } catch (err) {
             // If teacher creation fails, still show created user but surface error
@@ -189,14 +216,124 @@ const AdminUsers = () => {
         }
       } else {
         const userId = selectedUser.UserID || selectedUser.id;
-        const updatedUser = await updateUser(userId, userData);
-        setUsers(
-          users.map((user) => {
-            const currentUserId = user.UserID || user.id;
-            const updatedUserId = updatedUser.UserID || updatedUser.id;
-            return currentUserId === updatedUserId ? updatedUser : user;
-          })
+
+        if (editStep === 1) {
+          // Step 1: update core details only
+          const updatedUser = await updateUser(userId, userData);
+          setUsers(
+            users.map((user) => {
+              const currentUserId = user.UserID || user.id;
+              const updatedUserId = updatedUser.UserID || updatedUser.id;
+              return currentUserId === updatedUserId ? updatedUser : user;
+            })
+          );
+          setSelectedUser(updatedUser);
+          const nextTypeId = String(
+            updatedUser.UserTypeID || updatedUser.userTypeID || ""
+          );
+          setForceUserType(Number(nextTypeId || 0) || null);
+          setEditStep(2);
+          // stay in modal for step 2
+          return;
+        }
+
+        // Step 2: update role-specific data only
+        const typeId = String(
+          selectedUser.UserTypeID || selectedUser.userTypeID || ""
         );
+
+        try {
+          if (typeId === "3") {
+            await updateStudent(userId, {
+              RollNumber: userData.RollNumber ?? userData.IDNumber,
+              EnrollmentDate: userData.EnrollmentDate,
+              CurrentGrade: userData.CurrentGrade ?? userData.Class,
+              ParentName: userData.ParentName ?? userData.GuardianName,
+              ParentContact: userData.ParentContact ?? userData.GuardianPhone,
+            });
+            const desired = (userData.StudentCourseIDs || [])
+              .map((v) => Number(v))
+              .filter((n) => !isNaN(n));
+            try {
+              const current = await getEnrollmentsByStudent(userId);
+              const currentCourseIds = current
+                .map((e) => Number(e.CourseID))
+                .filter((n) => !isNaN(n));
+              const toAdd = desired.filter(
+                (cid) => !currentCourseIds.includes(cid)
+              );
+              const toRemove = current.filter(
+                (e) => !desired.includes(Number(e.CourseID))
+              );
+
+              if (toAdd.length) {
+                await createEnrollmentsForStudent(userId, toAdd, {
+                  EnrollmentDate: userData.EnrollmentDate,
+                  IsActive: true,
+                });
+              }
+
+              for (const e of toRemove) {
+                if (e.EnrollmentID != null) {
+                  await deleteEnrollment(e.EnrollmentID);
+                }
+              }
+            } catch (enSyncErr) {
+              console.error("Failed to sync student enrollments", enSyncErr);
+              setFormError(
+                enSyncErr?.message ||
+                  "Updated student, but failed to sync enrollments"
+              );
+            }
+          } else if (typeId === "2") {
+            await updateTeacher(userId, {
+              TeacherID: userId,
+              EmployeeID: userData.EmployeeID,
+              Department: userData.Department,
+              Qualification: userData.Qualification,
+              JoiningDate: userData.JoiningDate,
+              Bio: userData.Bio,
+            });
+            const desired = (userData.CourseIDs || [])
+              .map((v) => Number(v))
+              .filter((n) => !isNaN(n));
+            try {
+              const existing = await getTeacherCourses(userId);
+              const currentIds = (existing || [])
+                .map((c) => Number(c.id ?? c.CourseID ?? c.courseId))
+                .filter((n) => !isNaN(n));
+              const toAssign = desired.filter(
+                (cid) => !currentIds.includes(cid)
+              );
+              const toUnassign = currentIds.filter(
+                (cid) => !desired.includes(cid)
+              );
+              for (const cid of toAssign) {
+                await updateCourse(cid, { TeacherID: userId });
+              }
+              for (const cid of toUnassign) {
+                await updateCourse(cid, { TeacherID: null });
+              }
+            } catch (tcErr) {
+              console.error("Failed to sync teacher courses", tcErr);
+              setFormError(
+                tcErr?.message ||
+                  "Updated teacher, but failed to sync assigned courses"
+              );
+            }
+          }
+        } catch (roleErr) {
+          console.error("Failed to update role-specific data", roleErr);
+          setFormError(
+            roleErr?.message ||
+              "User updated, but failed to update role-specific details"
+          );
+        }
+
+        setShowModal(false);
+        setSelectedUser(null);
+        setForceUserType(null);
+        setEditStep(1);
       }
 
       setShowModal(false);
@@ -231,12 +368,16 @@ const AdminUsers = () => {
 
       const user = await getUserById(userID);
       setSelectedUser(user);
+      setEditStep(1);
+      setForceUserType(null);
       setShowModal(true);
     } catch (error) {
       console.error("Error fetching user details:", error);
       const fallbackUser = users.find((u) => (u.UserID || u.id) === userID);
       if (fallbackUser) {
         setSelectedUser(fallbackUser);
+        setEditStep(1);
+        setForceUserType(null);
         setShowModal(true);
       } else {
         setFormError("Failed to fetch user details. Please try again.");
@@ -270,6 +411,7 @@ const AdminUsers = () => {
     setSelectedUser(null);
     setFormError("");
     setForceUserType(null);
+    setEditStep(1);
   };
 
   if (loading) {
@@ -550,6 +692,15 @@ const AdminUsers = () => {
                   ]}
                   forceUserType={forceUserType}
                   initialCourseSelection={initialCourseSelection}
+                  showCoreFields={Boolean(selectedUser) ? editStep === 1 : true}
+                  showRoleFields={Boolean(selectedUser) ? editStep === 2 : true}
+                  submitLabel={
+                    selectedUser
+                      ? editStep === 1
+                        ? "Next"
+                        : "Update"
+                      : undefined
+                  }
                 />
               </div>
             </motion.div>

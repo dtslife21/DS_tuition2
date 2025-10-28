@@ -16,6 +16,11 @@ const UserForm = ({
   forceUserType,
   initialCourseSelection = [],
   onCancel,
+  // New: allow showing only core fields or only role-specific fields
+  showCoreFields = true,
+  showRoleFields = true,
+  // New: override submit button label
+  submitLabel,
 }) => {
   // support either `user` or `initialData` prop for backwards compatibility
   const initialUser = user || initialData || null;
@@ -306,51 +311,55 @@ const UserForm = ({
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-      {/* Always include user type (hidden if forced) */}
-      <div>
-        <label
-          htmlFor="UserTypeID"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          User Type
-        </label>
-        {forceUserType ? (
-          <div className="mt-1">
-            <input
-              type="hidden"
-              defaultValue={String(forceUserType)}
-              {...register("UserTypeID", { required: "User type is required" })}
-            />
-            <div className="px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-200">
-              {forceUserType === 1
-                ? "Admin"
-                : forceUserType === 2
-                ? "Teacher"
-                : "Student"}
-            </div>
-          </div>
-        ) : (
-          <select
-            id="UserTypeID"
-            name="UserTypeID"
-            {...register("UserTypeID", { required: "User type is required" })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+      {/* User Type selector (only in core step). In role-only step, rely on forceUserType. */}
+      {showCoreFields && (
+        <div>
+          <label
+            htmlFor="UserTypeID"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
           >
-            <option value="">Select User Type</option>
-            <option value="1">Admin</option>
-            <option value="2">Teacher</option>
-            <option value="3">Student</option>
-          </select>
-        )}
-        {errors.UserTypeID && (
-          <p className="mt-1 text-sm text-red-600">
-            {errors.UserTypeID.message}
-          </p>
-        )}
-      </div>
+            User Type
+          </label>
+          {forceUserType ? (
+            <div className="mt-1">
+              <input
+                type="hidden"
+                defaultValue={String(forceUserType)}
+                {...register("UserTypeID", {
+                  required: "User type is required",
+                })}
+              />
+              <div className="px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-200">
+                {forceUserType === 1
+                  ? "Admin"
+                  : forceUserType === 2
+                  ? "Teacher"
+                  : "Student"}
+              </div>
+            </div>
+          ) : (
+            <select
+              id="UserTypeID"
+              name="UserTypeID"
+              {...register("UserTypeID", { required: "User type is required" })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option value="">Select User Type</option>
+              <option value="1">Admin</option>
+              <option value="2">Teacher</option>
+              <option value="3">Student</option>
+            </select>
+          )}
+          {errors.UserTypeID && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.UserTypeID.message}
+            </p>
+          )}
+        </div>
+      )}
 
-      {/* If student, show redesigned form; otherwise show generic fields */}
-      {userTypeID !== "3" && (
+      {/* If not student: show generic core fields only when core step is shown */}
+      {userTypeID !== "3" && showCoreFields && (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
@@ -479,111 +488,120 @@ const UserForm = ({
         </>
       )}
 
-      {userTypeID === "3" && (
+      {/* Student role-specific fields. Only show account core in core step. */}
+      {userTypeID === "3" && showRoleFields && (
         <>
-          {/* Core account fields for students (same as admin/teacher) */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Username */}
-            <div>
-              <label
-                htmlFor="Username"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Username *
-              </label>
-              <input
-                id="Username"
-                name="Username"
-                type="text"
-                placeholder="Enter username"
-                {...register("Username", { required: "Username is required" })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              {errors.Username && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.Username.message}
-                </p>
-              )}
-            </div>
+          {showCoreFields && (
+            <>
+              {/* Core account fields for students (same as admin/teacher) */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* Username */}
+                <div>
+                  <label
+                    htmlFor="Username"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Username *
+                  </label>
+                  <input
+                    id="Username"
+                    name="Username"
+                    type="text"
+                    placeholder="Enter username"
+                    {...register("Username", {
+                      required: "Username is required",
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  {errors.Username && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.Username.message}
+                    </p>
+                  )}
+                </div>
 
-            {/* Email */}
-            <div>
-              <label
-                htmlFor="Email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Email *
-              </label>
-              <input
-                id="Email"
-                name="Email"
-                type="email"
-                placeholder="student@example.com"
-                {...register("Email", {
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Invalid email address",
-                  },
-                })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              {errors.Email && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.Email.message}
-                </p>
-              )}
-            </div>
-          </div>
+                {/* Email */}
+                <div>
+                  <label
+                    htmlFor="Email"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Email *
+                  </label>
+                  <input
+                    id="Email"
+                    name="Email"
+                    type="email"
+                    placeholder="student@example.com"
+                    {...register("Email", {
+                      required: "Email is required",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Invalid email address",
+                      },
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  {errors.Email && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.Email.message}
+                    </p>
+                  )}
+                </div>
+              </div>
 
-          {/* First/Last name instead of single Full Name */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="FirstName"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                First Name *
-              </label>
-              <input
-                id="FirstName"
-                name="FirstName"
-                type="text"
-                placeholder="Enter first name"
-                {...register("FirstName", {
-                  required: "First name is required",
-                })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              {errors.FirstName && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.FirstName.message}
-                </p>
-              )}
-            </div>
+              {/* First/Last name instead of single Full Name */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="FirstName"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    First Name *
+                  </label>
+                  <input
+                    id="FirstName"
+                    name="FirstName"
+                    type="text"
+                    placeholder="Enter first name"
+                    {...register("FirstName", {
+                      required: "First name is required",
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  {errors.FirstName && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.FirstName.message}
+                    </p>
+                  )}
+                </div>
 
-            <div>
-              <label
-                htmlFor="LastName"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Last Name *
-              </label>
-              <input
-                id="LastName"
-                name="LastName"
-                type="text"
-                placeholder="Enter last name"
-                {...register("LastName", { required: "Last name is required" })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              {errors.LastName && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.LastName.message}
-                </p>
-              )}
-            </div>
-          </div>
+                <div>
+                  <label
+                    htmlFor="LastName"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Last Name *
+                  </label>
+                  <input
+                    id="LastName"
+                    name="LastName"
+                    type="text"
+                    placeholder="Enter last name"
+                    {...register("LastName", {
+                      required: "Last name is required",
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  {errors.LastName && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.LastName.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Class */}
@@ -734,70 +752,76 @@ const UserForm = ({
             </div>
           </div>
 
-          {/* Student: Manage enrolled courses */}
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Enrolled Courses
-              </label>
-              <div className="mt-2 rounded-md border dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
-                {studentSelectedCourseIds.length ? (
-                  <ul className="flex flex-wrap gap-2">
-                    {studentSelectedCourseIds.map((cid) => {
-                      const c = (courses || []).find(
-                        (x) =>
-                          String(
-                            x.id ?? x.CourseID ?? x.CourseId ?? x.courseId ?? ""
-                          ) === String(cid)
-                      );
-                      const label =
-                        c?.name ||
-                        c?.CourseName ||
-                        c?.title ||
-                        c?.courseName ||
-                        `Course ${cid}`;
-                      return (
-                        <li
-                          key={cid}
-                          className="inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-200"
-                        >
-                          {label}
-                          <button
-                            type="button"
-                            className="text-green-600 hover:text-green-800 dark:text-green-300"
-                            onClick={() =>
-                              setStudentSelectedCourseIds((prev) =>
-                                prev.filter((id) => id !== cid)
-                              )
-                            }
+          {/* Student: Manage enrolled courses (only when editing an existing user) */}
+          {initialUser && (
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Enrolled Courses
+                </label>
+                <div className="mt-2 rounded-md border dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
+                  {studentSelectedCourseIds.length ? (
+                    <ul className="flex flex-wrap gap-2">
+                      {studentSelectedCourseIds.map((cid) => {
+                        const c = (courses || []).find(
+                          (x) =>
+                            String(
+                              x.id ??
+                                x.CourseID ??
+                                x.CourseId ??
+                                x.courseId ??
+                                ""
+                            ) === String(cid)
+                        );
+                        const label =
+                          c?.name ||
+                          c?.CourseName ||
+                          c?.title ||
+                          c?.courseName ||
+                          `Course ${cid}`;
+                        return (
+                          <li
+                            key={cid}
+                            className="inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-200"
                           >
-                            ✕
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <div className="text-xs text-gray-500">
-                    No courses enrolled yet.
-                  </div>
-                )}
+                            {label}
+                            <button
+                              type="button"
+                              className="text-green-600 hover:text-green-800 dark:text-green-300"
+                              onClick={() =>
+                                setStudentSelectedCourseIds((prev) =>
+                                  prev.filter((id) => id !== cid)
+                                )
+                              }
+                            >
+                              ✕
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <div className="text-xs text-gray-500">
+                      No courses enrolled yet.
+                    </div>
+                  )}
 
-                <div className="mt-3">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowStudentCoursePicker(true)}
-                  >
-                    Manage Enrolled Courses
-                  </Button>
+                  <div className="mt-3">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setShowStudentCoursePicker(true)}
+                    >
+                      Manage Enrolled Courses
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Password */}
-          {!user && (
+          {/* Password (core); only in create flow and only in core step) */}
+          {!user && showCoreFields && (
             <div>
               <label
                 htmlFor="PasswordHash"
@@ -831,7 +855,7 @@ const UserForm = ({
 
       {/* CurrentGrade / RollNumber legacy inputs removed — use Class and IDNumber instead */}
 
-      {userTypeID === "2" && (
+      {userTypeID === "2" && showRoleFields && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label
@@ -1088,11 +1112,12 @@ const UserForm = ({
         <Button type="submit" variant="primary" disabled={loading}>
           {loading
             ? "Saving..."
-            : initialUser
-            ? "Update User"
-            : userTypeID === "3"
-            ? "Add Student"
-            : "Create User"}
+            : submitLabel ||
+              (initialUser
+                ? "Update User"
+                : userTypeID === "3"
+                ? "Add Student"
+                : "Create User")}
         </Button>
       </div>
     </form>
