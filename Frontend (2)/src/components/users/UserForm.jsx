@@ -342,19 +342,31 @@ const UserForm = ({
           >
             User Type
           </label>
-          {forceUserType ? (
+          {forceUserType || initialUser ? (
             <div className="mt-1">
               <input
                 type="hidden"
-                defaultValue={String(forceUserType)}
+                defaultValue={
+                  forceUserType
+                    ? String(forceUserType)
+                    : String(
+                        initialUser?.UserTypeID ?? initialUser?.userTypeID ?? ""
+                      )
+                }
                 {...register("UserTypeID", {
                   required: "User type is required",
                 })}
               />
               <div className="px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-200">
-                {forceUserType === 1
+                {String(
+                  forceUserType ||
+                    (initialUser?.UserTypeID ?? initialUser?.userTypeID)
+                ) === "1"
                   ? "Admin"
-                  : forceUserType === 2
+                  : String(
+                      forceUserType ||
+                        (initialUser?.UserTypeID ?? initialUser?.userTypeID)
+                    ) === "2"
                   ? "Teacher"
                   : "Student"}
               </div>
