@@ -7,7 +7,7 @@ using System.Web.Http;
 
 namespace ClassSystemAPI.Controllers
 {
-    [Authorize(Roles = "Admin")]  // Restrict to admin only
+    //[Authorize(Roles = "Admin")]  // Restrict to admin only
     public class SystemLogsController : ApiController
     {
         private ClassSystemContext db = new ClassSystemContext();

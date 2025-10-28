@@ -21,7 +21,15 @@ namespace ClassSystemAPI.Models
         public DbSet<QRSession> QRSessions { get; set; }
         public DbSet<Attendance> Attendances { get; set; }
 
-        
+        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<SystemLog>()
+                .HasOptional(s => s.User)
+                .WithMany() // or .WithMany(u => u.SystemLogs) if you add collection navigation
+                .HasForeignKey(s => s.UserID)
+                .WillCascadeOnDelete(true);
 
+            base.OnModelCreating(modelBuilder);
+        }
     }
 }

@@ -1,5 +1,4 @@
-﻿ 
-using ClassSystemAPI.Models;
+﻿using ClassSystemAPI.Models;
 using System;
 using System.Data.Entity;
 using System.Linq;
@@ -160,12 +159,24 @@ namespace ClassSystemAPI.Controllers
         // DELETE: api/Users/5
         public IHttpActionResult DeleteUser(int id)
         {
-            User user = db.Users.Find(id);
-            if (user == null)
+            var user = db.Users.Find(id);
+            if (user == null) return NotFound();
+
+            var student = db.Students.Find(id);
+            if (student != null)
             {
-                AddLog(null, "DeleteUserFailed", $"User with ID {id} not found");
-                return NotFound();
+                var enrollments = db.Enrollments.Where(e => e.StudentID == id).ToList();
+                if (enrollments.Any())
+                    db.Enrollments.RemoveRange(enrollments);
+
+                db.Students.Remove(student);
             }
+
+            var teacher = db.Teachers.Find(id);
+            if (teacher != null) db.Teachers.Remove(teacher);
+
+            db.SystemLogs.Where(l => l.UserID == id).ToList().ForEach(l => l.UserID = null);
+            db.SaveChanges();
 
             db.Users.Remove(user);
             db.SaveChanges();
