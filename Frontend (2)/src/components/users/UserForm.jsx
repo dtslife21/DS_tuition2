@@ -53,8 +53,19 @@ const UserForm = ({
       Name: `${u?.FirstName || u?.firstName || ""} ${
         u?.LastName || u?.lastName || ""
       }`.trim(),
-      EnrollmentDate:
-        u?.EnrollmentDate || u?.enrollmentDate || u?.enrollment_date || "",
+      EnrollmentDate: (() => {
+        // Normalize known date shapes into YYYY-MM-DD so <input type="date"> shows the value
+        const raw =
+          u?.EnrollmentDate || u?.enrollmentDate || u?.enrollment_date || "";
+        if (!raw) return "";
+        try {
+          const d = new Date(raw);
+          if (isNaN(d.getTime())) return String(raw);
+          return d.toISOString().slice(0, 10);
+        } catch (e) {
+          return String(raw);
+        }
+      })(),
       GuardianName: u?.ParentName || u?.parentName || "",
       GuardianPhone: u?.ParentContact || u?.parentContact || "",
       // legacy student fields retained for compatibility
@@ -70,7 +81,18 @@ const UserForm = ({
         "",
       Department: u?.Department || u?.department || "",
       Qualification: u?.Qualification || u?.qualification || "",
-      JoiningDate: u?.JoiningDate || u?.joiningDate || "",
+      JoiningDate: (() => {
+        // Normalize known date shapes into YYYY-MM-DD so <input type="date"> shows the value
+        const raw = u?.JoiningDate || u?.joiningDate || "";
+        if (!raw) return "";
+        try {
+          const d = new Date(raw);
+          if (isNaN(d.getTime())) return String(raw);
+          return d.toISOString().slice(0, 10);
+        } catch (e) {
+          return String(raw);
+        }
+      })(),
       Bio: u?.Bio || u?.bio || "",
       AssignedCourseIDs:
         (u?.Courses && Array.isArray(u.Courses)

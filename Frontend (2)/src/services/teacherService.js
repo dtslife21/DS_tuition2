@@ -10,6 +10,13 @@ export const getAllTeachers = async () => {
   return response.data;
 };
 
+export const getTeacherById = async (teacherId) => {
+  const idStr = String(teacherId ?? "").trim();
+  if (!idStr) return null;
+  const response = await axios.get(`/Teachers/${idStr}`);
+  return response.data;
+};
+
 export const updateTeacher = async (teacherId, teacherData) => {
   const payload = {
     TeacherID:

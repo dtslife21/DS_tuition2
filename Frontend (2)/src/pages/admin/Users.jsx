@@ -83,10 +83,22 @@ import {
   getUserById,
   deleteUser,
 } from "../../services/userService";
-import { createStudent, updateStudent } from "../../services/studentService";
+import {
+  createStudent,
+  updateStudent,
+  getStudentById,
+} from "../../services/studentService";
 import { createEnrollmentsForStudent } from "../../services/enrollmentService";
-import { createTeacher, updateTeacher } from "../../services/teacherService";
-import { getTeacherCourses, updateCourse } from "../../services/courseService";
+import {
+  createTeacher,
+  updateTeacher,
+  getTeacherById,
+} from "../../services/teacherService";
+import {
+  getTeacherCourses,
+  updateCourse,
+  getStudentCourses,
+} from "../../services/courseService";
 import {
   getEnrollmentsByStudent,
   deleteEnrollment,
@@ -220,17 +232,91 @@ const AdminUsers = () => {
         if (editStep === 1) {
           // Step 1: update core details only
           const updatedUser = await updateUser(userId, userData);
-          setUsers(
-            users.map((user) => {
-              const currentUserId = user.UserID || user.id;
-              const updatedUserId = updatedUser.UserID || updatedUser.id;
-              return currentUserId === updatedUserId ? updatedUser : user;
-            })
-          );
-          setSelectedUser(updatedUser);
+
+          // Preload role-specific details for step 2 and merge into user
           const nextTypeId = String(
             updatedUser.UserTypeID || updatedUser.userTypeID || ""
           );
+          let merged = { ...updatedUser };
+          try {
+            if (nextTypeId === "3") {
+              // Student: load student record and enrolled courses
+              const [studentRec, courses] = await Promise.all([
+                getStudentById(userId),
+                getStudentCourses(userId),
+              ]);
+              const studentFields = studentRec || {};
+              const courseIds = (courses || [])
+                .map((c) => c.id ?? c.CourseID ?? c.courseId)
+                .filter((v) => v !== undefined && v !== null);
+              merged = {
+                ...merged,
+                RollNumber:
+                  studentFields.RollNumber ??
+                  studentFields.rollNumber ??
+                  merged.RollNumber,
+                CurrentGrade:
+                  studentFields.CurrentGrade ??
+                  studentFields.currentGrade ??
+                  merged.CurrentGrade,
+                ParentName:
+                  studentFields.ParentName ??
+                  studentFields.parentName ??
+                  merged.ParentName,
+                ParentContact:
+                  studentFields.ParentContact ??
+                  studentFields.parentContact ??
+                  merged.ParentContact,
+                EnrollmentDate:
+                  studentFields.EnrollmentDate ??
+                  studentFields.enrollmentDate ??
+                  merged.EnrollmentDate,
+                StudentCourseIDs: courseIds,
+              };
+            } else if (nextTypeId === "2") {
+              // Teacher: load teacher record and assigned courses
+              const [teacherRec, courses] = await Promise.all([
+                getTeacherById(userId),
+                getTeacherCourses(userId),
+              ]);
+              const courseIds = (courses || [])
+                .map((c) => c.id ?? c.CourseID ?? c.courseId)
+                .filter((v) => v !== undefined && v !== null);
+              merged = {
+                ...merged,
+                EmployeeID:
+                  teacherRec?.EmployeeID ??
+                  teacherRec?.employeeID ??
+                  merged.EmployeeID,
+                Department:
+                  teacherRec?.Department ??
+                  teacherRec?.department ??
+                  merged.Department,
+                Qualification:
+                  teacherRec?.Qualification ??
+                  teacherRec?.qualification ??
+                  merged.Qualification,
+                JoiningDate:
+                  teacherRec?.JoiningDate ??
+                  teacherRec?.joiningDate ??
+                  merged.JoiningDate,
+                Bio: teacherRec?.Bio ?? teacherRec?.bio ?? merged.Bio,
+                CourseIDs: courseIds,
+              };
+            }
+          } catch (prefillErr) {
+            console.warn("Failed to preload role-specific details", prefillErr);
+          }
+
+          // Update list and move to step 2
+          setUsers(
+            users.map((user) => {
+              const currentUserId = user.UserID || user.id;
+              const updatedUserId = merged.UserID || merged.id;
+              return currentUserId === updatedUserId ? merged : user;
+            })
+          );
+          setSelectedUser(merged);
           setForceUserType(Number(nextTypeId || 0) || null);
           setEditStep(2);
           // stay in modal for step 2
