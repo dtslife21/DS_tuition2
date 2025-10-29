@@ -15,6 +15,9 @@ const normalizeSubject = (raw) => {
       raw.title ??
       raw.Title ??
       "",
+    // keep both common shapes for code to support edit forms and duplicate checks
+    subjectCode:
+      raw.subjectCode ?? raw.SubjectCode ?? raw.code ?? raw.Code ?? "",
     courseName:
       raw.courseName ?? raw.CourseName ?? raw.course ?? raw.courseTitle ?? "",
     description: raw.description ?? raw.Description ?? raw.details ?? "",
@@ -129,6 +132,30 @@ export const getSubjectById = async (subjectId) => {
   }
 };
 
+// Update an existing subject
+export const updateSubject = async (subjectId, data) => {
+  try {
+    const resp = await axios.put(`/Subjects/${subjectId}`, data);
+    return normalizeSubject(resp.data);
+  } catch (err) {
+    // fallback: update in mockSubjects
+    const idx = mockSubjects.findIndex(
+      (s) => String(s.id) === String(subjectId)
+    );
+    if (idx !== -1) {
+      mockSubjects[idx] = { ...mockSubjects[idx], ...data };
+      return normalizeSubject(mockSubjects[idx]);
+    }
+    // if not found, attempt to merge into derived list by id
+    const current = await getSubjectById(subjectId);
+    if (current) {
+      const merged = { ...current, ...data, id: current.id };
+      return normalizeSubject(merged);
+    }
+    throw err;
+  }
+};
+
 // Fetch latest subject id from backend with flexible endpoint detection
 export const getLatestSubjectId = async () => {
   const endpoints = [
@@ -173,4 +200,5 @@ export default {
   deleteSubject,
   getSubjectById,
   getLatestSubjectId,
+  updateSubject,
 };

@@ -4,18 +4,22 @@ import {
   createSubject,
   deleteSubject,
   getSubjectById,
+  updateSubject,
 } from "../../services/subjectService";
 import Modal from "../../components/common/Modal";
 import Button from "../../components/common/Button";
 import EmptyState from "../../components/common/EmptyState";
 import Card from "../../components/common/Card";
 import SubjectForm from "../../components/admin/SubjectForm";
+import Loader from "../../components/common/Loader";
 
 const AdminSubjects = () => {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [viewSubject, setViewSubject] = useState(null);
+  const [editSubject, setEditSubject] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -23,7 +27,7 @@ const AdminSubjects = () => {
       const all = await getAllSubjects();
       setSubjects(all || []);
     } catch (err) {
-      console.error(err);
+      console.error("AdminSubjects.load:", err);
     } finally {
       setLoading(false);
     }
@@ -39,7 +43,7 @@ const AdminSubjects = () => {
       setSubjects((s) => [created, ...(s || [])]);
       setShowAdd(false);
     } catch (err) {
-      console.error(err);
+      console.error("AdminSubjects.create:", err);
     }
   };
 
@@ -49,16 +53,71 @@ const AdminSubjects = () => {
       const ok = await deleteSubject(id);
       if (ok) setSubjects((s) => s.filter((x) => String(x.id) !== String(id)));
     } catch (err) {
-      console.error(err);
+      console.error("AdminSubjects.delete:", err);
     }
   };
 
-  const openView = async (id) => {
+  // Open edit modal. Accept either the subject object or an id.
+  const openEdit = async (idOrSubject) => {
+    const subject = typeof idOrSubject === "object" ? idOrSubject : null;
+    const id = subject ? subject.id : idOrSubject;
+
+    // If no id available, use the subject object if provided and skip backend fetch
+    if (id === null || id === undefined || String(id).trim() === "") {
+      setEditSubject(subject || { id });
+      return;
+    }
+
     try {
+      // try to fetch canonical record from backend
       const details = await getSubjectById(id);
-      setViewSubject(details);
+      setEditSubject(details || subject || { id });
     } catch (err) {
-      console.error(err);
+      console.error("AdminSubjects.openEdit:", err);
+      setEditSubject(subject || { id });
+    }
+  };
+
+  const handleUpdate = async (data) => {
+    try {
+      const id = data.id ?? editSubject?.id;
+      if (!id) throw new Error("Missing subject id");
+      const updated = await updateSubject(id, data);
+      setSubjects((list) =>
+        (list || []).map((s) =>
+          String(s.id) === String(id) ? { ...s, ...updated } : s
+        )
+      );
+      setEditSubject(null);
+    } catch (err) {
+      console.error("AdminSubjects.update:", err);
+    }
+  };
+
+  // Open view modal. Accept the subject object from the list and only call backend when id looks valid.
+  const openView = async (subject) => {
+    if (!subject) return;
+
+    // show immediate list data
+    setViewSubject(subject);
+
+    const id = subject.id;
+    if (id === null || id === undefined || String(id).trim() === "") {
+      console.debug(
+        "AdminSubjects.openView: skipping backend fetch for empty id",
+        subject
+      );
+      return;
+    }
+
+    try {
+      setViewLoading(true);
+      const details = await getSubjectById(id);
+      if (details) setViewSubject(details);
+    } catch (err) {
+      console.error("AdminSubjects.openView:", err);
+    } finally {
+      setViewLoading(false);
     }
   };
 
@@ -93,7 +152,11 @@ const AdminSubjects = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {subjects.map((s) => (
-            <Card key={s.id} className="p-4">
+            <Card
+              key={s.id}
+              className="p-4 cursor-pointer hover:shadow-lg"
+              onClick={() => openView(s)}
+            >
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
@@ -110,11 +173,25 @@ const AdminSubjects = () => {
                     </p>
                   )}
                 </div>
+
                 <div className="flex flex-col items-end gap-2">
-                  <Button variant="primary" onClick={() => openView(s.id)}>
-                    View
+                  <Button
+                    variant="primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEdit(s);
+                    }}
+                  >
+                    Edit
                   </Button>
-                  <Button variant="secondary" onClick={() => handleDelete(s.id)}>
+
+                  <Button
+                    variant="secondary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(s.id);
+                    }}
+                  >
                     Delete
                   </Button>
                 </div>
@@ -143,15 +220,38 @@ const AdminSubjects = () => {
         {viewSubject ? (
           <div className="space-y-2">
             <div>
+              <strong>ID:</strong> {viewSubject.id ?? "-"}
+            </div>
+            <div>
+              <strong>Code:</strong> {viewSubject.subjectCode ?? "-"}
+            </div>
+            <div>
               <strong>Name:</strong> {viewSubject.name}
             </div>
             <div>
-              <strong>Course:</strong> {viewSubject.courseName || "-"}
+              <strong>Course:</strong> {viewSubject.courseName ?? "-"}
             </div>
             <div>
-              <strong>Description:</strong> {viewSubject.description || "-"}
+              <strong>Description:</strong> {viewSubject.description ?? "-"}
             </div>
+            {viewLoading && <Loader size="sm" className="py-2" />}
           </div>
+        ) : (
+          <div>Loading...</div>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={!!editSubject}
+        onClose={() => setEditSubject(null)}
+        title={`Edit Subject`}
+      >
+        {editSubject ? (
+          <SubjectForm
+            initial={editSubject}
+            onSubmit={handleUpdate}
+            onCancel={() => setEditSubject(null)}
+          />
         ) : (
           <div>Loading...</div>
         )}
