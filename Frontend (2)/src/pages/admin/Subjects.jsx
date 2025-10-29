@@ -121,7 +121,7 @@ const AdminSubjects = () => {
     }
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) return (<Loader size="md" className="py-2" />);
 
   return (
     <div className="space-y-4 p-4">
@@ -234,10 +234,10 @@ const AdminSubjects = () => {
             <div>
               <strong>Description:</strong> {viewSubject.description ?? "-"}
             </div>
-            {viewLoading && <Loader size="sm" className="py-2" />}
+            
           </div>
         ) : (
-          <div>Loading...</div>
+          viewLoading && <Loader size="sm" className="py-2" />
         )}
       </Modal>
 
@@ -253,7 +253,7 @@ const AdminSubjects = () => {
             onCancel={() => setEditSubject(null)}
           />
         ) : (
-          <div>Loading...</div>
+          viewLoading && <Loader size="sm" className="py-2" />
         )}
       </Modal>
     </div>

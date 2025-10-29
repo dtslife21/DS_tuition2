@@ -33,6 +33,7 @@ const SubjectForm = ({
     setSubjectCodeError("");
     const trimmedName = name.trim();
     const trimmedCode = subjectCode.trim();
+    const trimmedDescription = description.trim();
 
     // Validate both fields and show both errors at once if missing
     let hasError = false;
@@ -48,14 +49,28 @@ const SubjectForm = ({
 
     // build payload including both common keys to improve backend compatibility
     const payload = {
-      // include id when editing
-      ...(subjectId ? { id: subjectId } : {}),
+      // include id when editing (cover multiple naming conventions)
+      ...(subjectId
+        ? {
+            id: subjectId,
+            SubjectID: subjectId,
+            subjectId: subjectId,
+          }
+        : {}),
       name: trimmedName,
       subjectName: trimmedName,
-      subjectCode: subjectCode.trim(),
-      description: description.trim(),
+      SubjectName: trimmedName,
+      subjectCode: trimmedCode,
+      SubjectCode: trimmedCode,
+      description: trimmedDescription,
+      Description: trimmedDescription,
       // include courseName if provided initially so duplicate checks can scope to a course
-      ...(initial.courseName ? { courseName: initial.courseName } : {}),
+      ...(initial.courseName
+        ? {
+            courseName: initial.courseName,
+            CourseName: initial.courseName,
+          }
+        : {}),
     };
 
     // Prevent adding the same subject to the same course
@@ -133,18 +148,6 @@ const SubjectForm = ({
       {step ? (
         <div className="text-sm font-medium text-indigo-600">
           Step {step} of 2
-        </div>
-      ) : null}
-      {subjectId ? (
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Subject ID
-          </label>
-          <input
-            value={subjectId}
-            readOnly
-            className="mt-1 block w-full rounded-md border-gray-200 bg-gray-700 p-2 text-gray-700"
-          />
         </div>
       ) : null}
 

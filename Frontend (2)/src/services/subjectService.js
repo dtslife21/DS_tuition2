@@ -7,7 +7,14 @@ const mockSubjects = [];
 const normalizeSubject = (raw) => {
   if (!raw) return null;
   return {
-    id: raw.id ?? raw.SubjectID ?? raw.subjectId ?? raw.id ?? null,
+    id:
+      raw.id ??
+      raw.SubjectID ??
+      raw.SubjectId ??
+      raw.subjectID ??
+      raw.subjectId ??
+      raw.subject_id ??
+      null,
     name:
       raw.name ??
       raw.subjectName ??
@@ -135,8 +142,24 @@ export const getSubjectById = async (subjectId) => {
 // Update an existing subject
 export const updateSubject = async (subjectId, data) => {
   try {
-    const resp = await axios.put(`/Subjects/${subjectId}`, data);
-    return normalizeSubject(resp.data);
+    const payload = {
+      subjectId: subjectId,
+      SubjectID: subjectId,
+      id: subjectId,
+      subjectName: data.subjectName ?? data.SubjectName ?? data.name,
+      SubjectName: data.subjectName ?? data.SubjectName ?? data.name,
+      name: data.name ?? data.subjectName ?? data.SubjectName,
+      subjectCode: data.subjectCode ?? data.SubjectCode ?? data.code,
+      SubjectCode: data.subjectCode ?? data.SubjectCode ?? data.code,
+      code: data.subjectCode ?? data.SubjectCode ?? data.code,
+      Code: data.subjectCode ?? data.SubjectCode ?? data.code,
+      description: data.description ?? data.Description,
+      Description: data.description ?? data.Description,
+      courseName: data.courseName ?? data.CourseName,
+      CourseName: data.courseName ?? data.CourseName,
+    };
+    const resp = await axios.put(`/Subjects/${subjectId}`, payload);
+    return normalizeSubject(resp.data || payload);
   } catch (err) {
     // fallback: update in mockSubjects
     const idx = mockSubjects.findIndex(
