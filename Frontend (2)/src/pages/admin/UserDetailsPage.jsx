@@ -5,6 +5,8 @@ import {
   getTeacherCourses,
   getStudentCourses,
 } from "../../services/courseService";
+import { getStudentById } from "../../services/studentService";
+import { getTeacherById } from "../../services/teacherService";
 import UserForm from "../../components/users/UserForm";
 import Card from "../../components/common/Card";
 import Avatar from "../../components/common/Avatar";
@@ -22,7 +24,7 @@ const InfoRow = ({ label, value }) => (
   </div>
 );
 
-const Pill = ({ children, color = "indigo"}) => (
+const Pill = ({ children, color = "indigo" }) => (
   <span
     className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-${color}-100 text-${color}-800 dark:bg-${color}-900/30 dark:text-${color}-800`}
   >
@@ -40,6 +42,12 @@ const UserDetailsPage = () => {
   const [courses, setCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [coursesError, setCoursesError] = useState("");
+  const [teacherDetails, setTeacherDetails] = useState(null);
+  const [teacherLoading, setTeacherLoading] = useState(false);
+  const [teacherError, setTeacherError] = useState("");
+  const [studentDetails, setStudentDetails] = useState(null);
+  const [studentLoading, setStudentLoading] = useState(false);
+  const [studentError, setStudentError] = useState("");
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -105,6 +113,92 @@ const UserDetailsPage = () => {
     };
 
     fetchCourses();
+  }, [user]);
+
+  // Fetch teacher record (department/qualification/bio/etc.) when user is a teacher
+  useEffect(() => {
+    const fetchTeacher = async () => {
+      if (!user) return;
+
+      const isTeacherType =
+        String(user.UserTypeID || user.userTypeID || "").trim() === "2" ||
+        String((user.userType || "").toLowerCase()) === "teacher";
+
+      if (!isTeacherType) {
+        setTeacherDetails(null);
+        setTeacherError("");
+        return;
+      }
+
+      const teacherId =
+        user.TeacherID ??
+        user.teacherID ??
+        user.teacherId ??
+        user.UserID ??
+        user.id ??
+        null;
+
+      try {
+        setTeacherLoading(true);
+        setTeacherError("");
+        if (!teacherId) {
+          setTeacherDetails(null);
+          return;
+        }
+        const rec = await getTeacherById(teacherId);
+        setTeacherDetails(rec);
+      } catch (err) {
+        console.warn("Failed to load teacher record", err);
+        setTeacherError("Failed to load teacher details");
+      } finally {
+        setTeacherLoading(false);
+      }
+    };
+
+    fetchTeacher();
+  }, [user]);
+
+  // Fetch student record when user is a student
+  useEffect(() => {
+    const fetchStudent = async () => {
+      if (!user) return;
+
+      const isStudentType =
+        String(user.UserTypeID || user.userTypeID || "").trim() === "3" ||
+        String((user.userType || "").toLowerCase()) === "student";
+
+      if (!isStudentType) {
+        setStudentDetails(null);
+        setStudentError("");
+        return;
+      }
+
+      const studentId =
+        user.StudentID ??
+        user.studentID ??
+        user.studentId ??
+        user.UserID ??
+        user.id ??
+        null;
+
+      try {
+        setStudentLoading(true);
+        setStudentError("");
+        if (!studentId) {
+          setStudentDetails(null);
+          return;
+        }
+        const rec = await getStudentById(studentId);
+        setStudentDetails(rec);
+      } catch (err) {
+        console.warn("Failed to load student record", err);
+        setStudentError("Failed to load student details");
+      } finally {
+        setStudentLoading(false);
+      }
+    };
+
+    fetchStudent();
   }, [user]);
 
   const handleSave = async (userData) => {
@@ -261,12 +355,11 @@ const UserDetailsPage = () => {
             <InfoRow label="Last Name" value={user.LastName || user.lastName} />
             <InfoRow label="Username" value={user.Username || user.username} />
             <InfoRow label="Email" value={user.Email || user.email} />
-            <InfoRow label="Phone" value={user.Phone || user.phone} />
             <InfoRow label="User Type" value={userTypeLabel} />
-            <InfoRow
+            {/* <InfoRow
               label="User Type ID"
               value={user.UserTypeID || user.userTypeID}
-            />
+            /> */}
             <InfoRow label="User ID" value={user.UserID || user.id} />
             {(user.EmployeeID || user.employeeID) && (
               <InfoRow
@@ -281,7 +374,136 @@ const UserDetailsPage = () => {
               />
             )}
           </div>
+          {/* Teacher-specific details (if present) */}
+          {teacherLoading && (
+            <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
+              Loading teacher details...
+            </div>
+          )}
+          {teacherError && (
+            <div className="mt-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-3 rounded-md">
+              {teacherError}
+            </div>
+          )}
+          {teacherDetails && (
+            <div className="mt-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                Teacher Details
+              </h3>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(teacherDetails.Department || teacherDetails.department) && (
+                  <InfoRow
+                    label="Department"
+                    value={
+                      teacherDetails.Department || teacherDetails.department
+                    }
+                  />
+                )}
+                {(teacherDetails.Qualification ||
+                  teacherDetails.qualification) && (
+                  <InfoRow
+                    label="Qualification"
+                    value={
+                      teacherDetails.Qualification ||
+                      teacherDetails.qualification
+                    }
+                  />
+                )}
+                {(teacherDetails.JoiningDate || teacherDetails.joiningDate) && (
+                  <InfoRow
+                    label="Joining Date"
+                    value={new Date(
+                      teacherDetails.JoiningDate || teacherDetails.joiningDate
+                    ).toLocaleDateString()}
+                  />
+                )}
+                {(teacherDetails.EmployeeID || teacherDetails.employeeID) &&
+                  !(user.EmployeeID || user.employeeID) && (
+                    <InfoRow
+                      label="Employee ID"
+                      value={
+                        teacherDetails.EmployeeID || teacherDetails.employeeID
+                      }
+                    />
+                  )}
+              </div>
+
+              {(teacherDetails.Bio || teacherDetails.bio) && (
+                <div className="mt-4 bg-gray-50 dark:bg-gray-900/20 p-3 rounded-md text-sm text-gray-700 dark:text-gray-300">
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    Bio
+                  </div>
+                  <div className="mt-1 whitespace-pre-wrap">
+                    {teacherDetails.Bio || teacherDetails.bio}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </Card>
+      )}
+
+      {/* Student-specific details (shown below main card, before courses) */}
+      {studentLoading && (
+        <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
+          Loading student details...
+        </div>
+      )}
+      {studentError && (
+        <div className="mt-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-3 rounded-md">
+          {studentError}
+        </div>
+      )}
+      {studentDetails && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Student Details
+            </h2>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InfoRow
+                label="Roll Number"
+                value={
+                  studentDetails.RollNumber || studentDetails.rollNumber || "-"
+                }
+              />
+              <InfoRow
+                label="Enrollment Date"
+                value={
+                  studentDetails.EnrollmentDate
+                    ? new Date(
+                        studentDetails.EnrollmentDate
+                      ).toLocaleDateString()
+                    : "-"
+                }
+              />
+              <InfoRow
+                label="Current Grade"
+                value={
+                  studentDetails.CurrentGrade ||
+                  studentDetails.currentGrade ||
+                  "-"
+                }
+              />
+              <InfoRow
+                label="Parent Name"
+                value={
+                  studentDetails.ParentName || studentDetails.parentName || "-"
+                }
+              />
+              <InfoRow
+                label="Parent Contact"
+                value={
+                  studentDetails.ParentContact ||
+                  studentDetails.parentContact ||
+                  "-"
+                }
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Courses section for Teacher or Student (visible to admin) */}

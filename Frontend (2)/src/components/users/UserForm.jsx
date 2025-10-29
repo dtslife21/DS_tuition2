@@ -1006,72 +1006,74 @@ const UserForm = ({
             />
           </div>
 
-          {/* Teacher: Manage assigned courses */}
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Assigned Courses
-            </label>
-            <div className="mt-2 rounded-md border dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
-              {selectedCourseIds.length ? (
-                <ul className="flex flex-wrap gap-2">
-                  {selectedCourseIds.map((cid) => {
-                    const c = (courses || []).find(
-                      (x) =>
-                        String(
-                          x.id ?? x.CourseID ?? x.CourseId ?? x.courseId ?? ""
-                        ) === String(cid)
-                    );
-                    const label =
-                      c?.name ||
-                      c?.CourseName ||
-                      c?.title ||
-                      c?.courseName ||
-                      `Course ${cid}`;
-                    return (
-                      <li
-                        key={cid}
-                        className="inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200"
-                      >
-                        {label}
-                        <button
-                          type="button"
-                          className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
-                          onClick={() =>
-                            setSelectedCourseIds((prev) =>
-                              prev.filter((id) => id !== cid)
-                            )
-                          }
+          {/* Teacher: Manage assigned courses (only shown when editing an existing teacher) */}
+          {initialUser && (
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Assigned Courses
+              </label>
+              <div className="mt-2 rounded-md border dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
+                {selectedCourseIds.length ? (
+                  <ul className="flex flex-wrap gap-2">
+                    {selectedCourseIds.map((cid) => {
+                      const c = (courses || []).find(
+                        (x) =>
+                          String(
+                            x.id ?? x.CourseID ?? x.CourseId ?? x.courseId ?? ""
+                          ) === String(cid)
+                      );
+                      const label =
+                        c?.name ||
+                        c?.CourseName ||
+                        c?.title ||
+                        c?.courseName ||
+                        `Course ${cid}`;
+                      return (
+                        <li
+                          key={cid}
+                          className="inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200"
                         >
-                          ✕
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <div className="text-xs text-gray-500">
-                  No courses assigned yet.
-                </div>
-              )}
+                          {label}
+                          <button
+                            type="button"
+                            className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
+                            onClick={() =>
+                              setSelectedCourseIds((prev) =>
+                                prev.filter((id) => id !== cid)
+                              )
+                            }
+                          >
+                            ✕
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="text-xs text-gray-500">
+                    No courses assigned yet.
+                  </div>
+                )}
 
-              <div className="mt-3 flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowTeacherCoursePicker(true)}
-                >
-                  Manage Courses
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setShowCourseModal(true)}
-                >
-                  + Add New Course
-                </Button>
+                <div className="mt-3 flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowTeacherCoursePicker(true)}
+                  >
+                    Manage Courses
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setShowCourseModal(true)}
+                  >
+                    + Add New Course
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 

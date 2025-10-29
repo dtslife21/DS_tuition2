@@ -233,10 +233,29 @@ const AdminUsers = () => {
           // Step 1: update core details only
           const updatedUser = await updateUser(userId, userData);
 
-          // Preload role-specific details for step 2 and merge into user
+          // Determine next type and handle admin as a one-step update
           const nextTypeId = String(
             updatedUser.UserTypeID || updatedUser.userTypeID || ""
           );
+
+          // If the user is an Admin, complete the update in one step.
+          if (nextTypeId === "1") {
+            setUsers(
+              users.map((user) => {
+                const currentUserId = user.UserID || user.id;
+                const updatedUserId = updatedUser.UserID || updatedUser.id;
+                return currentUserId === updatedUserId ? updatedUser : user;
+              })
+            );
+            // close modal and reset state
+            setShowModal(false);
+            setSelectedUser(null);
+            setForceUserType(null);
+            setEditStep(1);
+            return;
+          }
+
+          // Preload role-specific details for step 2 and merge into user
           let merged = { ...updatedUser };
           try {
             if (nextTypeId === "3") {
