@@ -16,6 +16,14 @@ const CoursePickerModal = ({
   allowCreate = true,
   // excludedIds: array of course ids (string/number) to hide from the picker (remaining courses logic)
   excludedIds = [],
+  // saving: when true, disable actions while the parent finalizes the choice
+  saving = false,
+  // proceedLabel: customize the primary button label for different flows
+  proceedLabel = "Proceed",
+  // errorMessage: optional text rendered below the helper description
+  errorMessage = "",
+  // courseFormDefaults: default values passed to CourseForm when creating a course inline
+  courseFormDefaults = null,
 }) => {
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
@@ -88,7 +96,10 @@ const CoursePickerModal = ({
 
   const clearSearch = () => setQuery("");
 
-  const handleProceed = () => onProceed(selectedCourseIds);
+  const handleProceed = () => {
+    if (saving) return;
+    onProceed(selectedCourseIds);
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
@@ -116,6 +127,9 @@ const CoursePickerModal = ({
             {description && (
               <p className="mt-2 text-xs text-gray-500">{description}</p>
             )}
+            {errorMessage ? (
+              <p className="mt-2 text-xs text-red-500">{errorMessage}</p>
+            ) : null}
           </div>
 
           <div className="flex-shrink-0">
@@ -152,6 +166,7 @@ const CoursePickerModal = ({
               <Button
                 variant="secondary"
                 onClick={() => setShowCourseModal(true)}
+                disabled={saving}
               >
                 + Add New Course
               </Button>
@@ -159,11 +174,15 @@ const CoursePickerModal = ({
           </div>
 
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={onClose}>
+            <Button variant="secondary" onClick={onClose} disabled={saving}>
               Cancel
             </Button>
-            <Button variant="primary" onClick={handleProceed}>
-              Proceed
+            <Button
+              variant="primary"
+              onClick={handleProceed}
+              disabled={saving}
+            >
+              {saving ? "Saving..." : proceedLabel}
             </Button>
           </div>
         </div>
@@ -190,6 +209,7 @@ const CoursePickerModal = ({
               }
             }}
             onCancel={() => setShowCourseModal(false)}
+            initialData={courseFormDefaults || {}}
           />
         </Modal>
       </div>

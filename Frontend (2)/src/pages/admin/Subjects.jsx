@@ -12,6 +12,8 @@ import EmptyState from "../../components/common/EmptyState";
 import Card from "../../components/common/Card";
 import SubjectForm from "../../components/admin/SubjectForm";
 import Loader from "../../components/common/Loader";
+import CoursePickerModal from "../../components/courses/CoursePickerModal";
+import { getCourseDetails } from "../../services/courseService";
 
 const AdminSubjects = () => {
   const [subjects, setSubjects] = useState([]);
@@ -20,6 +22,13 @@ const AdminSubjects = () => {
   const [viewSubject, setViewSubject] = useState(null);
   const [editSubject, setEditSubject] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
+  const [subjectDraftData, setSubjectDraftData] = useState(null);
+  const [subjectInProgress, setSubjectInProgress] = useState(null);
+  const [showCoursePicker, setShowCoursePicker] = useState(false);
+  const [selectedCourseIds, setSelectedCourseIds] = useState([]);
+  const [creatingSubject, setCreatingSubject] = useState(false);
+  const [linkingCourse, setLinkingCourse] = useState(false);
+  const [courseStepError, setCourseStepError] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -37,13 +46,40 @@ const AdminSubjects = () => {
     load();
   }, []);
 
-  const handleCreate = async (data) => {
+  const handleSubjectDetailsSubmit = async (data) => {
+    setCreatingSubject(true);
     try {
       const created = await createSubject(data);
-      setSubjects((s) => [created, ...(s || [])]);
+      const createdId =
+        created?.id ??
+        created?.SubjectID ??
+        created?.subjectId ??
+        data?.id ??
+        data?.SubjectID ??
+        data?.subjectId ??
+        null;
+
+      const payloadWithIds = {
+        ...data,
+        ...(createdId !== null && createdId !== undefined
+          ? {
+              id: createdId,
+              SubjectID: createdId,
+              subjectId: createdId,
+            }
+          : {}),
+      };
+
+      setSubjectDraftData(payloadWithIds);
+      setSubjectInProgress(created);
+      setSelectedCourseIds([]);
+      setCourseStepError("");
       setShowAdd(false);
+      setShowCoursePicker(true);
     } catch (err) {
       console.error("AdminSubjects.create:", err);
+    } finally {
+      setCreatingSubject(false);
     }
   };
 
@@ -55,6 +91,163 @@ const AdminSubjects = () => {
     } catch (err) {
       console.error("AdminSubjects.delete:", err);
     }
+  };
+
+  const handleLinkCourse = async (selectedIds) => {
+    if (!subjectInProgress) {
+      setCourseStepError("Subject details are missing. Please start again.");
+      return;
+    }
+
+    const normalizedSelection = Array.isArray(selectedIds)
+      ? selectedIds.map((value) => String(value))
+      : [String(selectedIds || "")];
+
+    const chosenId = normalizedSelection.find((value) => value.trim().length);
+    if (!chosenId) {
+      setSelectedCourseIds([]);
+      setCourseStepError("Select a course or add a new one to continue.");
+      return;
+    }
+
+    setSelectedCourseIds(normalizedSelection);
+    setCourseStepError("");
+    setLinkingCourse(true);
+
+    try {
+      let courseDetails = null;
+      try {
+        courseDetails = await getCourseDetails(chosenId);
+      } catch (courseErr) {
+        console.warn("AdminSubjects.linkCourse:getCourseDetails", courseErr);
+      }
+
+      const courseIdValue =
+        courseDetails?.id ??
+        courseDetails?.CourseID ??
+        courseDetails?.courseId ??
+        chosenId;
+      const courseNameValue =
+        courseDetails?.name ??
+        courseDetails?.courseName ??
+        courseDetails?.CourseName ??
+        "";
+      const courseCodeValue =
+        courseDetails?.code ??
+        courseDetails?.courseCode ??
+        courseDetails?.CourseCode ??
+        "";
+
+      const subjectIdValue =
+        subjectInProgress?.id ??
+        subjectDraftData?.id ??
+        subjectDraftData?.SubjectID ??
+        subjectDraftData?.subjectId ??
+        null;
+
+      if (subjectIdValue === null || subjectIdValue === undefined) {
+        setLinkingCourse(false);
+        setCourseStepError(
+          "Subject could not be saved. Please try adding it again."
+        );
+        return;
+      }
+
+      const updatePayload = {
+        ...(subjectDraftData || {}),
+        id: subjectIdValue,
+        SubjectID: subjectIdValue,
+        subjectId: subjectIdValue,
+        name:
+          subjectDraftData?.name ??
+          subjectDraftData?.subjectName ??
+          subjectInProgress?.name ??
+          "",
+        subjectName:
+          subjectDraftData?.subjectName ??
+          subjectDraftData?.name ??
+          subjectInProgress?.name ??
+          "",
+        SubjectName:
+          subjectDraftData?.SubjectName ??
+          subjectDraftData?.subjectName ??
+          subjectDraftData?.name ??
+          subjectInProgress?.name ??
+          "",
+        subjectCode:
+          subjectDraftData?.subjectCode ??
+          subjectDraftData?.SubjectCode ??
+          subjectInProgress?.subjectCode ??
+          "",
+        SubjectCode:
+          subjectDraftData?.SubjectCode ??
+          subjectDraftData?.subjectCode ??
+          subjectInProgress?.subjectCode ??
+          "",
+        description:
+          subjectDraftData?.description ??
+          subjectDraftData?.Description ??
+          subjectInProgress?.description ??
+          "",
+        Description:
+          subjectDraftData?.Description ??
+          subjectDraftData?.description ??
+          subjectInProgress?.description ??
+          "",
+        courseId: courseIdValue,
+        CourseID: courseIdValue,
+        CourseId: courseIdValue,
+        courseID: courseIdValue,
+        courseName: courseNameValue,
+        CourseName: courseNameValue,
+        courseCode: courseCodeValue,
+        CourseCode: courseCodeValue,
+      };
+
+      const updated = await updateSubject(subjectIdValue, updatePayload);
+      const normalized = {
+        ...updated,
+        courseName: updated?.courseName ?? courseNameValue,
+      };
+
+      setSubjects((list) => {
+        const filtered = (list || []).filter(
+          (s) =>
+            String(s.id ?? s.SubjectID ?? s.subjectId ?? "") !==
+            String(subjectIdValue ?? "")
+        );
+        return [normalized, ...filtered];
+      });
+
+      setShowCoursePicker(false);
+      setSubjectInProgress(null);
+      setSubjectDraftData(null);
+      setSelectedCourseIds([]);
+      setCourseStepError("");
+    } catch (err) {
+      console.error("AdminSubjects.linkCourse:", err);
+      setCourseStepError(
+        "Unable to link the subject to the course. Please try again."
+      );
+    } finally {
+      setLinkingCourse(false);
+    }
+  };
+
+  const handleCoursePickerClose = async () => {
+    if (linkingCourse) return;
+    setShowCoursePicker(false);
+    if (subjectInProgress?.id) {
+      try {
+        await deleteSubject(subjectInProgress.id);
+      } catch (err) {
+        console.warn("AdminSubjects.cancelNewSubject:", err);
+      }
+    }
+    setSubjectInProgress(null);
+    setSubjectDraftData(null);
+    setSelectedCourseIds([]);
+    setCourseStepError("");
   };
 
   // Open edit modal. Accept either the subject object or an id.
@@ -121,6 +314,13 @@ const AdminSubjects = () => {
     }
   };
 
+  const courseFormSubjectId =
+    subjectInProgress?.id ??
+    subjectDraftData?.id ??
+    subjectDraftData?.SubjectID ??
+    subjectDraftData?.subjectId ??
+    "";
+
   if (loading) return (<Loader size="md" className="py-2" />);
 
   return (
@@ -133,7 +333,17 @@ const AdminSubjects = () => {
           </p>
         </div>
         <div>
-          <Button onClick={() => setShowAdd(true)} variant="primary">
+          <Button
+            onClick={() => {
+              setSubjectDraftData(null);
+              setSubjectInProgress(null);
+              setSelectedCourseIds([]);
+              setCourseStepError("");
+              setShowCoursePicker(false);
+              setShowAdd(true);
+            }}
+            variant="primary"
+          >
             Add Subject
           </Button>
         </div>
@@ -144,7 +354,17 @@ const AdminSubjects = () => {
           title="No subjects yet"
           description="Create subjects and assign them to courses so teachers and students can find them."
           action={
-            <Button variant="primary" onClick={() => setShowAdd(true)}>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setSubjectDraftData(null);
+                setSubjectInProgress(null);
+                setSelectedCourseIds([]);
+                setCourseStepError("");
+                setShowCoursePicker(false);
+                setShowAdd(true);
+              }}
+            >
               Add Subject
             </Button>
           }
@@ -203,12 +423,22 @@ const AdminSubjects = () => {
 
       <Modal
         isOpen={showAdd}
-        onClose={() => setShowAdd(false)}
-        title="Add Subject"
+        onClose={() => {
+          if (creatingSubject) return;
+          setShowAdd(false);
+          setSubjectDraftData(null);
+        }}
+        title="Step 1 of 2 — Add Subject"
       >
         <SubjectForm
-          onSubmit={handleCreate}
-          onCancel={() => setShowAdd(false)}
+          step={1}
+          onSubmit={handleSubjectDetailsSubmit}
+          onCancel={() => {
+            if (creatingSubject) return;
+            setShowAdd(false);
+            setSubjectDraftData(null);
+          }}
+          loading={creatingSubject}
         />
       </Modal>
 
@@ -256,6 +486,24 @@ const AdminSubjects = () => {
           viewLoading && <Loader size="sm" className="py-2" />
         )}
       </Modal>
+
+      <CoursePickerModal
+        isOpen={showCoursePicker}
+        onClose={handleCoursePickerClose}
+        initialSelected={selectedCourseIds}
+        onProceed={handleLinkCourse}
+        title="Step 2 of 2 — Assign Course"
+        description="Select an existing course to link with this subject or add a new one."
+        multiSelect={false}
+        saving={linkingCourse}
+        proceedLabel="Link Course"
+        errorMessage={courseStepError}
+        courseFormDefaults={
+          courseFormSubjectId
+            ? { subjectId: String(courseFormSubjectId) }
+            : { subjectId: "" }
+        }
+      />
     </div>
   );
 };
