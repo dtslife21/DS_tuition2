@@ -788,8 +788,8 @@ const UserForm = ({
         </>
       )}
 
-      {/* Student role-specific fields. Only show account core in core step. */}
-      {userTypeID === "3" && showRoleFields && (
+      {/* Student fields split into core (step 1) and role-specific (step 2) */}
+      {userTypeID === "3" && (
         <>
           {showCoreFields && (
             <>
@@ -902,255 +902,261 @@ const UserForm = ({
               </div>
 
               {renderPhotoField()}
+
+              {/* Password (core); only in create flow and only in core step */}
+              {!user && (
+                <div>
+                  <label
+                    htmlFor="PasswordHash"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Password *
+                  </label>
+                  <input
+                    id="PasswordHash"
+                    name="PasswordHash"
+                    type="password"
+                    placeholder="Enter password"
+                    {...register("PasswordHash", {
+                      required: "Password is required",
+                      minLength: {
+                        value: 6,
+                        message: "Password must be at least 6 characters",
+                      },
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  {errors.PasswordHash && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.PasswordHash.message}
+                    </p>
+                  )}
+                </div>
+              )}
             </>
           )}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Class */}
-            <div>
-              <label
-                htmlFor="Class"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Class *
-              </label>
-              <select
-                id="Class"
-                {...register("Class", { required: "Class is required" })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-                <option value="">Select class</option>
-                {Array.from({ length: 13 }, (_, i) => `Grade ${i + 1}`).map(
-                  (g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  )
-                )}
-              </select>
-              {errors.Class && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.Class.message}
-                </p>
-              )}
-            </div>
-
-            {/* ID Number with generator */}
-            <div>
-              <label
-                htmlFor="IDNumber"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                ID Number *
-              </label>
-              <div className="mt-1">
-                <input
-                  disabled={false}
-                  id="IDNumber"
-                  type="text"
-                  placeholder={
-                    loadingStudents ? "Generating ID..." : "Auto-generated ID"
-                  }
-                  readOnly={false} /* keep editable but prefilled */
-                  {...register("IDNumber", {
-                    required: "ID number is required",
-                    pattern: {
-                      // enforce leading 'R' followed by at least 3 digits (R001)
-                      value: /^R\d{3,}$/i,
-                      message: "Use format R001, R002...",
-                    },
-                  })}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Format: R001, R002, R003...
-              </p>
-              {errors.IDNumber && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.IDNumber.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Enrollment Date (replaces Birthday) */}
-            <div>
-              <label
-                htmlFor="EnrollmentDate"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Enrollment Date *
-              </label>
-              <input
-                id="EnrollmentDate"
-                type="date"
-                {...register("EnrollmentDate", {
-                  required: "Enrollment date is required",
-                  validate: (v) =>
-                    (v && new Date(v) <= new Date()) ||
-                    "Enrollment date can't be in the future",
-                })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              {errors.EnrollmentDate && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.EnrollmentDate.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Guardian name */}
-            <div>
-              <label
-                htmlFor="GuardianName"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Guardian's Name *
-              </label>
-              <input
-                id="GuardianName"
-                type="text"
-                {...register("GuardianName", {
-                  required: "Guardian's name is required",
-                })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              {errors.GuardianName && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.GuardianName.message}
-                </p>
-              )}
-            </div>
-
-            {/* Guardian phone */}
-            <div>
-              <label
-                htmlFor="GuardianPhone"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Guardian's Phone *
-              </label>
-              <input
-                id="GuardianPhone"
-                type="tel"
-                placeholder="(+947) 456-7890"
-                {...register("GuardianPhone", {
-                  required: "Guardian's phone is required",
-                  validate: (v) =>
-                    String(v).replace(/\D/g, "").length >= 10 ||
-                    "Enter at least 10 digits",
-                })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              {errors.GuardianPhone && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.GuardianPhone.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Student: Manage enrolled courses (only when editing an existing user) */}
-          {initialUser && (
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Enrolled Courses
-                </label>
-                <div className="mt-2 rounded-md border dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
-                  {studentSelectedCourseIds.length ? (
-                    <ul className="flex flex-wrap gap-2">
-                      {studentSelectedCourseIds.map((cid) => {
-                        const c = (courses || []).find(
-                          (x) =>
-                            String(
-                              x.id ??
-                                x.CourseID ??
-                                x.CourseId ??
-                                x.courseId ??
-                                ""
-                            ) === String(cid)
-                        );
-                        const label =
-                          c?.name ||
-                          c?.CourseName ||
-                          c?.title ||
-                          c?.courseName ||
-                          `Course ${cid}`;
-                        return (
-                          <li
-                            key={cid}
-                            className="inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-200"
-                          >
-                            {label}
-                            <button
-                              type="button"
-                              className="text-green-600 hover:text-green-800 dark:text-green-300"
-                              onClick={() =>
-                                setStudentSelectedCourseIds((prev) =>
-                                  prev.filter((id) => id !== cid)
-                                )
-                              }
-                            >
-                              ✕
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <div className="text-xs text-gray-500">
-                      No courses enrolled yet.
-                    </div>
+          {showRoleFields && (
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* Class */}
+                <div>
+                  <label
+                    htmlFor="Class"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Class *
+                  </label>
+                  <select
+                    id="Class"
+                    {...register("Class", { required: "Class is required" })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  >
+                    <option value="">Select class</option>
+                    {Array.from({ length: 13 }, (_, i) => `Grade ${i + 1}`).map(
+                      (g) => (
+                        <option key={g} value={g}>
+                          {g}
+                        </option>
+                      )
+                    )}
+                  </select>
+                  {errors.Class && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.Class.message}
+                    </p>
                   )}
+                </div>
 
-                  <div className="mt-3">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setShowStudentCoursePicker(true)}
-                    >
-                      Manage Enrolled Courses
-                    </Button>
+                {/* ID Number with generator */}
+                <div>
+                  <label
+                    htmlFor="IDNumber"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    ID Number *
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      disabled={false}
+                      id="IDNumber"
+                      type="text"
+                      placeholder={
+                        loadingStudents
+                          ? "Generating ID..."
+                          : "Auto-generated ID"
+                      }
+                      readOnly={false} /* keep editable but prefilled */
+                      {...register("IDNumber", {
+                        required: "ID number is required",
+                        pattern: {
+                          // enforce leading 'R' followed by at least 3 digits (R001)
+                          value: /^R\d{3,}$/i,
+                          message: "Use format R001, R002...",
+                        },
+                      })}
+                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
                   </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Format: R001, R002, R003...
+                  </p>
+                  {errors.IDNumber && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.IDNumber.message}
+                    </p>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Password (core); only in create flow and only in core step) */}
-          {!user && showCoreFields && (
-            <div>
-              <label
-                htmlFor="PasswordHash"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Password *
-              </label>
-              <input
-                id="PasswordHash"
-                name="PasswordHash"
-                type="password"
-                placeholder="Enter password"
-                {...register("PasswordHash", {
-                  required: "Password is required",
-                  minLength: {
-                    value: 6,
-                    message: "Password must be at least 6 characters",
-                  },
-                })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              {errors.PasswordHash && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.PasswordHash.message}
-                </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* Enrollment Date (replaces Birthday) */}
+                <div>
+                  <label
+                    htmlFor="EnrollmentDate"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Enrollment Date *
+                  </label>
+                  <input
+                    id="EnrollmentDate"
+                    type="date"
+                    {...register("EnrollmentDate", {
+                      required: "Enrollment date is required",
+                      validate: (v) =>
+                        (v && new Date(v) <= new Date()) ||
+                        "Enrollment date can't be in the future",
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  {errors.EnrollmentDate && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.EnrollmentDate.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* Guardian name */}
+                <div>
+                  <label
+                    htmlFor="GuardianName"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Guardian's Name *
+                  </label>
+                  <input
+                    id="GuardianName"
+                    type="text"
+                    {...register("GuardianName", {
+                      required: "Guardian's name is required",
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  {errors.GuardianName && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.GuardianName.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Guardian phone */}
+                <div>
+                  <label
+                    htmlFor="GuardianPhone"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Guardian's Phone *
+                  </label>
+                  <input
+                    id="GuardianPhone"
+                    type="tel"
+                    placeholder="(+947) 456-7890"
+                    {...register("GuardianPhone", {
+                      required: "Guardian's phone is required",
+                      validate: (v) =>
+                        String(v).replace(/\D/g, "").length >= 10 ||
+                        "Enter at least 10 digits",
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  {errors.GuardianPhone && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.GuardianPhone.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Student: Manage enrolled courses (only when editing an existing user) */}
+              {initialUser && (
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Enrolled Courses
+                    </label>
+                    <div className="mt-2 rounded-md border dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
+                      {studentSelectedCourseIds.length ? (
+                        <ul className="flex flex-wrap gap-2">
+                          {studentSelectedCourseIds.map((cid) => {
+                            const c = (courses || []).find(
+                              (x) =>
+                                String(
+                                  x.id ??
+                                    x.CourseID ??
+                                    x.CourseId ??
+                                    x.courseId ??
+                                    ""
+                                ) === String(cid)
+                            );
+                            const label =
+                              c?.name ||
+                              c?.CourseName ||
+                              c?.title ||
+                              c?.courseName ||
+                              `Course ${cid}`;
+                            return (
+                              <li
+                                key={cid}
+                                className="inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-200"
+                              >
+                                {label}
+                                <button
+                                  type="button"
+                                  className="text-green-600 hover:text-green-800 dark:text-green-300"
+                                  onClick={() =>
+                                    setStudentSelectedCourseIds((prev) =>
+                                      prev.filter((id) => id !== cid)
+                                    )
+                                  }
+                                >
+                                  ✕
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <div className="text-xs text-gray-500">
+                          No courses enrolled yet.
+                        </div>
+                      )}
+
+                      <div className="mt-3">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => setShowStudentCoursePicker(true)}
+                        >
+                          Manage Enrolled Courses
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
-            </div>
+            </>
           )}
         </>
       )}
@@ -1274,74 +1280,72 @@ const UserForm = ({
             />
           </div>
 
-          {/* Teacher: Manage assigned courses (only shown when editing an existing teacher) */}
-          {initialUser && (
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Assigned Courses
-              </label>
-              <div className="mt-2 rounded-md border dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
-                {selectedCourseIds.length ? (
-                  <ul className="flex flex-wrap gap-2">
-                    {selectedCourseIds.map((cid) => {
-                      const c = (courses || []).find(
-                        (x) =>
-                          String(
-                            x.id ?? x.CourseID ?? x.CourseId ?? x.courseId ?? ""
-                          ) === String(cid)
-                      );
-                      const label =
-                        c?.name ||
-                        c?.CourseName ||
-                        c?.title ||
-                        c?.courseName ||
-                        `Course ${cid}`;
-                      return (
-                        <li
-                          key={cid}
-                          className="inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200"
+          {/* Teacher: Manage assigned courses (available in create and edit) */}
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Assigned Courses
+            </label>
+            <div className="mt-2 rounded-md border dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
+              {selectedCourseIds.length ? (
+                <ul className="flex flex-wrap gap-2">
+                  {selectedCourseIds.map((cid) => {
+                    const c = (courses || []).find(
+                      (x) =>
+                        String(
+                          x.id ?? x.CourseID ?? x.CourseId ?? x.courseId ?? ""
+                        ) === String(cid)
+                    );
+                    const label =
+                      c?.name ||
+                      c?.CourseName ||
+                      c?.title ||
+                      c?.courseName ||
+                      `Course ${cid}`;
+                    return (
+                      <li
+                        key={cid}
+                        className="inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200"
+                      >
+                        {label}
+                        <button
+                          type="button"
+                          className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
+                          onClick={() =>
+                            setSelectedCourseIds((prev) =>
+                              prev.filter((id) => id !== cid)
+                            )
+                          }
                         >
-                          {label}
-                          <button
-                            type="button"
-                            className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
-                            onClick={() =>
-                              setSelectedCourseIds((prev) =>
-                                prev.filter((id) => id !== cid)
-                              )
-                            }
-                          >
-                            ✕
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <div className="text-xs text-gray-500">
-                    No courses assigned yet.
-                  </div>
-                )}
-
-                <div className="mt-3 flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowTeacherCoursePicker(true)}
-                  >
-                    Manage Courses
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setShowCourseModal(true)}
-                  >
-                    + Add New Course
-                  </Button>
+                          ✕
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div className="text-xs text-gray-500">
+                  No courses assigned yet.
                 </div>
+              )}
+
+              <div className="mt-3 flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowTeacherCoursePicker(true)}
+                >
+                  Manage Courses
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowCourseModal(true)}
+                >
+                  + Add New Course
+                </Button>
               </div>
             </div>
-          )}
+          </div>
         </div>
       )}
 

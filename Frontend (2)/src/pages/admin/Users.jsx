@@ -115,13 +115,15 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [editStep, setEditStep] = useState(1); // 1: core details, 2: role-specific
+  const [editStep, setEditStep] = useState(1); // 1: core details, 2: role-specific (edit flow)
+  const [createStep, setCreateStep] = useState(1); // 1: core details, 2: role-specific (create flow)
   const [formError, setFormError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   const [forceUserType, setForceUserType] = useState(null);
   const [showCoursePicker, setShowCoursePicker] = useState(false);
   const [initialCourseSelection, setInitialCourseSelection] = useState([]);
   const [pendingUserData, setPendingUserData] = useState(null); // holds student payload awaiting course pick
+  const [pendingCreateCore, setPendingCreateCore] = useState(null); // stores step-1 (core) data for create flow
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -143,32 +145,62 @@ const AdminUsers = () => {
       setFormError("");
 
       if (!selectedUser) {
-        // Creation flow
+        // Creation flow (2-step wizard)
         const typeId = String(userData.UserTypeID || userData.userTypeID || "");
-        // If it's a student, ask to choose course(s) first via popup
-        if (typeId === "3") {
-          setPendingUserData({
+
+        // If admin, there's no role-specific step — create immediately from step 1
+        if (createStep === 1 && typeId === "1") {
+          const createdAdmin = await createUser({
             ...userData,
             IsActive: true,
             ProfilePicture: null,
           });
-          setShowModal(false); // close form to show picker
-          setInitialCourseSelection([]);
-          setShowCoursePicker(true);
-          return; // defer actual creation until after course picking
+          setUsers([...users, createdAdmin]);
+          setShowModal(false);
+          setForceUserType(null);
+          setCreateStep(1);
+          setPendingCreateCore(null);
+          return;
         }
 
-        const newUser = {
+        if (createStep === 1) {
+          // Store core details and move to step 2
+          setPendingCreateCore({ ...userData });
+          // Lock user type for step 2
+          setForceUserType(Number(typeId) || null);
+          setCreateStep(2);
+          return; // don't call API yet
+        }
+
+        // Step 2: role-specific submit
+        const mergedCreate = {
+          ...(pendingCreateCore || {}),
           ...userData,
+          UserTypeID: Number(
+            typeId ||
+              (pendingCreateCore?.UserTypeID ?? pendingCreateCore?.userTypeID)
+          ),
           IsActive: true,
           ProfilePicture: null,
         };
 
-        const createdUser = await createUser(newUser);
+        if (typeId === "3") {
+          // Student: after step 2, open course picker to finish
+          setPendingUserData(mergedCreate);
+          setShowModal(false);
+          setInitialCourseSelection([]);
+          setShowCoursePicker(true);
+          // reset wizard state
+          setCreateStep(1);
+          setPendingCreateCore(null);
+          return;
+        }
 
-        // If this is a teacher, post only the teacher-specific fields to the
-        // Teachers API so the backend's TeachersController can persist them.
+        // Create base user
+        const createdUser = await createUser(mergedCreate);
+
         if (typeId === "2") {
+          // Create teacher record and assign courses if provided
           try {
             const teacherPayload = {
               TeacherID:
@@ -176,16 +208,15 @@ const AdminUsers = () => {
                 createdUser.id ??
                 createdUser.userID ??
                 createdUser.userId,
-              EmployeeID: newUser.EmployeeID || undefined,
-              Department: newUser.Department || undefined,
-              Qualification: newUser.Qualification || undefined,
-              JoiningDate: newUser.JoiningDate || undefined,
-              Bio: newUser.Bio || undefined,
+              EmployeeID: mergedCreate.EmployeeID || undefined,
+              Department: mergedCreate.Department || undefined,
+              Qualification: mergedCreate.Qualification || undefined,
+              JoiningDate: mergedCreate.JoiningDate || undefined,
+              Bio: mergedCreate.Bio || undefined,
             };
 
             const createdTeacher = await createTeacher(teacherPayload);
 
-            // merge teacher info into the created user for UI convenience
             const merged = {
               ...createdUser,
               TeacherID:
@@ -196,15 +227,13 @@ const AdminUsers = () => {
               Teacher: createdTeacher,
             };
 
-            // If courses were selected in the form, assign them to this teacher
             try {
               const teacherId =
                 merged.UserID ?? merged.id ?? merged.userID ?? merged.userId;
-              const selectedCourseIds = (newUser.CourseIDs || []).map((v) =>
-                Number(v)
+              const selectedCourseIds = (mergedCreate.CourseIDs || []).map(
+                (v) => Number(v)
               );
               if (teacherId && selectedCourseIds.length) {
-                // Assign each selected course to this teacher
                 for (const cid of selectedCourseIds) {
                   await updateCourse(cid, { TeacherID: teacherId });
                 }
@@ -219,13 +248,18 @@ const AdminUsers = () => {
 
             setUsers([...users, merged]);
           } catch (err) {
-            // If teacher creation fails, still show created user but surface error
             setUsers([...users, createdUser]);
             setFormError(err?.message || "Failed to create teacher record");
           }
         } else {
           setUsers([...users, createdUser]);
         }
+
+        // Reset wizard state
+        setShowModal(false);
+        setForceUserType(null);
+        setCreateStep(1);
+        setPendingCreateCore(null);
       } else {
         const userId = selectedUser.UserID || selectedUser.id;
 
@@ -499,16 +533,14 @@ const AdminUsers = () => {
   };
 
   const openCreateFor = (typeId) => {
-    // For teachers, first open the course picker modal
+    // Initialize 2-step create flow
     setForceUserType(typeId);
     setSelectedUser(null);
     setFormError("");
-    if (typeId === 2) {
-      // show course picker first
-      setShowCoursePicker(true);
-    } else {
-      setShowModal(true);
-    }
+    setInitialCourseSelection([]);
+    setPendingCreateCore(null);
+    setCreateStep(1);
+    setShowModal(true);
   };
 
   const closeModal = () => {
@@ -517,6 +549,8 @@ const AdminUsers = () => {
     setFormError("");
     setForceUserType(null);
     setEditStep(1);
+    setCreateStep(1);
+    setPendingCreateCore(null);
   };
 
   if (loading) {
@@ -797,14 +831,20 @@ const AdminUsers = () => {
                   ]}
                   forceUserType={forceUserType}
                   initialCourseSelection={initialCourseSelection}
-                  showCoreFields={Boolean(selectedUser) ? editStep === 1 : true}
-                  showRoleFields={Boolean(selectedUser) ? editStep === 2 : true}
+                  showCoreFields={
+                    Boolean(selectedUser) ? editStep === 1 : createStep === 1
+                  }
+                  showRoleFields={
+                    Boolean(selectedUser) ? editStep === 2 : createStep === 2
+                  }
                   submitLabel={
                     selectedUser
                       ? editStep === 1
                         ? "Next"
                         : "Update"
-                      : undefined
+                      : createStep === 1
+                      ? "Next"
+                      : "Create"
                   }
                 />
               </div>
