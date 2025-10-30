@@ -1,11 +1,61 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import Cropper from "react-easy-crop";
 import Button from "../common/Button";
 import Modal from "../common/Modal";
 import CourseForm from "../courses/CourseForm";
 import { getAllCourses, createCourse } from "../../services/courseService";
 import { getAllStudents } from "../../services/studentService";
 import CoursePickerModal from "../courses/CoursePickerModal";
+
+const MAX_PROFILE_PHOTO_SIZE = 2 * 1024 * 1024; // 2 MB cap for inline uploads
+const PROFILE_PHOTO_ASPECT_RATIO = 1; // keep avatars square
+
+const createImage = (url) =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener("load", () => resolve(image));
+    image.addEventListener("error", (error) => reject(error));
+    image.setAttribute("crossOrigin", "anonymous");
+    image.src = url;
+  });
+
+const getCroppedImage = async (imageSrc, cropPixels) => {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("Could not get canvas context");
+  }
+
+  const target = cropPixels || {
+    x: 0,
+    y: 0,
+    width: image.width,
+    height: image.height,
+  };
+
+  const width = Math.max(1, Math.round(target.width));
+  const height = Math.max(1, Math.round(target.height));
+
+  canvas.width = width;
+  canvas.height = height;
+
+  context.drawImage(
+    image,
+    target.x,
+    target.y,
+    target.width,
+    target.height,
+    0,
+    0,
+    width,
+    height
+  );
+
+  return canvas.toDataURL("image/jpeg", 0.9);
+};
 
 const UserForm = ({
   onSubmit,
@@ -35,6 +85,204 @@ const UserForm = ({
     defaultValues: getDefaults(initialUser, forceUserType),
   });
 
+  const initialProfilePicture =
+    initialUser?.ProfilePicture || initialUser?.profilePicture || "";
+  const [photoPreview, setPhotoPreview] = useState(initialProfilePicture);
+  const [photoError, setPhotoError] = useState("");
+  const [isPhotoEditorOpen, setIsPhotoEditorOpen] = useState(false);
+  const [rawPhoto, setRawPhoto] = useState("");
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [isSavingCrop, setIsSavingCrop] = useState(false);
+  const [editorError, setEditorError] = useState("");
+
+  useEffect(() => {
+    register("ProfilePicture");
+  }, [register]);
+
+  const openPhotoEditor = (imageData) => {
+    if (!imageData) return;
+    setRawPhoto(imageData);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    setEditorError("");
+    setIsPhotoEditorOpen(true);
+  };
+
+  const handlePhotoSelect = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      event.target.value = "";
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please select an image file (PNG or JPG).");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_PROFILE_PHOTO_SIZE) {
+      setPhotoError("Image must be smaller than 2 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    setPhotoError("");
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result?.toString() || "";
+      if (!result) {
+        setPhotoError("Could not read the selected file.");
+        return;
+      }
+      openPhotoEditor(result);
+    };
+    reader.onerror = () => {
+      setPhotoError("Could not read the selected file.");
+    };
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  };
+
+  const handlePhotoRemove = () => {
+    if (!isSavingCrop) {
+      setIsPhotoEditorOpen(false);
+    }
+    setPhotoPreview("");
+    setValue("ProfilePicture", "", {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+    setPhotoError("");
+    setRawPhoto("");
+    setEditorError("");
+  };
+
+  const handleExistingPhotoEdit = () => {
+    if (photoPreview) {
+      openPhotoEditor(photoPreview);
+    }
+  };
+
+  const handlePhotoEditorClose = () => {
+    if (isSavingCrop) return;
+    setIsPhotoEditorOpen(false);
+    setRawPhoto("");
+    setEditorError("");
+  };
+
+  const handleCropComplete = (_, croppedPixels) => {
+    setCroppedAreaPixels(croppedPixels);
+  };
+
+  const handleZoomChange = (event) => {
+    setZoom(Number(event.target.value));
+  };
+
+  const estimateBase64Size = (dataUrl) => {
+    if (!dataUrl) return 0;
+    const base64 = dataUrl.split(",")[1] || "";
+    return Math.ceil((base64.length * 3) / 4);
+  };
+
+  const handleConfirmCrop = async () => {
+    if (!rawPhoto) return;
+    setIsSavingCrop(true);
+    setEditorError("");
+    try {
+      const cropped = await getCroppedImage(rawPhoto, croppedAreaPixels);
+      const size = estimateBase64Size(cropped);
+      if (size > MAX_PROFILE_PHOTO_SIZE) {
+        setEditorError(
+          "Cropped image is still larger than 2 MB. Try a tighter crop."
+        );
+        setPhotoError(
+          "Cropped image is still larger than 2 MB. Try a tighter crop."
+        );
+        return;
+      }
+      setPhotoPreview(cropped);
+      setValue("ProfilePicture", cropped, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+      setPhotoError("");
+      setIsPhotoEditorOpen(false);
+      setRawPhoto("");
+    } catch (error) {
+      console.error("Failed to crop image", error);
+      setEditorError("Could not process the selected area. Please try again.");
+      setPhotoError("Could not process the selected area. Please try again.");
+    } finally {
+      setIsSavingCrop(false);
+    }
+  };
+
+  const renderPhotoField = () => (
+    <div className="mt-4 space-y-2">
+      <label
+        htmlFor="profile-photo-input"
+        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+      >
+        Profile Photo
+      </label>
+      <input
+        id="profile-photo-input"
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={handlePhotoSelect}
+      />
+      <div className="mt-2 flex flex-wrap items-center gap-4">
+        {photoPreview ? (
+          <img
+            src={photoPreview}
+            alt="Selected profile"
+            className="h-16 w-16 rounded-full border border-gray-200 object-cover shadow-sm dark:border-gray-700"
+          />
+        ) : (
+          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-gray-300 bg-gray-50 text-xs text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
+            No photo
+          </div>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <label
+            htmlFor="profile-photo-input"
+            className="cursor-pointer inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+          >
+            {photoPreview ? "Change Photo" : "Upload Photo"}
+          </label>
+          {photoPreview && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleExistingPhotoEdit}
+            >
+              Edit Crop
+            </Button>
+          )}
+          {photoPreview && (
+            <button
+              type="button"
+              onClick={handlePhotoRemove}
+              className="inline-flex items-center justify-center rounded-md border border-transparent bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-200 dark:hover:bg-red-900/60"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
+      {photoError && <p className="text-sm text-red-600">{photoError}</p>}
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        PNG or JPG up to 2 MB.
+      </p>
+    </div>
+  );
+
   // derive default form values from a user object (or empty for create)
   function getDefaults(u, forcedType) {
     return {
@@ -47,6 +295,7 @@ const UserForm = ({
       UserTypeID: forcedType
         ? String(forcedType)
         : u?.UserTypeID || u?.userTypeID || "",
+      ProfilePicture: u?.ProfilePicture || u?.profilePicture || "",
       // student specific defaults (for the redesigned student form)
       Class: u?.CurrentGrade || u?.currentGrade || "",
       IDNumber: u?.RollNumber || u?.rollNumber || "",
@@ -128,6 +377,12 @@ const UserForm = ({
   useEffect(() => {
     const defaults = getDefaults(initialUser, forceUserType);
     reset(defaults);
+    setPhotoPreview(defaults.ProfilePicture || "");
+    setValue("ProfilePicture", defaults.ProfilePicture || "", {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    setPhotoError("");
     // Also sync selected courses from the user object
     const nextSelected = (defaults.AssignedCourseIDs || []).map((v) =>
       String(v)
@@ -297,7 +552,16 @@ const UserForm = ({
       LastName: synthesized.LastName,
       UserTypeID: Number(synthesized.UserTypeID),
       IsActive: true,
-      ProfilePicture: null,
+      ProfilePicture: (() => {
+        const value =
+          typeof synthesized.ProfilePicture === "string" &&
+          synthesized.ProfilePicture.length
+            ? synthesized.ProfilePicture
+            : typeof photoPreview === "string" && photoPreview.length
+            ? photoPreview
+            : "";
+        return value || null;
+      })(),
       ...(isStudent && {
         RollNumber: synthesized.RollNumber,
         CurrentGrade: synthesized.CurrentGrade,
@@ -519,6 +783,8 @@ const UserForm = ({
               </p>
             )}
           </div>
+
+          {renderPhotoField()}
         </>
       )}
 
@@ -634,6 +900,8 @@ const UserForm = ({
                   )}
                 </div>
               </div>
+
+              {renderPhotoField()}
             </>
           )}
 
@@ -1105,6 +1373,69 @@ const UserForm = ({
           }}
           onCancel={() => setShowCourseModal(false)}
         />
+      </Modal>
+
+      <Modal
+        isOpen={isPhotoEditorOpen}
+        onClose={() => {
+          if (!isSavingCrop) {
+            handlePhotoEditorClose();
+          }
+        }}
+        title="Adjust Profile Photo"
+        size="xl"
+      >
+        <div className="space-y-4">
+          <div className="relative h-64 w-full overflow-hidden rounded-md bg-gray-900">
+            {rawPhoto && (
+              <Cropper
+                image={rawPhoto}
+                crop={crop}
+                zoom={zoom}
+                aspect={PROFILE_PHOTO_ASPECT_RATIO}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={handleCropComplete}
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Zoom
+            </label>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={handleZoomChange}
+              className="flex-1 accent-indigo-600"
+            />
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {zoom.toFixed(1)}x
+            </span>
+          </div>
+          {editorError && <p className="text-sm text-red-600">{editorError}</p>}
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handlePhotoEditorClose}
+              disabled={isSavingCrop}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleConfirmCrop}
+              disabled={isSavingCrop}
+            >
+              {isSavingCrop ? "Saving..." : "Save Crop"}
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Course pickers for teacher and student */}
