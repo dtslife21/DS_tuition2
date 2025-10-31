@@ -3,17 +3,24 @@ import { useAuth } from "../../contexts/AuthContext";
 import { getAllUsers } from "../../services/userService";
 import { getAllStudents } from "../../services/studentService";
 import { getAllCourses } from "../../services/courseService";
+import { getAllTeachers } from "../../services/teacherService";
+import { getAllAnnouncements } from "../../services/announcementService";
 import Card from "../common/Card";
 import EmptyState from "../common/EmptyState";
 import Loader from "../common/Loader";
 import Avatar from "../common/Avatar";
+import StatsCard from "../common/StatsCard";
+import AnnouncementList from "../announcements/AnnouncementList";
 
 const AdminDashboard = () => {
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("notices");
 
   const normalizeUserDisplay = (item) => {
     if (!item || typeof item !== "object") {
@@ -66,10 +73,18 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [usersData, studentsData, coursesData] = await Promise.all([
+        const [
+          usersData,
+          studentsData,
+          coursesData,
+          teachersData,
+          announcementsData,
+        ] = await Promise.all([
           getAllUsers(),
           getAllStudents(),
           getAllCourses(),
+          getAllTeachers(),
+          getAllAnnouncements(),
         ]);
 
         setUsers(
@@ -88,11 +103,17 @@ const AdminDashboard = () => {
 
         setStudents(normalizedStudents);
         setCourses(Array.isArray(coursesData) ? coursesData : []);
+        setTeachers(Array.isArray(teachersData) ? teachersData : []);
+        setAnnouncements(
+          Array.isArray(announcementsData) ? announcementsData : []
+        );
       } catch (error) {
         console.error("Error fetching data:", error);
         setUsers([]);
         setStudents([]);
         setCourses([]);
+        setTeachers([]);
+        setAnnouncements([]);
       } finally {
         setLoading(false);
       }
@@ -106,13 +127,79 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <Card title="Total Users" value={users.length} icon="👥" />
-        <Card title="Total Students" value={students.length} icon="👨‍🎓" />
-        <Card title="Total Courses" value={courses.length} icon="📚" />
+    <div className="space-y-8">
+      {/* Stats header */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        <StatsCard icon="🎓" title="Total Students" value={students.length} />
+        <StatsCard icon="�" title="Total Courses" value={courses.length} />
+        <StatsCard icon="🧑‍🏫" title="Total Teachers" value={teachers.length} />
+        <StatsCard icon="💵" title="Fees Collection" value={`Rs.${0}`} />
       </div>
 
+      {/* Notices & Announcements panel */}
+      <Card>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-5 text-white flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-semibold">Notices & Announcements</h3>
+            <p className="text-xs opacity-90">
+              Stay updated with the latest information
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-white/90">
+            <span className="text-lg">🔔</span>
+            <span className="text-lg">🔎</span>
+            <span className="text-lg">⚙️</span>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="border-b border-gray-200 dark:border-gray-700 px-4">
+          <nav className="-mb-px flex gap-6" aria-label="Tabs">
+            <button
+              onClick={() => setTab("notices")}
+              className={`whitespace-nowrap py-4 text-sm font-medium border-b-2 transition-colors ${
+                tab === "notices"
+                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700"
+              }`}
+            >
+              NOTICES ({announcements.length})
+            </button>
+            <button
+              onClick={() => setTab("attachments")}
+              className={`whitespace-nowrap py-4 text-sm font-medium border-b-2 transition-colors ${
+                tab === "attachments"
+                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700"
+              }`}
+            >
+              ATTACHMENTS (0)
+            </button>
+          </nav>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {tab === "notices" ? (
+            announcements.length ? (
+              <AnnouncementList announcements={announcements} />
+            ) : (
+              <EmptyState
+                title="No notices available"
+                description="Check back later for updates"
+              />
+            )
+          ) : (
+            <EmptyState
+              title="No attachments available"
+              description="Attachments shared with announcements will appear here."
+            />
+          )}
+        </div>
+      </Card>
+
+      {/* Recent Users & Courses (kept for quick access) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
