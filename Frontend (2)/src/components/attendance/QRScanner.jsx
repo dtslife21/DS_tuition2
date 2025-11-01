@@ -1,5 +1,6 @@
 // src/components/attendance/QRScanner.jsx
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 import { useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { recordAttendance } from "../../services/attendanceService";
@@ -20,24 +21,33 @@ const QRScanner = () => {
 
   // Simple camera preview to match the uploaded UI
   const videoRef = useRef(null);
-  const streamRef = useRef(null);
+  const readerRef = useRef(null);
+  const controlsRef = useRef(null);
+  const audioCtxRef = useRef(null);
+
+  const [scanError, setScanError] = useState("");
+  const [lastRecord, setLastRecord] = useState(null);
+  const [scanIteration, setScanIteration] = useState(0);
+
+  const teacherId = useMemo(() => {
+    return (
+      user?.teacherId ??
+      user?.TeacherId ??
+      user?.teacherID ??
+      user?.TeacherID ??
+      user?.id ??
+      user?.Id ??
+      user?.userId ??
+      user?.userID ??
+      user?.UserId ??
+      user?.UserID ??
+      null
+    );
+  }, [user]);
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const teacherId =
-          user?.teacherId ??
-          user?.TeacherId ??
-          user?.teacherID ??
-          user?.TeacherID ??
-          user?.id ??
-          user?.Id ??
-          user?.userId ??
-          user?.userID ??
-          user?.UserId ??
-          user?.UserID ??
-          null;
-
         const list = teacherId ? await getTeacherCourses(teacherId) : [];
         setCourses(Array.isArray(list) ? list : []);
         setSelectedCourseId("");
@@ -46,71 +56,376 @@ const QRScanner = () => {
       }
     };
     fetchCourses();
-  }, [user]);
+  }, [teacherId]);
 
-  const stopCamera = () => {
-    const current = streamRef.current;
-    if (current && current.getTracks) {
-      current.getTracks().forEach((t) => t.stop());
+  const stopCamera = useCallback(() => {
+    if (controlsRef.current) {
+      try {
+        controlsRef.current.stop();
+      } catch (_) {
+        // ignore stop errors
+      }
+      controlsRef.current = null;
     }
-    streamRef.current = null;
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
+
+    if (readerRef.current) {
+      try {
+        readerRef.current.reset();
+      } catch (_) {
+        // ignore reset errors
+      }
+      readerRef.current = null;
     }
-  };
+
+    const video = videoRef.current;
+    if (video && video.srcObject) {
+      const tracks =
+        typeof video.srcObject.getTracks === "function"
+          ? video.srcObject.getTracks()
+          : [];
+      tracks.forEach((track) => {
+        try {
+          track.stop();
+        } catch (_) {
+          // ignore stop errors
+        }
+      });
+      video.srcObject = null;
+    }
+  }, []);
 
   const path = location?.pathname?.toLowerCase() ?? "";
   const isTeacherAttendanceRoute =
     path.includes("teacher") && path.includes("attendance");
 
-  useEffect(() => {
-    if (!isTeacherAttendanceRoute) {
+  const canScan = isTeacherAttendanceRoute && Boolean(selectedCourseId);
+
+  const resolveAttendanceDate = useCallback(() => {
+    if (selectedDate) {
+      const date = new Date(selectedDate);
+      if (!Number.isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    }
+
+    return new Date().toISOString();
+  }, [selectedDate]);
+
+  const handleDecoded = useCallback(
+    async (rawText) => {
+      if (!rawText) {
+        setStatus("error");
+        setMessage("Empty QR result. Please try again.");
+        setScanError("QR code did not contain any data.");
+        return;
+      }
+
       stopCamera();
+      setStatus("loading");
+      setMessage("");
+      setScanError("");
+      setLastRecord(null);
+
+      let parsed = null;
+      try {
+        parsed = JSON.parse(rawText);
+      } catch (_) {
+        parsed = rawText;
+      }
+
+      const payload = parsed && typeof parsed === "object" ? parsed : {};
+
+      const qrType =
+        payload.type ??
+        payload.Type ??
+        payload.qrType ??
+        payload.QRType ??
+        null;
+
+      if (qrType && String(qrType).toLowerCase() !== "student-attendance") {
+        setStatus("error");
+        setMessage("This QR code is not a student attendance code.");
+        setScanError(
+          "Present a student attendance QR generated from the student portal."
+        );
+        return;
+      }
+
+      const resolvedStudentId = (() => {
+        if (payload && typeof payload === "object") {
+          return (
+            payload.studentId ??
+            payload.StudentID ??
+            payload.studentID ??
+            payload.id ??
+            payload.Id ??
+            payload.userId ??
+            payload.UserID ??
+            null
+          );
+        }
+
+        if (typeof parsed === "string") {
+          const trimmed = parsed.trim();
+          if (!trimmed.length) {
+            return null;
+          }
+          if (trimmed.startsWith("STD-")) {
+            const parts = trimmed.split("-");
+            return parts.length >= 2 ? parts[1] : trimmed;
+          }
+          return trimmed;
+        }
+
+        return null;
+      })();
+
+      if (!resolvedStudentId) {
+        setStatus("error");
+        setMessage("Invalid student QR code detected.");
+        setScanError(
+          "Could not extract student information from this QR code."
+        );
+        return;
+      }
+
+      const resolvedCourseId =
+        selectedCourseId ||
+        payload.courseId ||
+        payload.CourseID ||
+        payload.courseID ||
+        null;
+
+      if (!resolvedCourseId) {
+        setStatus("error");
+        setMessage("Select a course before scanning student QR codes.");
+        setScanError("Course selection is required to record attendance.");
+        return;
+      }
+
+      const resolvedName =
+        payload.name ??
+        payload.studentName ??
+        payload.StudentName ??
+        payload.fullName ??
+        payload.FullName ??
+        "";
+
+      const attendanceDate = resolveAttendanceDate();
+
+      try {
+        const record = await recordAttendance({
+          sessionId:
+            sessionId ??
+            payload.sessionId ??
+            payload.sessionID ??
+            payload.SessionID ??
+            null,
+          studentId: resolvedStudentId,
+          courseId: resolvedCourseId,
+          teacherId,
+          date: attendanceDate,
+          status: payload.status ?? "Present",
+        });
+
+        setStatus("success");
+        // play a short beep to indicate successful scan
+        try {
+          if (typeof window !== "undefined") {
+            const AudioContext =
+              window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+              if (!audioCtxRef.current)
+                audioCtxRef.current = new AudioContext();
+              const ctx = audioCtxRef.current;
+              // try to resume context if suspended (some browsers require a user gesture)
+              if (
+                ctx.state === "suspended" &&
+                typeof ctx.resume === "function"
+              ) {
+                ctx.resume().catch(() => {});
+              }
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = "sine";
+              osc.frequency.value = 950;
+              gain.gain.value = 0.06;
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              const now = ctx.currentTime;
+              osc.start(now);
+              osc.stop(now + 0.18);
+              // cleanup
+              setTimeout(() => {
+                try {
+                  osc.disconnect();
+                  gain.disconnect();
+                } catch (_) {}
+              }, 500);
+            }
+          }
+        } catch (e) {
+          // ignore audio errors
+        }
+        setLastRecord(record);
+        const displayName =
+          resolvedName ||
+          record?.studentName ||
+          record?.StudentName ||
+          String(resolvedStudentId);
+        setMessage(`Attendance recorded for ${displayName}.`);
+      } catch (error) {
+        console.error("Failed to record attendance", error);
+        setStatus("error");
+        setMessage("Failed to record attendance. Please try again.");
+        setScanError(
+          "Recording attendance failed. Check your connection and retry."
+        );
+      }
+    },
+    [resolveAttendanceDate, selectedCourseId, sessionId, stopCamera, teacherId]
+  );
+
+  useEffect(() => {
+    if (!canScan) {
+      stopCamera();
+      if (!selectedCourseId || !isTeacherAttendanceRoute) {
+        setStatus("idle");
+        setMessage("");
+        setScanError("");
+        setLastRecord(null);
+      }
       return undefined;
     }
 
     let cancelled = false;
+    const videoElement = videoRef.current;
 
-    const setupCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-        });
+    if (!videoElement) {
+      return undefined;
+    }
 
+    setStatus("scanning");
+    setMessage("");
+    setScanError("");
+    setLastRecord(null);
+
+    const reader = new BrowserMultiFormatReader();
+    readerRef.current = reader;
+
+    reader
+      .decodeFromVideoDevice(
+        undefined,
+        videoElement,
+        (result, err, controls) => {
+          if (cancelled) {
+            try {
+              controls?.stop();
+            } catch (_) {
+              // ignore stop errors when cancelled
+            }
+            return;
+          }
+
+          if (result) {
+            controlsRef.current = controls;
+            handleDecoded(result.getText());
+            return;
+          }
+
+          if (err && err.name !== "NotFoundException") {
+            setScanError("Unable to read QR code. Hold steady and try again.");
+          }
+        }
+      )
+      .then((controls) => {
         if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop());
+          try {
+            controls?.stop();
+          } catch (_) {
+            // ignore stop errors when cancelled
+          }
           return;
         }
-
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
+        controlsRef.current = controls;
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
         }
-      } catch (_) {
-        // ignore camera errors for now; UI still renders
-      }
-    };
-
-    setupCamera();
+        console.error("Failed to access camera", error);
+        setStatus("error");
+        setMessage(
+          "Camera access failed. Check browser permissions and retry."
+        );
+        setScanError(error?.message ?? "Camera access was blocked.");
+      });
 
     return () => {
       cancelled = true;
       stopCamera();
     };
-  }, [isTeacherAttendanceRoute]);
+  }, [
+    canScan,
+    handleDecoded,
+    isTeacherAttendanceRoute,
+    scanIteration,
+    selectedCourseId,
+    stopCamera,
+  ]);
 
-  const handleScan = async () => {
-    try {
-      setStatus("loading");
-      await recordAttendance(sessionId, user.id);
-      setStatus("success");
-      setMessage("Attendance recorded successfully!");
-    } catch (error) {
-      setStatus("error");
-      setMessage("Failed to record attendance");
+  const restartScanner = useCallback(() => {
+    setMessage("");
+    setScanError("");
+    setLastRecord(null);
+    setScanIteration((value) => value + 1);
+  }, []);
+
+  const actionButtonLabel = (() => {
+    if (!canScan) {
+      return "Start Scanning";
     }
-  };
+    if (status === "scanning") {
+      return "Scanning...";
+    }
+    if (status === "loading") {
+      return "Recording...";
+    }
+    if (status === "success") {
+      return "Scan Next Student";
+    }
+    if (status === "error") {
+      return "Retry Scan";
+    }
+    return "Start Scanning";
+  })();
+
+  const lastRecordInfo = useMemo(() => {
+    if (!lastRecord) {
+      return null;
+    }
+
+    const studentLabel =
+      lastRecord.studentId ??
+      lastRecord.StudentID ??
+      lastRecord.userId ??
+      lastRecord.UserID ??
+      "";
+
+    const recordDate =
+      lastRecord.date ??
+      lastRecord.Date ??
+      lastRecord.recordedAt ??
+      lastRecord.RecordedAt ??
+      lastRecord.scanTime ??
+      lastRecord.scan_time ??
+      null;
+
+    const courseLabel =
+      lastRecord.courseId ?? lastRecord.CourseID ?? lastRecord.courseID ?? "";
+
+    return { studentLabel, recordDate, courseLabel };
+  }, [lastRecord]);
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -156,16 +471,22 @@ const QRScanner = () => {
       {/* Camera preview inside dashed border */}
       <div className="rounded-2xl border-2 border-dashed border-indigo-400/70 p-3">
         <div className="rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700 aspect-video flex items-center justify-center">
-          <video ref={videoRef} className="w-full h-full object-cover" />
+          <video
+            ref={videoRef}
+            className="w-full h-full object-cover"
+            muted
+            playsInline
+            autoPlay
+          />
         </div>
       </div>
 
       <div className="mt-6 flex items-center gap-3">
         <Button
-          onClick={handleScan}
-          disabled={status === "loading" || !selectedCourseId}
+          onClick={restartScanner}
+          disabled={!canScan || status === "scanning" || status === "loading"}
         >
-          {status === "loading" ? "Processing..." : "Simulate Scan"}
+          {actionButtonLabel}
         </Button>
         {selectedCourseId === "" && (
           <span className="text-sm text-gray-500">
@@ -174,12 +495,49 @@ const QRScanner = () => {
         )}
       </div>
 
-      {status === "success" && (
-        <p className="mt-4 text-green-600 dark:text-green-400">{message}</p>
+      {message && (
+        <p
+          className={`mt-4 ${
+            status === "success"
+              ? "text-green-600 dark:text-green-400"
+              : status === "error"
+              ? "text-red-600 dark:text-red-400"
+              : "text-gray-600 dark:text-gray-400"
+          }`}
+        >
+          {message}
+        </p>
       )}
 
-      {status === "error" && (
-        <p className="mt-4 text-red-600 dark:text-red-400">{message}</p>
+      {scanError && (
+        <p className="mt-2 text-sm text-red-500 dark:text-red-400">
+          {scanError}
+        </p>
+      )}
+
+      {lastRecordInfo && (
+        <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
+          <p>
+            Last scan:{" "}
+            <span className="font-medium">
+              {lastRecordInfo.studentLabel || "Unknown"}
+            </span>
+          </p>
+          {lastRecordInfo.recordDate && (
+            <p>
+              Recorded at:{" "}
+              <span className="font-medium">
+                {new Date(lastRecordInfo.recordDate).toLocaleString()}
+              </span>
+            </p>
+          )}
+          {lastRecordInfo.courseLabel && (
+            <p>
+              Course:{" "}
+              <span className="font-medium">{lastRecordInfo.courseLabel}</span>
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

@@ -4,10 +4,9 @@ import { useAuth } from "../../contexts/AuthContext";
 import { getCourseDetails } from "../../services/courseService";
 import { getCourseAttendance } from "../../services/attendanceService";
 import AttendanceList from "../../components/attendance/AttendanceList";
-import QRScanner from "../../components/attendance/QRScanner";
 import EmptyState from "../../components/common/EmptyState";
 import Loader from "../../components/common/Loader";
-import QRGenerator from "../../components/attendance/QRGenerator";
+import StudentQRPass from "../../components/attendance/StudentQRPass";
 
 const StudentAttendance = () => {
   const { id } = useParams();
@@ -121,7 +120,7 @@ const StudentAttendance = () => {
       </div>
 
       <div className="bg-gradient-to-br from-white to-indigo-50/70 dark:from-gray-900/70 dark:to-indigo-950/20 backdrop-blur shadow-lg ring-1 ring-indigo-100 dark:ring-indigo-800 rounded-2xl p-4 sm:p-6">
-        <QRGenerator courseId={id} />
+        <StudentQRPass courseId={id} />
       </div>
 
       <div className="flex items-center justify-between">

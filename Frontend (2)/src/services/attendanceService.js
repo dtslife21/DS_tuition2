@@ -3,6 +3,18 @@ import { mockAttendance } from "../utils/mockData";
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const sanitizeRecordPayload = (source) => {
+  if (!source || typeof source !== "object") {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(source).filter(
+      ([, value]) => value !== undefined && value !== null && value !== ""
+    )
+  );
+};
+
 const normalizeStatus = (value) => {
   if (value === undefined || value === null) {
     return "Present";
@@ -317,18 +329,35 @@ export const generateQRSession = async (sessionData) => {
   };
 };
 
-export const recordAttendance = async (sessionId, studentId) => {
+export const recordAttendance = async (arg1, arg2) => {
+  const rawPayload =
+    arg1 && typeof arg1 === "object" && !Array.isArray(arg1)
+      ? arg1
+      : { sessionId: arg1, studentId: arg2 };
+
+  const payload = sanitizeRecordPayload(rawPayload);
+
+  const resolvedStudentId =
+    payload.studentId ?? payload.StudentID ?? payload.studentID ?? null;
+
+  if (!resolvedStudentId && resolvedStudentId !== 0) {
+    throw new Error("Student ID is required to record attendance.");
+  }
+
+  payload.studentId = String(resolvedStudentId);
+  delete payload.StudentID;
+  delete payload.studentID;
+
   try {
-    const response = await axios.post(`/Attendance/record`, {
-      sessionId,
-      studentId,
-    });
-    const payload = response.data;
+    const response = await axios.post(`/Attendance/record`, payload);
+    const responsePayload = response.data;
     return (
-      normalizeAttendanceRecord(payload) ?? {
+      normalizeAttendanceRecord(responsePayload) ?? {
         id: Math.random().toString(36).substring(7),
-        sessionId,
-        studentId,
+        sessionId: responsePayload.sessionId ?? rawPayload.sessionId ?? null,
+        studentId: String(resolvedStudentId),
+        courseId: responsePayload.courseId ?? rawPayload.courseId ?? null,
+        teacherId: responsePayload.teacherId ?? rawPayload.teacherId ?? null,
         scanTime: new Date().toISOString(),
         status: "Present",
       }
@@ -340,8 +369,12 @@ export const recordAttendance = async (sessionId, studentId) => {
   await delay(500);
   return {
     id: Math.random().toString(36).substring(7),
-    sessionId,
-    studentId,
+    sessionId: rawPayload.sessionId ?? null,
+    studentId: String(resolvedStudentId),
+    courseId: rawPayload.courseId ?? null,
+    teacherId: rawPayload.teacherId ?? null,
+    attendanceDate:
+      rawPayload.date ?? rawPayload.attendanceDate ?? new Date().toISOString(),
     scanTime: new Date().toISOString(),
     status: "Present",
   };
