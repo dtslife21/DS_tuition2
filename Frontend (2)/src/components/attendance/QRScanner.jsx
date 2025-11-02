@@ -4,7 +4,10 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 import { useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { recordAttendance } from "../../services/attendanceService";
-import { getTeacherCourses } from "../../services/courseService";
+import {
+  getTeacherCourses,
+  getTeacherCourseStudents,
+} from "../../services/courseService";
 import Button from "../common/Button";
 
 const QRScanner = () => {
@@ -18,6 +21,9 @@ const QRScanner = () => {
   const [courses, setCourses] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
+  const [courseStudents, setCourseStudents] = useState([]);
+  const [rosterStatus, setRosterStatus] = useState("idle");
+  const [rosterError, setRosterError] = useState("");
 
   // Simple camera preview to match the uploaded UI
   const videoRef = useRef(null);
@@ -57,6 +63,51 @@ const QRScanner = () => {
     };
     fetchCourses();
   }, [teacherId]);
+
+  useEffect(() => {
+    if (!teacherId || !selectedCourseId) {
+      setCourseStudents([]);
+      setRosterStatus("idle");
+      setRosterError("");
+      return;
+    }
+
+    let cancelled = false;
+    setRosterStatus("loading");
+    setRosterError("");
+    setCourseStudents([]);
+
+    const loadRoster = async () => {
+      try {
+        const { students } = await getTeacherCourseStudents(
+          teacherId,
+          selectedCourseId
+        );
+        if (cancelled) {
+          return;
+        }
+        const list = Array.isArray(students) ? students : [];
+        setCourseStudents(list);
+        setRosterStatus("success");
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        console.error("Failed to fetch course roster", error);
+        setCourseStudents([]);
+        setRosterStatus("error");
+        setRosterError(
+          "Unable to load enrolled students. Scanning is disabled for this course."
+        );
+      }
+    };
+
+    loadRoster();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCourseId, teacherId]);
 
   const stopCamera = useCallback(() => {
     if (controlsRef.current) {
@@ -98,18 +149,123 @@ const QRScanner = () => {
   const isTeacherAttendanceRoute =
     path.includes("teacher") && path.includes("attendance");
 
-  const canScan = isTeacherAttendanceRoute && Boolean(selectedCourseId);
+  const rosterReady = rosterStatus === "success";
+  const canScan =
+    isTeacherAttendanceRoute && Boolean(selectedCourseId) && rosterReady;
 
   const resolveAttendanceDate = useCallback(() => {
     if (selectedDate) {
-      const date = new Date(selectedDate);
-      if (!Number.isNaN(date.getTime())) {
-        return date.toISOString();
+      const now = new Date();
+      const parts = selectedDate.split("-");
+      if (parts.length === 3) {
+        const [year, month, day] = parts.map((part) => Number(part));
+        if (
+          Number.isFinite(year) &&
+          Number.isFinite(month) &&
+          Number.isFinite(day)
+        ) {
+          const parsed = new Date(now);
+          parsed.setFullYear(year, month - 1, day);
+          if (!Number.isNaN(parsed.getTime())) {
+            return {
+              iso: parsed.toISOString(),
+              display: selectedDate,
+            };
+          }
+        }
+      }
+
+      const parsed = new Date(`${selectedDate}T00:00:00`);
+      if (!Number.isNaN(parsed.getTime())) {
+        // fallback to midnight if time merge failed
+        return {
+          iso: parsed.toISOString(),
+          display: selectedDate,
+        };
       }
     }
 
-    return new Date().toISOString();
+    const now = new Date();
+    const fallbackDisplay = now.toISOString().split("T")[0];
+    return {
+      iso: now.toISOString(),
+      display: fallbackDisplay,
+    };
   }, [selectedDate]);
+
+  const playBeep = useCallback(
+    (times = 1, freq = 950, duration = 0.18, gap = 0.12) => {
+      try {
+        if (typeof window === "undefined") return;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+
+        if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+        const ctx = audioCtxRef.current;
+
+        // resume if suspended (some browsers block until user interaction)
+        if (ctx.state === "suspended" && typeof ctx.resume === "function") {
+          ctx.resume().catch(() => {});
+        }
+
+        const now = ctx.currentTime;
+        for (let i = 0; i < times; i++) {
+          const start = now + i * (duration + gap);
+          const stop = start + duration;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.value = freq;
+          gain.gain.value = 0.06;
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(stop);
+          // cleanup after the tone finishes
+          setTimeout(() => {
+            try {
+              osc.disconnect();
+              gain.disconnect();
+            } catch (_) {}
+          }, (i * (duration + gap) + duration + 0.1) * 1000);
+        }
+      } catch (_) {
+        // ignore audio errors
+      }
+    },
+    []
+  );
+
+  const enrolledStudentIds = useMemo(() => {
+    if (!Array.isArray(courseStudents) || courseStudents.length === 0) {
+      return new Set();
+    }
+
+    const ids = courseStudents
+      .map((student) => {
+        if (!student || typeof student !== "object") {
+          return null;
+        }
+        const identifier =
+          student.studentId ??
+          student.StudentID ??
+          student.id ??
+          student.Id ??
+          student.userId ??
+          student.UserID ??
+          null;
+
+        if (identifier === undefined || identifier === null) {
+          return null;
+        }
+
+        const text = String(identifier).trim();
+        return text.length ? text : null;
+      })
+      .filter(Boolean);
+
+    return new Set(ids);
+  }, [courseStudents]);
 
   const handleDecoded = useCallback(
     async (rawText) => {
@@ -125,6 +281,22 @@ const QRScanner = () => {
       setMessage("");
       setScanError("");
       setLastRecord(null);
+
+      if (!rosterReady) {
+        const pendingMessage =
+          rosterStatus === "loading"
+            ? "Student roster is still loading."
+            : "Student roster unavailable.";
+        setStatus("error");
+        setMessage(pendingMessage);
+        setScanError(
+          rosterStatus === "loading"
+            ? "Please wait for the enrolled student list to finish loading before scanning."
+            : rosterError ||
+                "Unable to verify the enrolled students for this course."
+        );
+        return;
+      }
 
       let parsed = null;
       try {
@@ -212,6 +384,22 @@ const QRScanner = () => {
         "";
 
       const attendanceDate = resolveAttendanceDate();
+      const attendanceIso = attendanceDate.iso;
+      const attendanceDisplay = attendanceDate.display;
+
+      const enrollmentKey = String(resolvedStudentId).trim();
+      if (!enrollmentKey || !enrolledStudentIds.has(enrollmentKey)) {
+        setStatus("error");
+        setMessage("Student is not enrolled in the selected course.");
+        setScanError(
+          "This QR belongs to a student who is not registered for the selected course."
+        );
+        // double beep to indicate mismatch (not enrolled)
+        try {
+          playBeep(2, 700, 0.14, 0.12);
+        } catch (_) {}
+        return;
+      }
 
       try {
         const record = await recordAttendance({
@@ -224,56 +412,28 @@ const QRScanner = () => {
           studentId: resolvedStudentId,
           courseId: resolvedCourseId,
           teacherId,
-          date: attendanceDate,
+          date: attendanceIso,
+          attendanceDate: attendanceDisplay,
           status: payload.status ?? "Present",
         });
 
         setStatus("success");
         // play a short beep to indicate successful scan
-        try {
-          if (typeof window !== "undefined") {
-            const AudioContext =
-              window.AudioContext || window.webkitAudioContext;
-            if (AudioContext) {
-              if (!audioCtxRef.current)
-                audioCtxRef.current = new AudioContext();
-              const ctx = audioCtxRef.current;
-              // try to resume context if suspended (some browsers require a user gesture)
-              if (
-                ctx.state === "suspended" &&
-                typeof ctx.resume === "function"
-              ) {
-                ctx.resume().catch(() => {});
-              }
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.type = "sine";
-              osc.frequency.value = 950;
-              gain.gain.value = 0.06;
-              osc.connect(gain);
-              gain.connect(ctx.destination);
-              const now = ctx.currentTime;
-              osc.start(now);
-              osc.stop(now + 0.18);
-              // cleanup
-              setTimeout(() => {
-                try {
-                  osc.disconnect();
-                  gain.disconnect();
-                } catch (_) {}
-              }, 500);
-            }
-          }
-        } catch (e) {
-          // ignore audio errors
-        }
-        setLastRecord(record);
+        playBeep(1, 950, 0.18, 0.12);
+        setLastRecord({
+          ...record,
+          attendanceDate:
+            record?.attendanceDate ??
+            record?.AttendanceDate ??
+            attendanceDisplay,
+        });
         const displayName =
           resolvedName ||
           record?.studentName ||
           record?.StudentName ||
           String(resolvedStudentId);
-        setMessage(`Attendance recorded for ${displayName}.`);
+        const dateText = attendanceDisplay ? ` on ${attendanceDisplay}` : "";
+        setMessage(`Attendance recorded for ${displayName}${dateText}.`);
       } catch (error) {
         console.error("Failed to record attendance", error);
         setStatus("error");
@@ -283,7 +443,17 @@ const QRScanner = () => {
         );
       }
     },
-    [resolveAttendanceDate, selectedCourseId, sessionId, stopCamera, teacherId]
+    [
+      enrolledStudentIds,
+      resolveAttendanceDate,
+      rosterReady,
+      rosterStatus,
+      rosterError,
+      selectedCourseId,
+      sessionId,
+      stopCamera,
+      teacherId,
+    ]
   );
 
   useEffect(() => {
@@ -333,8 +503,22 @@ const QRScanner = () => {
             return;
           }
 
-          if (err && err.name !== "NotFoundException") {
-            setScanError("Unable to read QR code. Hold steady and try again.");
+          if (err) {
+            const ignorable = new Set([
+              "NotFoundException",
+              "ChecksumException",
+              "FormatException",
+              "ChecksumError",
+              "FormatError",
+            ]);
+
+            if (!ignorable.has(err.name)) {
+              setScanError(
+                "Unable to read QR code. Hold steady and try again."
+              );
+            } else {
+              setScanError("");
+            }
           }
         }
       )
@@ -415,6 +599,8 @@ const QRScanner = () => {
     const recordDate =
       lastRecord.date ??
       lastRecord.Date ??
+      lastRecord.attendanceDate ??
+      lastRecord.AttendanceDate ??
       lastRecord.recordedAt ??
       lastRecord.RecordedAt ??
       lastRecord.scanTime ??
@@ -492,6 +678,14 @@ const QRScanner = () => {
           <span className="text-sm text-gray-500">
             Select a course to enable scanning
           </span>
+        )}
+        {selectedCourseId !== "" && rosterStatus === "loading" && (
+          <span className="text-sm text-gray-500">
+            Loading enrolled students...
+          </span>
+        )}
+        {selectedCourseId !== "" && rosterStatus === "error" && (
+          <span className="text-sm text-red-500">{rosterError}</span>
         )}
       </div>
 

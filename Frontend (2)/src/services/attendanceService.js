@@ -360,6 +360,13 @@ export const recordAttendance = async (arg1, arg2) => {
         teacherId: responsePayload.teacherId ?? rawPayload.teacherId ?? null,
         scanTime: new Date().toISOString(),
         status: "Present",
+        attendanceDate:
+          responsePayload.attendanceDate ??
+          responsePayload.AttendanceDate ??
+          rawPayload.attendanceDate ??
+          rawPayload.date ??
+          rawPayload.Date ??
+          new Date().toISOString(),
       }
     );
   } catch (error) {
@@ -375,7 +382,16 @@ export const recordAttendance = async (arg1, arg2) => {
     teacherId: rawPayload.teacherId ?? null,
     attendanceDate:
       rawPayload.date ?? rawPayload.attendanceDate ?? new Date().toISOString(),
-    scanTime: new Date().toISOString(),
+    attendanceDate:
+      rawPayload.attendanceDate ??
+      rawPayload.date ??
+      rawPayload.Date ??
+      new Date().toISOString(),
+    date:
+      rawPayload.date ??
+      rawPayload.Date ??
+      rawPayload.attendanceDate ??
+      new Date().toISOString(),
     status: "Present",
   };
 };
