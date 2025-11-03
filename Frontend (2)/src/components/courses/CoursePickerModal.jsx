@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Modal from "../common/Modal";
 import Button from "../common/Button";
 import CourseForm from "./CourseForm";
-import { getAllCourses, createCourse } from "../../services/courseService";
+import { getAllCourses, getTeacherCourses, createCourse } from "../../services/courseService";
 
 const CoursePickerModal = ({
   isOpen,
@@ -24,6 +24,10 @@ const CoursePickerModal = ({
   errorMessage = "",
   // courseFormDefaults: default values passed to CourseForm when creating a course inline
   courseFormDefaults = null,
+  // When provided, only show courses for this teacher and when creating a new
+  // course from the picker, attach the teacher id so the new course is scoped
+  // to that teacher.
+  teacherId = null,
 }) => {
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
@@ -38,7 +42,12 @@ const CoursePickerModal = ({
     const load = async () => {
       try {
         setLoadingCourses(true);
-        const all = await getAllCourses();
+        // If a teacherId is provided prefer teacher-scoped courses. The
+        // service falls back to filtering the full list when the dedicated
+        // endpoint isn't available.
+        const all = teacherId
+          ? await getTeacherCourses(teacherId)
+          : await getAllCourses();
         if (!mounted) return;
         setCourses(all || []);
       } catch (err) {
@@ -195,7 +204,8 @@ const CoursePickerModal = ({
           <CourseForm
             onSubmit={async (data) => {
               try {
-                const newCourse = await createCourse(data);
+                const payload = teacherId ? { ...data, TeacherID: teacherId, teacherId } : data;
+                const newCourse = await createCourse(payload);
                 const newId = String(
                   newCourse.id ?? newCourse.CourseID ?? newCourse.CourseId ?? ""
                 );

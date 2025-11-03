@@ -21,7 +21,12 @@ import {
   deleteStudent as deleteStudentRecord,
   getStudentById,
 } from "../../services/studentService";
-import { createEnrollmentsForStudent } from "../../services/enrollmentService";
+import {
+  createEnrollmentsForStudent,
+  getEnrollmentsByStudent,
+  deleteEnrollment,
+} from "../../services/enrollmentService";
+import { getStudentCourses } from "../../services/courseService";
 import Loader from "../../components/common/Loader";
 import CoursePickerModal from "../../components/courses/CoursePickerModal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,6 +57,10 @@ const TeacherStudents = () => {
   const [loading, setLoading] = useState(true);
   const [editUser, setEditUser] = useState(null);
   const [isEditOpen, setEditOpen] = useState(false);
+  const [editStep, setEditStep] = useState(1);
+  const [forceUserType, setForceUserType] = useState(null);
+  const [formError, setFormError] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [createStep, setCreateStep] = useState(1);
   const [pendingCoreData, setPendingCoreData] = useState(null);
@@ -327,6 +336,134 @@ const TeacherStudents = () => {
     }
   };
 
+  // Handles the multi-step edit flow for students (mirrors admin behavior)
+  const handleEditSubmit = async (formData) => {
+    setFormError("");
+    try {
+      if (editStep === 1) {
+        const uid = editUser?.UserID || editUser?.id;
+        const updatedUser = await updateUser(uid, {
+          ...formData,
+          UserTypeID: 3,
+        });
+
+        let merged = { ...updatedUser };
+        try {
+          const [studentRec, courses] = await Promise.all([
+            getStudentById(uid),
+            getStudentCourses(uid),
+          ]);
+          const courseIds = (courses || [])
+            .map((c) => c.id ?? c.CourseID ?? c.courseId)
+            .filter((v) => v !== undefined && v !== null);
+
+          merged = {
+            ...merged,
+            RollNumber:
+              studentRec?.RollNumber ??
+              studentRec?.rollNumber ??
+              merged.RollNumber,
+            CurrentGrade:
+              studentRec?.CurrentGrade ??
+              studentRec?.currentGrade ??
+              merged.CurrentGrade,
+            ParentName:
+              studentRec?.ParentName ??
+              studentRec?.parentName ??
+              merged.ParentName,
+            ParentContact:
+              studentRec?.ParentContact ??
+              studentRec?.parentContact ??
+              merged.ParentContact,
+            EnrollmentDate:
+              studentRec?.EnrollmentDate ??
+              studentRec?.enrollmentDate ??
+              merged.EnrollmentDate,
+            StudentCourseIDs: courseIds,
+          };
+        } catch (prefillErr) {
+          console.warn("Failed to preload student details", prefillErr);
+        }
+
+        setStudents((prev) =>
+          prev.map((s) => {
+            const currentUserId = s.UserID || s.id;
+            const updatedUserId = merged.UserID || merged.id;
+            return currentUserId === updatedUserId ? merged : s;
+          })
+        );
+        setEditUser(merged);
+        setForceUserType(3);
+        setEditStep(2);
+        return;
+      }
+
+      // Step 2: update student-specific details and sync enrollments
+      const uid = editUser?.UserID || editUser?.id;
+      try {
+        await updateStudent(uid, {
+          StudentID: uid,
+          RollNumber: formData.RollNumber,
+          EnrollmentDate: formData.EnrollmentDate,
+          CurrentGrade: formData.CurrentGrade,
+          ParentName: formData.ParentName,
+          ParentContact: formData.ParentContact,
+        });
+
+        const desired = (formData.StudentCourseIDs || [])
+          .map((v) => Number(v))
+          .filter((n) => !isNaN(n));
+
+        try {
+          const current = await getEnrollmentsByStudent(uid);
+          const currentCourseIds = current
+            .map((e) => Number(e.CourseID))
+            .filter((n) => !isNaN(n));
+          const toAdd = desired.filter(
+            (cid) => !currentCourseIds.includes(cid)
+          );
+          const toRemove = current.filter(
+            (e) => !desired.includes(Number(e.CourseID))
+          );
+
+          if (toAdd.length) {
+            await createEnrollmentsForStudent(uid, toAdd, {
+              EnrollmentDate: formData.EnrollmentDate,
+              IsActive: true,
+            });
+          }
+
+          for (const e of toRemove) {
+            if (e.EnrollmentID != null) {
+              await deleteEnrollment(e.EnrollmentID);
+            }
+          }
+        } catch (enSyncErr) {
+          console.error("Failed to sync student enrollments", enSyncErr);
+          setFormError(
+            enSyncErr?.message ||
+              "Updated student, but failed to sync enrollments"
+          );
+        }
+      } catch (roleErr) {
+        console.error("Failed to update student data", roleErr);
+        setFormError(
+          roleErr?.message ||
+            "User updated, but failed to update student details"
+        );
+      }
+
+      await refreshStudents();
+      setEditOpen(false);
+      setEditUser(null);
+      setForceUserType(null);
+      setEditStep(1);
+    } catch (error) {
+      console.error("Error saving edit:", error);
+      setFormError(error?.message || "Failed to save user");
+    }
+  };
+
   if (loading) {
     return <Loader className="py-12" />;
   }
@@ -402,6 +539,7 @@ const TeacherStudents = () => {
                   ]}
                   forceUserType={3}
                   initialCourseSelection={defaultCourseSelection}
+                  teacherId={teacherId}
                   showCoreFields={createStep === 1}
                   showRoleFields={createStep === 2}
                   submitLabel={createStep === 1 ? "Next" : "Create"}
@@ -427,6 +565,10 @@ const TeacherStudents = () => {
             return identifier ? `/teacher/students/${identifier}` : null;
           }}
           onEdit={async (userId) => {
+            setEditLoading(true);
+            setFormError("");
+            setEditStep(1);
+            setForceUserType(3);
             try {
               const [userData, studentData] = await Promise.all([
                 getUserById(userId),
@@ -435,13 +577,16 @@ const TeacherStudents = () => {
               setEditUser(
                 studentData ? { ...userData, ...studentData } : userData
               );
-            } catch (_) {
+            } catch (err) {
+              console.error("Error loading user for edit:", err);
               const fallback = students.find(
                 (s) => (s.UserID || s.id) === userId
               );
               setEditUser(fallback || null);
+            } finally {
+              setEditLoading(false);
+              setEditOpen(true);
             }
-            setEditOpen(true);
           }}
           onDelete={async (userId) => {
             const confirmed = window.confirm("Delete this student?");
@@ -474,46 +619,75 @@ const TeacherStudents = () => {
         description="Choose a course to enroll the new student in."
         multiSelect={false}
         allowCreate={false}
+        teacherId={teacherId}
         saving={coursePickerSaving}
         errorMessage={coursePickerError}
         onProceed={handleCoursePickerProceed}
       />
 
-      {/* Edit Student Popup */}
-      {isEditOpen && (
-        <UserFormDialog
-          initialData={editUser || {}}
-          forceUserType={3}
-          onSave={async (formData) => {
-            const uid = editUser?.UserID || editUser?.id;
-            try {
-              await updateUser(uid, {
-                ...formData,
-                UserTypeID: 3,
-              });
-              await updateStudent(uid, {
-                StudentID: uid,
-                RollNumber: formData.RollNumber,
-                EnrollmentDate: formData.EnrollmentDate,
-                CurrentGrade: formData.CurrentGrade,
-                ParentName: formData.ParentName,
-                ParentContact: formData.ParentContact,
-              });
-              await refreshStudents();
-            } catch (error) {
-              console.error("Error updating student:", error);
-              setStudents((prev) =>
-                prev.map((s) =>
-                  (s.UserID || s.id) === uid ? { ...s, ...formData } : s
-                )
-              );
-            }
-            setEditOpen(false);
-            setEditUser(null);
-          }}
-          triggerButton={null}
-        />
-      )}
+      {/* Edit Student Popup (admin-style multi-step modal) */}
+      <AnimatePresence>
+        {isEditOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden"
+            >
+              <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {editUser ? "Edit User" : "Create New User"}
+                </h2>
+                <button
+                  onClick={() => {
+                    setEditOpen(false);
+                    setEditUser(null);
+                    setForceUserType(null);
+                    setEditStep(1);
+                    setFormError("");
+                  }}
+                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              {formError && (
+                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 px-4 py-3">
+                  {formError}
+                </div>
+              )}
+
+              <div className="p-4">
+                <UserForm
+                  onSubmit={handleEditSubmit}
+                  user={editUser}
+                  loading={editLoading}
+                  userTypes={[
+                    { id: 1, name: "Admin" },
+                    { id: 2, name: "Teacher" },
+                    { id: 3, name: "Student" },
+                  ]}
+                  forceUserType={forceUserType}
+                  teacherId={teacherId}
+                  initialCourseSelection={
+                    (editUser?.StudentCourseIDs || []).map(String) || []
+                  }
+                  showCoreFields={editStep === 1}
+                  showRoleFields={editStep === 2}
+                  submitLabel={editStep === 1 ? "Next" : "Update"}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

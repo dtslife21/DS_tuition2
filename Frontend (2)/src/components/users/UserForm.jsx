@@ -4,7 +4,7 @@ import Cropper from "react-easy-crop";
 import Button from "../common/Button";
 import Modal from "../common/Modal";
 import CourseForm from "../courses/CourseForm";
-import { getAllCourses, createCourse } from "../../services/courseService";
+import { getAllCourses, getTeacherCourses, createCourse } from "../../services/courseService";
 import { getAllStudents } from "../../services/studentService";
 import CoursePickerModal from "../courses/CoursePickerModal";
 
@@ -66,6 +66,8 @@ const UserForm = ({
   forceUserType,
   initialCourseSelection = [],
   onCancel,
+  // when provided, scope course lists/creation to this teacher id
+  teacherId = null,
   // New: allow showing only core fields or only role-specific fields
   showCoreFields = true,
   showRoleFields = true,
@@ -436,7 +438,7 @@ const UserForm = ({
     const load = async () => {
       try {
         setLoadingCourses(true);
-        const all = await getAllCourses();
+        const all = teacherId ? await getTeacherCourses(teacherId) : await getAllCourses();
         if (!mounted) return;
         setCourses(all || []);
       } catch (err) {
@@ -1357,7 +1359,12 @@ const UserForm = ({
         <CourseForm
           onSubmit={async (data) => {
             try {
-              const newCourse = await createCourse(data);
+              // If a teacherId was provided to this form, ensure the
+              // created course is associated with that teacher.
+              const payload = teacherId
+                ? { ...data, TeacherID: teacherId, teacherId }
+                : data;
+              const newCourse = await createCourse(payload);
               // ensure id is represented as string
               const newId = String(
                 newCourse.id ??
@@ -1455,6 +1462,7 @@ const UserForm = ({
         description="Choose one or more courses to assign to this teacher."
         multiSelect={true}
         allowCreate={true}
+        teacherId={teacherId}
       />
 
       <CoursePickerModal
@@ -1469,6 +1477,7 @@ const UserForm = ({
         description="Select courses for the student to be enrolled in."
         multiSelect={true}
         allowCreate={false}
+        teacherId={teacherId}
       />
 
       <div className="flex justify-end space-x-3">
