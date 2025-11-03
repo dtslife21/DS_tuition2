@@ -4,7 +4,7 @@ import { getAllCourses } from "./courseService";
 // In-memory mock subjects (fallback when API not available).
 const mockSubjects = [];
 
-const normalizeSubject = (raw) => {
+const mapSubject = (raw) => {
   if (!raw) return null;
   return {
     id:
@@ -37,8 +37,8 @@ export const getAllSubjects = async () => {
     const raw = Array.isArray(resp.data)
       ? resp.data
       : resp.data?.subjects || [];
-    const normalized = raw.map(normalizeSubject).filter(Boolean);
-    if (normalized.length) return normalized;
+    const subjects = raw.map(mapSubject).filter(Boolean);
+    if (subjects.length) return subjects;
   } catch (err) {
     // ignore and fallback
   }
@@ -87,19 +87,19 @@ export const getAllSubjects = async () => {
       const key = `${String(s.name || "").toLowerCase()}|${String(
         s.courseName || ""
       ).toLowerCase()}`;
-      if (!map.has(key)) map.set(key, normalizeSubject(s));
+      if (!map.has(key)) map.set(key, mapSubject(s));
     }
     return Array.from(map.values());
   } catch (err) {
-    // last resort, return mockSubjects normalized
-    return mockSubjects.map(normalizeSubject);
+    // last resort, return mockSubjects mapped into subject shape
+    return mockSubjects.map(mapSubject);
   }
 };
 
 export const createSubject = async (subjectData) => {
   try {
     const resp = await axios.post("/Subjects", subjectData);
-    return normalizeSubject(resp.data);
+    return mapSubject(resp.data);
   } catch (err) {
     // fallback: push to mockSubjects
     const nextId =
@@ -107,7 +107,7 @@ export const createSubject = async (subjectData) => {
       1;
     const newSub = { id: nextId, ...subjectData };
     mockSubjects.push(newSub);
-    return normalizeSubject(newSub);
+    return mapSubject(newSub);
   }
 };
 
@@ -131,7 +131,7 @@ export const deleteSubject = async (subjectId) => {
 export const getSubjectById = async (subjectId) => {
   try {
     const resp = await axios.get(`/Subjects/${subjectId}`);
-    return normalizeSubject(resp.data);
+    return mapSubject(resp.data);
   } catch (err) {
     // fallback: search in mockSubjects or derived list
     const all = await getAllSubjects();
@@ -159,7 +159,7 @@ export const updateSubject = async (subjectId, data) => {
       CourseName: data.courseName ?? data.CourseName,
     };
     const resp = await axios.put(`/Subjects/${subjectId}`, payload);
-    return normalizeSubject(resp.data || payload);
+    return mapSubject(resp.data || payload);
   } catch (err) {
     // fallback: update in mockSubjects
     const idx = mockSubjects.findIndex(
@@ -167,13 +167,13 @@ export const updateSubject = async (subjectId, data) => {
     );
     if (idx !== -1) {
       mockSubjects[idx] = { ...mockSubjects[idx], ...data };
-      return normalizeSubject(mockSubjects[idx]);
+      return mapSubject(mockSubjects[idx]);
     }
     // if not found, attempt to merge into derived list by id
     const current = await getSubjectById(subjectId);
     if (current) {
       const merged = { ...current, ...data, id: current.id };
-      return normalizeSubject(merged);
+      return mapSubject(merged);
     }
     throw err;
   }

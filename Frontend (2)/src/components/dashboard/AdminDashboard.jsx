@@ -22,54 +22,6 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("notices");
 
-  const normalizeUserDisplay = (item) => {
-    if (!item || typeof item !== "object") {
-      return null;
-    }
-
-    const firstName =
-      item.firstName ??
-      item.FirstName ??
-      item.raw?.firstName ??
-      item.raw?.FirstName ??
-      "";
-    const lastName =
-      item.lastName ??
-      item.LastName ??
-      item.raw?.lastName ??
-      item.raw?.LastName ??
-      "";
-    const email =
-      item.email ?? item.Email ?? item.raw?.email ?? item.raw?.Email ?? "";
-    const userType =
-      item.userType ??
-      item.UserType ??
-      item.raw?.userType ??
-      item.raw?.UserType ??
-      "";
-
-    const id =
-      item.id ??
-      item.UserID ??
-      item.userID ??
-      item.userId ??
-      item.studentId ??
-      item.StudentID ??
-      item.raw?.id ??
-      item.raw?.UserID ??
-      item.raw?.userId ??
-      null;
-
-    return {
-      ...item,
-      id,
-      firstName,
-      lastName,
-      email,
-      userType,
-    };
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -86,22 +38,11 @@ const AdminDashboard = () => {
           getAllTeachers(),
           getAllAnnouncements(),
         ]);
+        setUsers(Array.isArray(usersData) ? usersData.filter(Boolean) : []);
 
-        setUsers(
-          Array.isArray(usersData)
-            ? usersData
-                .map(normalizeUserDisplay)
-                .filter((item) => Boolean(item))
-            : []
+        setStudents(
+          Array.isArray(studentsData) ? studentsData.filter(Boolean) : []
         );
-
-        const normalizedStudents = Array.isArray(studentsData)
-          ? studentsData
-              .map((student) => normalizeUserDisplay(student))
-              .filter((student) => Boolean(student))
-          : [];
-
-        setStudents(normalizedStudents);
         setCourses(Array.isArray(coursesData) ? coursesData : []);
         setTeachers(Array.isArray(teachersData) ? teachersData : []);
         setAnnouncements(

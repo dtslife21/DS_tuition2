@@ -61,7 +61,7 @@ const resolveUserType = (user) => {
   return typeMap[mappedId] ?? String(mappedId);
 };
 
-const normalizeUser = (user) => {
+const mapUser = (user) => {
   if (!user || typeof user !== "object") {
     return null;
   }
@@ -130,7 +130,7 @@ const normalizeUser = (user) => {
 
   const isActive = user.IsActive ?? user.isActive ?? true;
 
-  const normalized = {
+  const userRecord = {
     id: resolvedId,
     userId: resolvedId,
     UserID: resolvedId,
@@ -165,8 +165,8 @@ const normalizeUser = (user) => {
     null;
 
   if (studentId !== undefined && studentId !== null) {
-    normalized.studentId = studentId;
-    normalized.StudentID = studentId;
+    userRecord.studentId = studentId;
+    userRecord.StudentID = studentId;
   }
 
   const teacherId =
@@ -178,16 +178,16 @@ const normalizeUser = (user) => {
     null;
 
   if (teacherId !== undefined && teacherId !== null) {
-    normalized.teacherId = teacherId;
-    normalized.TeacherID = teacherId;
+    userRecord.teacherId = teacherId;
+    userRecord.TeacherID = teacherId;
   }
 
-  return normalized;
+  return userRecord;
 };
 
 const mapUsers = (payload) =>
   ensureArray(payload)
-    .map(normalizeUser)
+    .map(mapUser)
     .filter((user) => Boolean(user));
 
 export const getAllUsers = async () => {
@@ -208,7 +208,7 @@ export const getUserById = async (userID) => {
   }
 
   const payload = await response.json();
-  return normalizeUser(payload) ?? null;
+  return mapUser(payload) ?? null;
 };
 
 export const createUser = async (userData) => {
@@ -225,7 +225,7 @@ export const createUser = async (userData) => {
   }
 
   const payload = await response.json();
-  return normalizeUser(payload) ?? payload;
+  return mapUser(payload) ?? payload;
 };
 
 export const updateUser = async (userID, userData) => {
@@ -279,17 +279,17 @@ export const updateUser = async (userID, userData) => {
 
   // Backend returns 204 No Content on success; handle gracefully
   if (response.status === 204) {
-    // Return a normalized combination of base and userData
-    return normalizeUser({ ...base, ...merged });
+    // Return a combined view of base and userData
+    return mapUser({ ...base, ...merged });
   }
 
   // Some implementations may return the updated entity
   try {
     const payload = await response.json();
-    return normalizeUser(payload) ?? payload;
+    return mapUser(payload) ?? payload;
   } catch {
     // Fallback
-    return normalizeUser({ ...base, ...merged });
+    return mapUser({ ...base, ...merged });
   }
 };
 

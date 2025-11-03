@@ -124,7 +124,7 @@ const StudentDashboard = () => {
           return;
         }
 
-        const normalizedAttendance = attendanceData.filter((record) => {
+        const filteredAttendance = attendanceData.filter((record) => {
           const recordStudentId =
             record.StudentID ??
             record.studentID ??
@@ -144,7 +144,7 @@ const StudentDashboard = () => {
           );
         });
 
-        setAttendance(normalizedAttendance);
+        setAttendance(filteredAttendance);
         setMaterials(materialsData || []);
         setAnnouncements(announcementsData || []);
       } catch (error) {

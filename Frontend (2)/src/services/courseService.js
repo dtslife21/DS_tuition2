@@ -1,9 +1,9 @@
 import axios from "axios";
 import { mockCourses, mockStudents } from "../utils/mockData";
-import normalizeStudent, { getAllStudents } from "./studentService";
+import mapStudent, { getAllStudents } from "./studentService";
 import { getStudentAttendance } from "./attendanceService";
 
-const normalizeSubjectEntry = (entry) => {
+const formatSubjectEntry = (entry) => {
   if (!entry) return null;
 
   if (typeof entry === "string") {
@@ -73,19 +73,19 @@ const collectSubjects = (course) => {
     }
   }
 
-  const normalized = collected
-    .map((entry) => normalizeSubjectEntry(entry))
+  const cleanedSubjects = collected
+    .map((entry) => formatSubjectEntry(entry))
     .filter(Boolean);
 
-  if (!normalized.length) {
+  if (!cleanedSubjects.length) {
     return [];
   }
 
-  const unique = Array.from(new Set(normalized));
+  const unique = Array.from(new Set(cleanedSubjects));
   return unique;
 };
 
-const normalizeCourse = (course) => {
+const formatCourse = (course) => {
   if (!course || typeof course !== "object") {
     return course;
   }
@@ -130,7 +130,7 @@ const normalizeCourse = (course) => {
 
   const subjects = collectSubjects(course);
 
-  const normalizedTeacher =
+  const teacherDetails =
     teacher && typeof teacher === "object"
       ? {
           id:
@@ -176,7 +176,7 @@ const normalizeCourse = (course) => {
         }
       : null;
 
-  const normalizedSubject =
+  const subjectDetails =
     subjectObj && typeof subjectObj === "object"
       ? {
           id:
@@ -227,8 +227,8 @@ const normalizeCourse = (course) => {
       subjectObj.SubjectID ??
       null,
     teacherId,
-    teacher: normalizedTeacher,
-    subjectDetails: normalizedSubject,
+    teacher: teacherDetails,
+    subjectDetails,
     academicYear:
       course.academicYear ?? course.AcademicYear ?? course.academic_year ?? "",
     description:
@@ -306,8 +306,8 @@ const transformEnrollmentToStudent = (enrollment, course) => {
     mergedStudent.User = studentPayload.User;
   }
 
-  const normalized = normalizeStudent(mergedStudent);
-  if (!normalized) {
+  const studentDetails = mapStudent(mergedStudent);
+  if (!studentDetails) {
     return null;
   }
 
@@ -315,36 +315,36 @@ const transformEnrollmentToStudent = (enrollment, course) => {
     enrollment.EnrollmentID ??
     enrollment.enrollmentID ??
     enrollment.id ??
-    normalized.EnrollmentID ??
+    studentDetails.EnrollmentID ??
     null;
 
   if (enrollmentId !== null && enrollmentId !== undefined) {
-    normalized.EnrollmentID = enrollmentId;
-    normalized.enrollmentId = enrollmentId;
+    studentDetails.EnrollmentID = enrollmentId;
+    studentDetails.enrollmentId = enrollmentId;
   }
 
   const enrollmentDate =
     enrollment.EnrollmentDate ??
     enrollment.enrollmentDate ??
-    normalized.EnrollmentDate ??
+    studentDetails.EnrollmentDate ??
     null;
-  normalized.EnrollmentDate = enrollmentDate;
+  studentDetails.EnrollmentDate = enrollmentDate;
 
-  const meta = resolveCourseIdentifiers(course, normalized.CourseID);
+  const meta = resolveCourseIdentifiers(course, studentDetails.CourseID);
   if (meta.CourseID !== null && meta.CourseID !== undefined) {
-    normalized.CourseID = meta.CourseID;
-    normalized.courseId = meta.CourseID;
+    studentDetails.CourseID = meta.CourseID;
+    studentDetails.courseId = meta.CourseID;
   }
   if (meta.CourseName) {
-    normalized.CourseName = meta.CourseName;
-    normalized.courseName = meta.CourseName;
+    studentDetails.CourseName = meta.CourseName;
+    studentDetails.courseName = meta.CourseName;
   }
   if (meta.CourseCode) {
-    normalized.CourseCode = meta.CourseCode;
-    normalized.courseCode = meta.CourseCode;
+    studentDetails.CourseCode = meta.CourseCode;
+    studentDetails.courseCode = meta.CourseCode;
   }
 
-  return normalized;
+  return studentDetails;
 };
 
 const flattenCoursesStudentResponse = (courses) => {
@@ -366,42 +366,42 @@ const flattenCoursesStudentResponse = (courses) => {
     const meta = resolveCourseIdentifiers(course);
 
     for (const entry of entries) {
-      let normalized = null;
+      let studentEntry = null;
 
       if (
         entry &&
         typeof entry === "object" &&
         (entry.Student || entry.student)
       ) {
-        normalized = transformEnrollmentToStudent(entry, meta);
+        studentEntry = transformEnrollmentToStudent(entry, meta);
       } else {
-        normalized = normalizeStudent(entry);
-        if (normalized) {
-          if (!normalized.CourseID && meta.CourseID !== null) {
-            normalized.CourseID = meta.CourseID;
-            normalized.courseId = meta.CourseID;
+        studentEntry = mapStudent(entry);
+        if (studentEntry) {
+          if (!studentEntry.CourseID && meta.CourseID !== null) {
+            studentEntry.CourseID = meta.CourseID;
+            studentEntry.courseId = meta.CourseID;
           }
-          if (!normalized.CourseName && meta.CourseName) {
-            normalized.CourseName = meta.CourseName;
-            normalized.courseName = meta.CourseName;
+          if (!studentEntry.CourseName && meta.CourseName) {
+            studentEntry.CourseName = meta.CourseName;
+            studentEntry.courseName = meta.CourseName;
           }
-          if (!normalized.CourseCode && meta.CourseCode) {
-            normalized.CourseCode = meta.CourseCode;
-            normalized.courseCode = meta.CourseCode;
+          if (!studentEntry.CourseCode && meta.CourseCode) {
+            studentEntry.CourseCode = meta.CourseCode;
+            studentEntry.courseCode = meta.CourseCode;
           }
         }
       }
 
-      if (!normalized) {
+      if (!studentEntry) {
         continue;
       }
 
       const keySource =
-        normalized.StudentID ??
-        normalized.studentId ??
-        normalized.UserID ??
-        normalized.userId ??
-        normalized.id ??
+        studentEntry.StudentID ??
+        studentEntry.studentId ??
+        studentEntry.UserID ??
+        studentEntry.userId ??
+        studentEntry.id ??
         null;
 
       const key = keySource !== null ? String(keySource) : null;
@@ -412,7 +412,7 @@ const flattenCoursesStudentResponse = (courses) => {
         seen.add(key);
       }
 
-      collected.push(normalized);
+      collected.push(studentEntry);
     }
   }
 
@@ -473,7 +473,7 @@ const fetchCourseStudentsLegacy = async (courseId) => {
         response.data?.data ||
         [];
 
-    const normalized = raw
+    const studentList = raw
       .map((entry) => {
         if (
           entry &&
@@ -485,7 +485,7 @@ const fetchCourseStudentsLegacy = async (courseId) => {
           });
         }
 
-        const resolved = normalizeStudent(entry);
+        const resolved = mapStudent(entry);
         if (resolved) {
           if (!resolved.CourseID) {
             resolved.CourseID = courseIdStr;
@@ -504,7 +504,7 @@ const fetchCourseStudentsLegacy = async (courseId) => {
       })
       .filter(Boolean);
 
-    return dedupeStudents(normalized);
+    return dedupeStudents(studentList);
   } catch (error) {
     return [];
   }
@@ -583,10 +583,10 @@ export const getTeacherCourses = async (teacherId) => {
         : response.data?.courses ||
           response.data?.Courses ||
           (response.data ? [response.data] : []);
-      const normalized = raw.map(normalizeCourse).filter(Boolean);
+      const formattedCourses = raw.map(formatCourse).filter(Boolean);
 
-      if (normalized.length) {
-        return normalized;
+      if (formattedCourses.length) {
+        return formattedCourses;
       }
     } catch (error) {
       console.warn(
@@ -599,7 +599,7 @@ export const getTeacherCourses = async (teacherId) => {
   try {
     const response = await axios.get("/Courses");
     const courses = Array.isArray(response.data)
-      ? response.data.map(normalizeCourse).filter(Boolean)
+      ? response.data.map(formatCourse).filter(Boolean)
       : [];
 
     if (!hasTeacherId) {
@@ -653,27 +653,26 @@ export const getTeacherCourseStudents = async (teacherId, courseId) => {
       },
     ]);
 
-    const normalizedCourse = normalizeCourse({
+    const courseDetails = formatCourse({
       ...payload,
       CourseID: identifiers.CourseID ?? payload.CourseID ?? courseStr,
       CourseName: identifiers.CourseName ?? payload.CourseName,
       CourseCode: identifiers.CourseCode ?? payload.CourseCode,
     });
 
-    const courseInfo = normalizedCourse
+    const courseInfo = courseDetails
       ? {
-          ...normalizedCourse,
-          CourseID:
-            identifiers.CourseID ?? normalizedCourse.CourseID ?? courseStr,
+          ...courseDetails,
+          CourseID: identifiers.CourseID ?? courseDetails.CourseID ?? courseStr,
           CourseName:
             identifiers.CourseName ??
-            normalizedCourse.CourseName ??
-            normalizedCourse.name ??
+            courseDetails.CourseName ??
+            courseDetails.name ??
             "",
           CourseCode:
             identifiers.CourseCode ??
-            normalizedCourse.CourseCode ??
-            normalizedCourse.code ??
+            courseDetails.CourseCode ??
+            courseDetails.code ??
             "",
         }
       : {
@@ -730,26 +729,26 @@ export const getTeacherCoursesWithStudents = async (teacherId) => {
         },
       ]);
 
-      const normalizedCourse = normalizeCourse({
+      const courseDetails = formatCourse({
         ...coursePayload,
         CourseID: identifiers.CourseID ?? coursePayload.CourseID,
         CourseName: identifiers.CourseName ?? coursePayload.CourseName,
         CourseCode: identifiers.CourseCode ?? coursePayload.CourseCode,
       });
 
-      const courseInfo = normalizedCourse
+      const courseInfo = courseDetails
         ? {
-            ...normalizedCourse,
-            CourseID: identifiers.CourseID ?? normalizedCourse.CourseID ?? null,
+            ...courseDetails,
+            CourseID: identifiers.CourseID ?? courseDetails.CourseID ?? null,
             CourseName:
               identifiers.CourseName ??
-              normalizedCourse.CourseName ??
-              normalizedCourse.name ??
+              courseDetails.CourseName ??
+              courseDetails.name ??
               "",
             CourseCode:
               identifiers.CourseCode ??
-              normalizedCourse.CourseCode ??
-              normalizedCourse.code ??
+              courseDetails.CourseCode ??
+              courseDetails.code ??
               "",
           }
         : {
@@ -982,7 +981,7 @@ export const getTeacherStudents = async (teacherOrCourseId, options = {}) => {
 export const getCourseDetails = async (courseId) => {
   try {
     const response = await axios.get(`/Courses/${courseId}`);
-    return normalizeCourse(response.data);
+    return formatCourse(response.data);
   } catch (error) {
     console.error("Failed to load course details from API, using mock", error);
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -995,7 +994,7 @@ export const getAllCourses = async () => {
   try {
     const response = await axios.get("/Courses");
     const courses = Array.isArray(response.data)
-      ? response.data.map(normalizeCourse)
+      ? response.data.map(formatCourse)
       : [];
 
     if (!courses.length) {
@@ -1028,7 +1027,7 @@ export const getStudentCourses = async (studentId) => {
     const courses = raw
       .map((enrollment) => enrollment.Course || enrollment.course)
       .filter(Boolean)
-      .map(normalizeCourse)
+      .map(formatCourse)
       .filter(Boolean);
     if (courses.length) {
       return courses;
@@ -1050,9 +1049,9 @@ export const getStudentCourses = async (studentId) => {
       const raw = Array.isArray(response.data)
         ? response.data
         : response.data?.courses || response.data?.Courses || [];
-      const normalized = raw.map(normalizeCourse).filter(Boolean);
-      if (normalized.length) {
-        return normalized;
+      const formattedCourses = raw.map(formatCourse).filter(Boolean);
+      if (formattedCourses.length) {
+        return formattedCourses;
       }
     } catch (_) {
       // try next endpoint
@@ -1089,8 +1088,8 @@ export const createCourse = async (courseData) => {
   try {
     const payload = mapCourseToApiPayload(courseData);
     const response = await axios.post("/Courses", payload);
-    // Normalize API response first
-    let created = normalizeCourse(response.data);
+    // Clean API response first
+    let created = formatCourse(response.data);
 
     // If API didn't return an identifier, generate one based on existing courses.
     const hasId =
@@ -1173,30 +1172,30 @@ export const updateCourse = async (courseId, updates = {}) => {
     throw new Error(`Course ${idStr} not found for update`);
   }
 
-  const normalizedExisting = normalizeCourse(existing) || {};
-  const normalizedUpdates = normalizeCourse({ id: idStr, ...updates }) || {};
+  const existingCourse = formatCourse(existing) || {};
+  const updateCourse = formatCourse({ id: idStr, ...updates }) || {};
 
   const merged = {
-    ...normalizedExisting,
-    ...normalizedUpdates,
+    ...existingCourse,
+    ...updateCourse,
   };
 
   const subjectId =
     updates?.SubjectID ??
     updates?.subjectID ??
     updates?.subjectId ??
-    normalizedUpdates.subjectId ??
-    normalizedExisting.subjectId ??
+    updateCourse.subjectId ??
+    existingCourse.subjectId ??
     null;
 
   const teacherId =
     updates?.TeacherID ??
     updates?.teacherID ??
     updates?.teacherId ??
-    normalizedUpdates.teacherId ??
-    normalizedExisting.teacherId ??
-    normalizedExisting.teacher?.teacherId ??
-    normalizedExisting.teacher?.id ??
+    updateCourse.teacherId ??
+    existingCourse.teacherId ??
+    existingCourse.teacher?.teacherId ??
+    existingCourse.teacher?.id ??
     null;
 
   const resolvedCourseId =

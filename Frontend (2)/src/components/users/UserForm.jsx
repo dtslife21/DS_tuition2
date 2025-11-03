@@ -303,7 +303,7 @@ const UserForm = ({
         u?.LastName || u?.lastName || ""
       }`.trim(),
       EnrollmentDate: (() => {
-        // Normalize known date shapes into YYYY-MM-DD so <input type="date"> shows the value
+        // Convert known date shapes into YYYY-MM-DD so <input type="date"> shows the value
         const raw =
           u?.EnrollmentDate || u?.enrollmentDate || u?.enrollment_date || "";
         if (!raw) return "";
@@ -331,7 +331,7 @@ const UserForm = ({
       Department: u?.Department || u?.department || "",
       Qualification: u?.Qualification || u?.qualification || "",
       JoiningDate: (() => {
-        // Normalize known date shapes into YYYY-MM-DD so <input type="date"> shows the value
+        // Convert known date shapes into YYYY-MM-DD so <input type="date"> shows the value
         const raw = u?.JoiningDate || u?.joiningDate || "";
         if (!raw) return "";
         try {
@@ -1358,7 +1358,7 @@ const UserForm = ({
           onSubmit={async (data) => {
             try {
               const newCourse = await createCourse(data);
-              // normalize id to string
+              // ensure id is represented as string
               const newId = String(
                 newCourse.id ??
                   newCourse.CourseID ??

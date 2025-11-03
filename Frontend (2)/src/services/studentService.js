@@ -1,7 +1,7 @@
 import axios from "axios";
 import { mockStudents } from "../utils/mockData";
 
-const normalizeStudent = (student) => {
+const mapStudent = (student) => {
   if (!student || typeof student !== "object") {
     return student;
   }
@@ -23,7 +23,7 @@ const normalizeStudent = (student) => {
     user.userID ??
     null;
 
-  const normalized = {
+  const studentRecord = {
     StudentID: student.StudentID ?? resolvedStudentId,
     UserID:
       student.UserID ??
@@ -71,21 +71,24 @@ const normalizeStudent = (student) => {
   };
 
   const resolvedId =
-    normalized.StudentID ?? normalized.UserID ?? resolvedStudentId ?? null;
+    studentRecord.StudentID ??
+    studentRecord.UserID ??
+    resolvedStudentId ??
+    null;
 
-  normalized.id = resolvedId;
-  normalized.studentId = normalized.StudentID ?? resolvedId;
-  normalized.userId = normalized.UserID ?? resolvedId;
-  normalized.firstName = normalized.FirstName;
-  normalized.lastName = normalized.LastName;
-  normalized.email = normalized.Email;
-  normalized.username = normalized.Username;
-  normalized.rollNumber = normalized.RollNumber;
-  normalized.currentGrade = normalized.CurrentGrade;
-  normalized.parentName = normalized.ParentName;
-  normalized.parentContact = normalized.ParentContact;
+  studentRecord.id = resolvedId;
+  studentRecord.studentId = studentRecord.StudentID ?? resolvedId;
+  studentRecord.userId = studentRecord.UserID ?? resolvedId;
+  studentRecord.firstName = studentRecord.FirstName;
+  studentRecord.lastName = studentRecord.LastName;
+  studentRecord.email = studentRecord.Email;
+  studentRecord.username = studentRecord.Username;
+  studentRecord.rollNumber = studentRecord.RollNumber;
+  studentRecord.currentGrade = studentRecord.CurrentGrade;
+  studentRecord.parentName = studentRecord.ParentName;
+  studentRecord.parentContact = studentRecord.ParentContact;
 
-  return normalized;
+  return studentRecord;
 };
 
 const mapStudentCreatePayload = (studentData) => {
@@ -164,7 +167,7 @@ const mapStudentUpdatePayload = (studentData) => {
 };
 
 const mapMockStudent = (student) => {
-  const normalized = {
+  const studentRecord = {
     StudentID: student.StudentID ?? student.id,
     UserID: student.UserID ?? student.id,
     RollNumber: student.RollNumber ?? student.rollNumber ?? "",
@@ -187,26 +190,27 @@ const mapMockStudent = (student) => {
     IsActive: student.IsActive ?? true,
   };
 
-  normalized.id = normalized.StudentID ?? normalized.UserID ?? student.id;
-  normalized.studentId = normalized.StudentID ?? normalized.id;
-  normalized.userId = normalized.UserID ?? normalized.id;
-  normalized.rollNumber = normalized.RollNumber;
-  normalized.currentGrade = normalized.CurrentGrade;
-  normalized.parentName = normalized.ParentName;
-  normalized.parentContact = normalized.ParentContact;
-  normalized.firstName = normalized.FirstName;
-  normalized.lastName = normalized.LastName;
-  normalized.email = normalized.Email;
-  normalized.username = normalized.Username;
+  studentRecord.id =
+    studentRecord.StudentID ?? studentRecord.UserID ?? student.id;
+  studentRecord.studentId = studentRecord.StudentID ?? studentRecord.id;
+  studentRecord.userId = studentRecord.UserID ?? studentRecord.id;
+  studentRecord.rollNumber = studentRecord.RollNumber;
+  studentRecord.currentGrade = studentRecord.CurrentGrade;
+  studentRecord.parentName = studentRecord.ParentName;
+  studentRecord.parentContact = studentRecord.ParentContact;
+  studentRecord.firstName = studentRecord.FirstName;
+  studentRecord.lastName = studentRecord.LastName;
+  studentRecord.email = studentRecord.Email;
+  studentRecord.username = studentRecord.Username;
 
-  return normalized;
+  return studentRecord;
 };
 
 export const getAllStudents = async () => {
   try {
     const response = await axios.get("/Students");
     const students = Array.isArray(response.data)
-      ? response.data.map(normalizeStudent).filter(Boolean)
+      ? response.data.map(mapStudent).filter(Boolean)
       : [];
 
     if (students.length) {
@@ -223,7 +227,7 @@ export const getAllStudents = async () => {
 export const getStudentById = async (studentId) => {
   try {
     const response = await axios.get(`/Students/${studentId}`);
-    return normalizeStudent(response.data);
+    return mapStudent(response.data);
   } catch (error) {
     console.error("Failed to load student from API, using mock", error);
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -238,7 +242,7 @@ export const createStudent = async (studentData) => {
   try {
     const payload = mapStudentCreatePayload(studentData);
     const response = await axios.post("/Students", payload);
-    return normalizeStudent(response.data);
+    return mapStudent(response.data);
   } catch (error) {
     console.error("Failed to create student via API, using mock", error);
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -261,7 +265,7 @@ export const updateStudent = async (studentId, studentData) => {
       StudentID: studentId,
     });
     const response = await axios.put(`/Students/${studentId}`, payload);
-    return normalizeStudent(
+    return mapStudent(
       response.data ?? { ...studentData, StudentID: studentId }
     );
   } catch (error) {
@@ -296,4 +300,4 @@ export const deleteStudent = async (studentId) => {
   }
 };
 
-export default normalizeStudent;
+export default mapStudent;

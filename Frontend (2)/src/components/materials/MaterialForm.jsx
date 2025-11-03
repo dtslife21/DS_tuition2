@@ -83,7 +83,7 @@ const MaterialForm = ({ courseId, onSuccess, onCancel }) => {
 
       const createdMaterial = await uploadMaterial(apiPayload);
 
-      const normalizedMaterial = createdMaterial
+      const materialResult = createdMaterial
         ? {
             ...createdMaterial,
             filePath:
@@ -115,7 +115,7 @@ const MaterialForm = ({ courseId, onSuccess, onCancel }) => {
             teacherId: resolvedTeacherId,
           };
 
-      onSuccess(normalizedMaterial);
+      onSuccess(materialResult);
       reset({ title: "", description: "" });
       setFile(null);
     } catch (err) {

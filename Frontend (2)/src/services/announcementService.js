@@ -29,7 +29,7 @@ const getCurrentTeacherId = () => {
   }
 };
 
-const normalizeAnnouncement = (announcement) => {
+const mapAnnouncement = (announcement) => {
   if (!announcement || typeof announcement !== "object") {
     return null;
   }
@@ -112,7 +112,7 @@ const normalizeAnnouncement = (announcement) => {
     announcement.important ??
     false;
 
-  const normalized = {
+  const announcementRecord = {
     id: resolvedId ?? `${courseId ?? "course"}-${postDate}`,
     AnnouncementID: resolvedId ?? null,
     announcementId: resolvedId ?? null,
@@ -133,7 +133,7 @@ const normalizeAnnouncement = (announcement) => {
     raw: announcement,
   };
 
-  return normalized;
+  return announcementRecord;
 };
 
 const extractAnnouncements = (payload) => {
@@ -163,7 +163,7 @@ const extractAnnouncements = (payload) => {
     return [];
   })();
 
-  return list.map(normalizeAnnouncement).filter(Boolean);
+  return list.map(mapAnnouncement).filter(Boolean);
 };
 
 const fetchAnnouncements = async (url, config) => {
@@ -192,9 +192,9 @@ const toNumberOrUndefined = (value) => {
 
 const toBoolean = (value) => {
   if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    if (normalized === "true") return true;
-    if (normalized === "false") return false;
+    const lowered = value.trim().toLowerCase();
+    if (lowered === "true") return true;
+    if (lowered === "false") return false;
   }
 
   return Boolean(value);
@@ -253,7 +253,7 @@ export const getCourseAnnouncements = async (courseId) => {
   await delay(250);
   return mockAnnouncements
     .filter((a) => String(a.courseId ?? a.CourseID) === resolvedId)
-    .map(normalizeAnnouncement);
+    .map(mapAnnouncement);
 };
 
 export const getAllAnnouncements = async () => {
@@ -278,7 +278,7 @@ export const getAllAnnouncements = async () => {
 
   await delay(250);
   const currentTeacherId = getCurrentTeacherId();
-  const base = mockAnnouncements.map(normalizeAnnouncement);
+  const base = mockAnnouncements.map(mapAnnouncement);
   if (currentTeacherId) {
     return base.filter(
       (a) => String(a.teacherId ?? a.TeacherID) === String(currentTeacherId)
@@ -323,23 +323,23 @@ export const createAnnouncement = async ({
       postDate,
     });
     const response = await axios.post(`/Announcements`, payload);
-    const normalized = normalizeAnnouncement(response.data) ?? response.data;
+    const mapped = mapAnnouncement(response.data) ?? response.data;
 
-    if (normalized?.AnnouncementID != null) {
+    if (mapped?.AnnouncementID != null) {
       try {
         const detailResponse = await axios.get(
-          `/Announcements/${normalized.AnnouncementID}`
+          `/Announcements/${mapped.AnnouncementID}`
         );
-        const refreshed = normalizeAnnouncement(detailResponse.data);
+        const refreshed = mapAnnouncement(detailResponse.data);
         if (refreshed) {
           return refreshed;
         }
       } catch (_) {
-        // ignore refresh errors and fall back to initial normalized response
+        // ignore refresh errors and fall back to initial mapped response
       }
     }
 
-    return normalized;
+    return mapped;
   } catch (error) {
     console.error("Failed to create announcement via API, using mock", error);
   }
@@ -348,7 +348,7 @@ export const createAnnouncement = async ({
   const nextId =
     (mockAnnouncements.reduce((m, a) => Math.max(m, Number(a.id) || 0), 0) ||
       0) + 1;
-  const newAnnouncement = normalizeAnnouncement({
+  const newAnnouncement = mapAnnouncement({
     id: nextId,
     courseId: Number(courseId),
     teacherId: Number(teacherId),
@@ -426,7 +426,7 @@ export const getAnnouncementsByTeacher = async (teacherId) => {
   await delay(250);
   return mockAnnouncements
     .filter((a) => String(a.teacherId ?? a.TeacherID) === resolvedId)
-    .map(normalizeAnnouncement);
+    .map(mapAnnouncement);
 };
 
 export const getAnnouncementsForCourses = async (courseIds = []) => {
@@ -455,7 +455,7 @@ export const getAnnouncementsForCourses = async (courseIds = []) => {
   const idSet = new Set(courseIds.map((id) => String(id)));
   return mockAnnouncements
     .filter((a) => idSet.has(String(a.courseId ?? a.CourseID)))
-    .map(normalizeAnnouncement);
+    .map(mapAnnouncement);
 };
 
 export const getAnnouncementsForStudent = async (studentId) => {
@@ -524,7 +524,7 @@ export const getAnnouncementsForStudent = async (studentId) => {
   );
 
   if (!courseIds.length) {
-    return mockAnnouncements.map(normalizeAnnouncement);
+    return mockAnnouncements.map(mapAnnouncement);
   }
 
   const idSet = new Set(courseIds);
@@ -532,5 +532,5 @@ export const getAnnouncementsForStudent = async (studentId) => {
     .filter((announcement) =>
       idSet.has(String(announcement.courseId ?? announcement.CourseID))
     )
-    .map(normalizeAnnouncement);
+    .map(mapAnnouncement);
 };

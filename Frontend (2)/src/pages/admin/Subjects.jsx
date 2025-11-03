@@ -99,18 +99,18 @@ const AdminSubjects = () => {
       return;
     }
 
-    const normalizedSelection = Array.isArray(selectedIds)
+    const stringifiedSelection = Array.isArray(selectedIds)
       ? selectedIds.map((value) => String(value))
       : [String(selectedIds || "")];
 
-    const chosenId = normalizedSelection.find((value) => value.trim().length);
+    const chosenId = stringifiedSelection.find((value) => value.trim().length);
     if (!chosenId) {
       setSelectedCourseIds([]);
       setCourseStepError("Select a course or add a new one to continue.");
       return;
     }
 
-    setSelectedCourseIds(normalizedSelection);
+    setSelectedCourseIds(stringifiedSelection);
     setCourseStepError("");
     setLinkingCourse(true);
 
@@ -205,7 +205,7 @@ const AdminSubjects = () => {
       };
 
       const updated = await updateSubject(subjectIdValue, updatePayload);
-      const normalized = {
+      const subjectEntry = {
         ...updated,
         courseName: updated?.courseName ?? courseNameValue,
       };
@@ -216,7 +216,7 @@ const AdminSubjects = () => {
             String(s.id ?? s.SubjectID ?? s.subjectId ?? "") !==
             String(subjectIdValue ?? "")
         );
-        return [normalized, ...filtered];
+        return [subjectEntry, ...filtered];
       });
 
       setShowCoursePicker(false);
@@ -321,7 +321,7 @@ const AdminSubjects = () => {
     subjectDraftData?.subjectId ??
     "";
 
-  if (loading) return (<Loader size="md" className="py-2" />);
+  if (loading) return <Loader size="md" className="py-2" />;
 
   return (
     <div className="space-y-4 p-4">
@@ -464,7 +464,6 @@ const AdminSubjects = () => {
             <div>
               <strong>Description:</strong> {viewSubject.description ?? "-"}
             </div>
-            
           </div>
         ) : (
           viewLoading && <Loader size="sm" className="py-2" />

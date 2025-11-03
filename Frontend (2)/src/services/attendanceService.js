@@ -1,5 +1,6 @@
 import axios from "axios";
 import { mockAttendance } from "../utils/mockData";
+import { ATTENDANCE_STATUS } from "../utils/constants";
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -15,29 +16,29 @@ const sanitizeRecordPayload = (source) => {
   );
 };
 
-const normalizeStatus = (value) => {
+const mapAttendanceStatus = (value) => {
   if (value === undefined || value === null) {
-    return "Present";
+    return ATTENDANCE_STATUS.PRESENT;
   }
 
   const text = String(value).toLowerCase();
 
   if (text === "present" || text === "p") {
-    return "Present";
+    return ATTENDANCE_STATUS.PRESENT;
   }
 
   if (text === "absent" || text === "a" || text === "0") {
-    return "Absent";
+    return ATTENDANCE_STATUS.ABSENT;
   }
 
   if (text === "late" || text === "l") {
-    return "Late";
+    return ATTENDANCE_STATUS.LATE;
   }
 
   return String(value);
 };
 
-const normalizeDate = (value) => {
+const toIsoDate = (value) => {
   if (!value) {
     return new Date().toISOString();
   }
@@ -48,7 +49,7 @@ const normalizeDate = (value) => {
     : date.toISOString();
 };
 
-const normalizeAttendanceRecord = (record) => {
+const buildAttendanceRecord = (record) => {
   if (!record || typeof record !== "object") {
     return null;
   }
@@ -99,7 +100,7 @@ const normalizeAttendanceRecord = (record) => {
     student.id ??
     null;
 
-  const status = normalizeStatus(
+  const status = mapAttendanceStatus(
     record.Status ??
       record.status ??
       record.AttendanceStatus ??
@@ -111,7 +112,7 @@ const normalizeAttendanceRecord = (record) => {
         : undefined)
   );
 
-  const date = normalizeDate(
+  const date = toIsoDate(
     record.Date ??
       record.date ??
       record.AttendanceDate ??
@@ -134,7 +135,7 @@ const normalizeAttendanceRecord = (record) => {
     record.session?.sessionId ??
     null;
 
-  const normalized = {
+  const recordData = {
     id:
       resolvedId ??
       `${courseId ?? "course"}-${studentId ?? "student"}-${date ?? Date.now()}`,
@@ -153,7 +154,7 @@ const normalizeAttendanceRecord = (record) => {
     raw: record,
   };
 
-  return normalized;
+  return recordData;
 };
 
 const extractAttendance = (payload) => {
@@ -186,7 +187,7 @@ const extractAttendance = (payload) => {
     return [];
   })();
 
-  return list.map(normalizeAttendanceRecord).filter(Boolean);
+  return list.map(buildAttendanceRecord).filter(Boolean);
 };
 
 const fetchAttendance = async (url, config) => {
@@ -252,7 +253,7 @@ export const getCourseAttendance = async (courseId) => {
   await delay(500);
   return mockAttendance
     .filter((att) => String(att.courseId ?? att.CourseID) === resolvedId)
-    .map(normalizeAttendanceRecord);
+    .map(buildAttendanceRecord);
 };
 
 export const getStudentAttendance = async (studentId) => {
@@ -295,7 +296,7 @@ export const getStudentAttendance = async (studentId) => {
   await delay(500);
   return mockAttendance
     .filter((att) => String(att.studentId ?? att.StudentID) === resolvedId)
-    .map(normalizeAttendanceRecord);
+    .map(buildAttendanceRecord);
 };
 
 export const generateQRSession = async (sessionData) => {
@@ -352,7 +353,7 @@ export const recordAttendance = async (arg1, arg2) => {
     const response = await axios.post(`/Attendance/record`, payload);
     const responsePayload = response.data;
     return (
-      normalizeAttendanceRecord(responsePayload) ?? {
+      buildAttendanceRecord(responsePayload) ?? {
         id: Math.random().toString(36).substring(7),
         sessionId: responsePayload.sessionId ?? rawPayload.sessionId ?? null,
         studentId: String(resolvedStudentId),
@@ -381,8 +382,6 @@ export const recordAttendance = async (arg1, arg2) => {
     courseId: rawPayload.courseId ?? null,
     teacherId: rawPayload.teacherId ?? null,
     attendanceDate:
-      rawPayload.date ?? rawPayload.attendanceDate ?? new Date().toISOString(),
-    attendanceDate:
       rawPayload.attendanceDate ??
       rawPayload.date ??
       rawPayload.Date ??
@@ -392,6 +391,6 @@ export const recordAttendance = async (arg1, arg2) => {
       rawPayload.Date ??
       rawPayload.attendanceDate ??
       new Date().toISOString(),
-    status: "Present",
+    status: ATTENDANCE_STATUS.PRESENT,
   };
 };

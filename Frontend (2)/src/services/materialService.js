@@ -41,7 +41,7 @@ const filterVisibleMaterials = (materials = []) =>
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const normalizeMaterial = (material) => {
+const mapMaterial = (material) => {
   if (!material || typeof material !== "object") {
     return null;
   }
@@ -129,7 +129,7 @@ const normalizeMaterial = (material) => {
     material.visible ??
     true;
 
-  const normalized = {
+  const materialRecord = {
     id: resolvedId ?? `${courseId ?? "course"}-${title || "material"}`,
     MaterialID: resolvedId ?? null,
     materialId: resolvedId ?? null,
@@ -152,7 +152,7 @@ const normalizeMaterial = (material) => {
     raw: material,
   };
 
-  return normalized;
+  return materialRecord;
 };
 
 const extractMaterials = (payload) => {
@@ -182,7 +182,7 @@ const extractMaterials = (payload) => {
     return [];
   })();
 
-  return list.map(normalizeMaterial).filter(Boolean);
+  return list.map(mapMaterial).filter(Boolean);
 };
 
 const fetchMaterials = async (url, config) => {
@@ -370,14 +370,14 @@ export const getCourseMaterials = async (courseId) => {
     }
   }
   await delay(300);
-  const fallbackNormalized = mockMaterials
+  const fallbackMapped = mockMaterials
     .filter(
       (material) =>
         String(material.courseId ?? material.CourseID) === resolvedId
     )
-    .map(normalizeMaterial)
+    .map(mapMaterial)
     .filter(Boolean);
-  const visibleFallback = filterVisibleMaterials(fallbackNormalized);
+  const visibleFallback = filterVisibleMaterials(fallbackMapped);
   // Return all visible mock materials for the course
   return visibleFallback;
 };
@@ -393,10 +393,8 @@ export const getAllMaterials = async () => {
   }
 
   await delay(300);
-  const fallbackNormalized = mockMaterials
-    .map(normalizeMaterial)
-    .filter(Boolean);
-  return filterVisibleMaterials(fallbackNormalized);
+  const fallbackMapped = mockMaterials.map(mapMaterial).filter(Boolean);
+  return filterVisibleMaterials(fallbackMapped);
 };
 
 export const getRecentMaterials = async (teacherId) => {
@@ -423,10 +421,8 @@ export const getRecentMaterials = async (teacherId) => {
   }
 
   await delay(300);
-  const fallbackNormalized = mockMaterials
-    .map(normalizeMaterial)
-    .filter(Boolean);
-  const visibleFallback = filterVisibleMaterials(fallbackNormalized);
+  const fallbackMapped = mockMaterials.map(mapMaterial).filter(Boolean);
+  const visibleFallback = filterVisibleMaterials(fallbackMapped);
   return filterByTeacher(visibleFallback, resolvedId)
     .slice()
     .sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate))
@@ -466,10 +462,8 @@ export const getStudentMaterials = async (studentId) => {
   }
 
   await delay(300);
-  const fallbackNormalized = mockMaterials
-    .map(normalizeMaterial)
-    .filter(Boolean);
-  const visibleFallback = filterVisibleMaterials(fallbackNormalized);
+  const fallbackMapped = mockMaterials.map(mapMaterial).filter(Boolean);
+  const visibleFallback = filterVisibleMaterials(fallbackMapped);
   return filterByStudent(visibleFallback, resolvedId);
 };
 
@@ -545,7 +539,7 @@ export const uploadMaterial = async (materialData) => {
     }
 
     const response = await axios.post(RESOURCE_BASE, payload);
-    return normalizeMaterial(response.data) ?? response.data;
+    return mapMaterial(response.data) ?? response.data;
   } catch (error) {
     console.error(
       "Failed to upload material via API, using mock fallback",
@@ -557,7 +551,7 @@ export const uploadMaterial = async (materialData) => {
   const nextId =
     Math.max(0, ...mockMaterials.map((material) => Number(material.id) || 0)) +
     1;
-  const newMaterial = normalizeMaterial({
+  const newMaterial = mapMaterial({
     id: nextId,
     ...materialData,
     uploadDate: new Date().toISOString(),
@@ -586,7 +580,7 @@ export const getMaterialById = async (materialId) => {
 
   try {
     const response = await axios.get(`${RESOURCE_BASE}/${resolvedId}`);
-    return normalizeMaterial(response.data);
+    return mapMaterial(response.data);
   } catch (error) {
     if (isNotFound(error)) {
       return null;
@@ -601,7 +595,7 @@ export const getMaterialById = async (materialId) => {
   const fallback = mockMaterials.find(
     (material) => String(material.id ?? material.MaterialID) === resolvedId
   );
-  return fallback ? normalizeMaterial(fallback) : null;
+  return fallback ? mapMaterial(fallback) : null;
 };
 
 export const updateMaterial = async (materialId, materialData) => {
@@ -641,7 +635,7 @@ export const updateMaterial = async (materialId, materialData) => {
     const updated = await getMaterialById(resolvedId);
     return (
       updated ??
-      normalizeMaterial({
+      mapMaterial({
         ...materialData,
         MaterialID: payload.MaterialID,
         materialId: payload.MaterialID,
@@ -659,7 +653,7 @@ export const updateMaterial = async (materialId, materialData) => {
   }
 
   await delay(300);
-  return normalizeMaterial({
+  return mapMaterial({
     ...materialData,
     MaterialID: payload.MaterialID ?? resolvedId,
     materialId: payload.MaterialID ?? resolvedId,
@@ -678,9 +672,9 @@ export const deleteMaterial = async (materialId) => {
     const response = await axios.delete(`${RESOURCE_BASE}/${resolvedId}`);
     const data = response?.data ?? null;
     if (data) {
-      return normalizeMaterial(data);
+      return mapMaterial(data);
     }
-    return normalizeMaterial({
+    return mapMaterial({
       MaterialID: resolvedId,
       materialId: resolvedId,
       id: resolvedId,
@@ -704,7 +698,7 @@ export const deleteMaterial = async (materialId) => {
   if (fallback) {
     fallback.isVisible = false;
     fallback.IsVisible = false;
-    return normalizeMaterial({
+    return mapMaterial({
       ...fallback,
       isVisible: false,
       IsVisible: false,
