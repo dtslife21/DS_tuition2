@@ -4,7 +4,11 @@ import Cropper from "react-easy-crop";
 import Button from "../common/Button";
 import Modal from "../common/Modal";
 import CourseForm from "../courses/CourseForm";
-import { getAllCourses, getTeacherCourses, createCourse } from "../../services/courseService";
+import {
+  getAllCourses,
+  getTeacherCourses,
+  createCourse,
+} from "../../services/courseService";
 import { getAllStudents } from "../../services/studentService";
 import CoursePickerModal from "../courses/CoursePickerModal";
 
@@ -438,7 +442,9 @@ const UserForm = ({
     const load = async () => {
       try {
         setLoadingCourses(true);
-        const all = teacherId ? await getTeacherCourses(teacherId) : await getAllCourses();
+        const all = teacherId
+          ? await getTeacherCourses(teacherId)
+          : await getAllCourses();
         if (!mounted) return;
         setCourses(all || []);
       } catch (err) {

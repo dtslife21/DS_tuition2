@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { getStudentCourses } from "../../services/courseService";
 import EmptyState from "../../components/common/EmptyState";
@@ -99,20 +100,23 @@ const StudentCourses = () => {
             {courses.length > 0 ? (
               <div className="w-full flex flex-wrap justify-center gap-8 mt-6">
                 {courses.map((course) => (
-                  <div
+                  <Link
                     key={course.id}
-                    className="bg-blue-200 dark:bg-blue-900 rounded-xl shadow-lg flex flex-col items-center p-8 w-80 max-w-full transition-transform hover:scale-105"
+                    to={`/student/courses/${course.id}`}
+                    className="no-underline"
                   >
-                    <div className="bg-blue-500 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold mb-4 shadow-md">
-                      {course.name.charAt(0)}
+                    <div className="bg-blue-200 dark:bg-blue-900 rounded-xl shadow-lg flex flex-col items-center p-8 w-80 max-w-full transition-transform hover:scale-105 group hover:shadow-2xl">
+                      <div className="bg-blue-500 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold mb-4 shadow-md">
+                        {course.name.charAt(0)}
+                      </div>
+                      <div className="text-2xl font-semibold text-gray-900 dark:text-white mb-1 text-center group-hover:text-indigo-700 dark:group-hover:text-indigo-300">
+                        {course.name}
+                      </div>
+                      <div className="text-md text-gray-700 dark:text-gray-300 text-center">
+                        {course.code}
+                      </div>
                     </div>
-                    <div className="text-2xl font-semibold text-gray-900 dark:text-white mb-1 text-center">
-                      {course.name}
-                    </div>
-                    <div className="text-md text-gray-700 dark:text-gray-300 text-center">
-                      {course.code}
-                    </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (

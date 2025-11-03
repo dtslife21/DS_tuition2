@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import Modal from "../common/Modal";
 import Button from "../common/Button";
 import CourseForm from "./CourseForm";
-import { getAllCourses, getTeacherCourses, createCourse } from "../../services/courseService";
+import {
+  getAllCourses,
+  getTeacherCourses,
+  createCourse,
+} from "../../services/courseService";
 
 const CoursePickerModal = ({
   isOpen,
@@ -186,11 +190,7 @@ const CoursePickerModal = ({
             <Button variant="secondary" onClick={onClose} disabled={saving}>
               Cancel
             </Button>
-            <Button
-              variant="primary"
-              onClick={handleProceed}
-              disabled={saving}
-            >
+            <Button variant="primary" onClick={handleProceed} disabled={saving}>
               {saving ? "Saving..." : proceedLabel}
             </Button>
           </div>
@@ -204,7 +204,9 @@ const CoursePickerModal = ({
           <CourseForm
             onSubmit={async (data) => {
               try {
-                const payload = teacherId ? { ...data, TeacherID: teacherId, teacherId } : data;
+                const payload = teacherId
+                  ? { ...data, TeacherID: teacherId, teacherId }
+                  : data;
                 const newCourse = await createCourse(payload);
                 const newId = String(
                   newCourse.id ?? newCourse.CourseID ?? newCourse.CourseId ?? ""

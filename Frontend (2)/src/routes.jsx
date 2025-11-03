@@ -21,6 +21,7 @@ import TeacherComplaints from "./pages/teacher/Complaints";
 import TeacherNotices from "./pages/teacher/Notices";
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentCourses from "./pages/student/Courses";
+import CourseView from "./components/courses/CourseView";
 import StudentAttendance from "./pages/student/Attendance";
 import StudentMaterials from "./pages/student/Materials";
 import StudentComplaints from "./pages/student/Complaints";
@@ -118,6 +119,7 @@ const RoutesConfig = () => {
         >
           <Route index element={<StudentDashboard />} />
           <Route path="courses" element={<StudentCourses />} />
+          <Route path="courses/:id" element={<CourseView />} />
           <Route path="attendance" element={<StudentAttendance />} />
           <Route path="materials" element={<StudentMaterials />} />
           <Route path="complaints" element={<StudentComplaints />} />
