@@ -1,8 +1,9 @@
 import { useForm } from "react-hook-form";
 import { useAuth } from "../../contexts/AuthContext";
 import Button from "../common/Button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { uploadMaterial } from "../../services/materialService";
+import { getTeacherCourses } from "../../services/courseService";
 
 const resolveTeacherId = (user) => {
   if (!user || typeof user !== "object") {
@@ -32,6 +33,50 @@ const MaterialForm = ({ courseId, onSuccess, onCancel }) => {
   const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [courses, setCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState(courseId ?? null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const load = async () => {
+      // If a courseId was provided by parent, no need to load teacher courses
+      if (courseId) return;
+
+      const teacherId = resolveTeacherId(user);
+      if (!teacherId) return;
+
+      try {
+        setLoadingCourses(true);
+        const list = await getTeacherCourses(teacherId);
+        if (!mounted) return;
+        setCourses(list || []);
+        if (!selectedCourse && Array.isArray(list) && list.length) {
+          const first = String(
+            list[0].id ??
+              list[0].CourseID ??
+              list[0].CourseId ??
+              list[0].courseId ??
+              ""
+          );
+          setSelectedCourse(first || null);
+        }
+      } catch (err) {
+        console.error("Failed to load teacher courses", err);
+        setCourses([]);
+      } finally {
+        if (mounted) setLoadingCourses(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, user]);
 
   const onSubmit = async (data) => {
     if (!file) {
@@ -46,8 +91,10 @@ const MaterialForm = ({ courseId, onSuccess, onCancel }) => {
       return;
     }
 
-    if (!courseId) {
-      setError("Course identifier is missing");
+    const chosenCourseId = courseId ?? selectedCourse;
+
+    if (!chosenCourseId) {
+      setError("Please select a course to attach this material to.");
       return;
     }
 
@@ -62,9 +109,9 @@ const MaterialForm = ({ courseId, onSuccess, onCancel }) => {
         return fallbackFileUrl;
       };
 
-      const numericCourseId = Number(courseId);
+      const numericCourseId = Number(chosenCourseId);
       const resolvedCourseId = Number.isNaN(numericCourseId)
-        ? courseId
+        ? chosenCourseId
         : numericCourseId;
       const numericTeacherId = Number(teacherId);
       const resolvedTeacherId = Number.isNaN(numericTeacherId)
@@ -143,7 +190,50 @@ const MaterialForm = ({ courseId, onSuccess, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div>
+      <div className="space-y-3">
+        {/* Course selector - shown when parent didn't provide a courseId */}
+        {!courseId && (
+          <div>
+            <label
+              htmlFor="course"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Course
+            </label>
+            {loadingCourses ? (
+              <p className="mt-1 text-sm text-gray-500">Loading courses…</p>
+            ) : courses && courses.length ? (
+              <select
+                id="course"
+                value={selectedCourse ?? ""}
+                onChange={(e) => setSelectedCourse(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">-- Select a course --</option>
+                {courses.map((c) => {
+                  const cid = String(
+                    c.id ?? c.CourseID ?? c.CourseId ?? c.courseId ?? ""
+                  );
+                  const label =
+                    c.name ||
+                    c.CourseName ||
+                    c.title ||
+                    c.courseName ||
+                    `Course ${cid}`;
+                  return (
+                    <option key={cid} value={cid}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+            ) : (
+              <p className="mt-1 text-sm text-gray-500">
+                No courses found for your account.
+              </p>
+            )}
+          </div>
+        )}
         <label
           htmlFor="title"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -161,7 +251,7 @@ const MaterialForm = ({ courseId, onSuccess, onCancel }) => {
         )}
       </div>
 
-      <div>
+      <div className="space-y-2">
         <label
           htmlFor="description"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
