@@ -11,7 +11,7 @@ import {
 import Button from "../common/Button";
 
 const QRScanner = () => {
-  const { sessionId } = useParams();
+  const { id: routeCourseId, sessionId } = useParams();
   const location = useLocation();
   const { user } = useAuth();
   const [status, setStatus] = useState("idle");
@@ -56,7 +56,12 @@ const QRScanner = () => {
       try {
         const list = teacherId ? await getTeacherCourses(teacherId) : [];
         setCourses(Array.isArray(list) ? list : []);
-        setSelectedCourseId("");
+        // if route contains a course id (e.g. /teacher/attendance/:id), pre-select it
+        if (routeCourseId) {
+          setSelectedCourseId(String(routeCourseId));
+        } else {
+          setSelectedCourseId("");
+        }
       } catch (_) {
         setCourses([]);
       }

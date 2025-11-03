@@ -8,6 +8,7 @@ import {
 } from "../../services/courseService";
 import UserList from "../../components/users/UserList";
 import UserFormDialog from "../../components/common/UserFormDialog";
+import UserForm from "../../components/users/UserForm";
 import {
   createUser,
   updateUser,
@@ -20,7 +21,11 @@ import {
   deleteStudent as deleteStudentRecord,
   getStudentById,
 } from "../../services/studentService";
+import { createEnrollmentsForStudent } from "../../services/enrollmentService";
 import Loader from "../../components/common/Loader";
+import CoursePickerModal from "../../components/courses/CoursePickerModal";
+import { motion, AnimatePresence } from "framer-motion";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 const resolveTeacherId = (user) => {
   if (!user || typeof user !== "object") {
@@ -47,8 +52,17 @@ const TeacherStudents = () => {
   const [loading, setLoading] = useState(true);
   const [editUser, setEditUser] = useState(null);
   const [isEditOpen, setEditOpen] = useState(false);
+  const [isCreateOpen, setCreateOpen] = useState(false);
+  const [createStep, setCreateStep] = useState(1);
+  const [pendingCoreData, setPendingCoreData] = useState(null);
+  const [showCoursePicker, setShowCoursePicker] = useState(false);
+  const [pendingStudentData, setPendingStudentData] = useState(null);
+  const [courseSelection, setCourseSelection] = useState([]);
+  const [coursePickerSaving, setCoursePickerSaving] = useState(false);
+  const [coursePickerError, setCoursePickerError] = useState("");
   const teacherId = resolveTeacherId(user);
   const courseId = id ? String(id).trim() : null;
+  const defaultCourseSelection = courseId ? [String(courseId)] : [];
 
   const refreshStudents = async () => {
     if (!teacherId) {
@@ -130,6 +144,189 @@ const TeacherStudents = () => {
     fetchData();
   }, [teacherId, courseId]);
 
+  const openCreateModal = () => {
+    setCreateOpen(true);
+    setCreateStep(1);
+    setPendingCoreData(null);
+    setPendingStudentData(null);
+    setCourseSelection(defaultCourseSelection);
+    setCoursePickerError("");
+  };
+
+  const closeCreateModal = () => {
+    setCreateOpen(false);
+    setCreateStep(1);
+    setPendingCoreData(null);
+    setPendingStudentData(null);
+    setCourseSelection(defaultCourseSelection);
+    setCoursePickerError("");
+  };
+
+  const handleCreateSubmit = async (formData) => {
+    if (createStep === 1) {
+      setPendingCoreData(formData);
+      setCreateStep(2);
+      return;
+    }
+
+    const mergedPayload = {
+      ...(pendingCoreData || {}),
+      ...formData,
+    };
+
+    const normalizedPayload = {
+      ...mergedPayload,
+      UserTypeID: 3,
+      userTypeID: 3,
+      IsActive: true,
+      ProfilePicture:
+        mergedPayload.ProfilePicture || mergedPayload.profilePicture || null,
+    };
+
+    const existingCourseIds = Array.isArray(normalizedPayload.StudentCourseIDs)
+      ? normalizedPayload.StudentCourseIDs
+      : Array.isArray(normalizedPayload.CourseIDs)
+      ? normalizedPayload.CourseIDs
+      : [];
+
+    const initialSelection = Array.from(
+      new Set([
+        ...defaultCourseSelection,
+        ...(existingCourseIds || []).map((cid) => String(cid)),
+      ])
+    ).filter(Boolean);
+
+    setPendingStudentData(normalizedPayload);
+    setCourseSelection(
+      (initialSelection && initialSelection.length
+        ? initialSelection
+        : defaultCourseSelection
+      ).map(String)
+    );
+    setCreateOpen(false);
+    setCreateStep(1);
+    setPendingCoreData(null);
+    setCoursePickerError("");
+    setShowCoursePicker(true);
+  };
+
+  const handleCoursePickerClose = () => {
+    if (coursePickerSaving) return;
+    setShowCoursePicker(false);
+    setPendingStudentData(null);
+    setCoursePickerError("");
+    setCourseSelection(defaultCourseSelection);
+  };
+
+  const handleCoursePickerProceed = async (selectedIds) => {
+    const ids = (selectedIds || []).map((id) => String(id));
+    setCourseSelection(ids);
+
+    if (!pendingStudentData) {
+      setShowCoursePicker(false);
+      setCourseSelection(defaultCourseSelection);
+      return;
+    }
+
+    setCoursePickerSaving(true);
+    setCoursePickerError("");
+
+    try {
+      const createdUser = await createUser({
+        ...pendingStudentData,
+        CourseIDs: ids.map((cid) =>
+          Number.isNaN(Number(cid)) ? cid : Number(cid)
+        ),
+        IsActive: true,
+        ProfilePicture:
+          pendingStudentData.ProfilePicture ||
+          pendingStudentData.profilePicture ||
+          null,
+      });
+
+      const studentPayload = {
+        UserID:
+          createdUser.UserID ??
+          createdUser.id ??
+          createdUser.userID ??
+          createdUser.userId,
+        RollNumber:
+          pendingStudentData.RollNumber ??
+          pendingStudentData.IDNumber ??
+          pendingStudentData.rollNumber ??
+          pendingStudentData.idNumber ??
+          undefined,
+        EnrollmentDate: pendingStudentData.EnrollmentDate ?? undefined,
+        CurrentGrade:
+          pendingStudentData.CurrentGrade ??
+          pendingStudentData.Class ??
+          pendingStudentData.currentGrade ??
+          pendingStudentData.class ??
+          undefined,
+        ParentName:
+          pendingStudentData.ParentName ??
+          pendingStudentData.GuardianName ??
+          pendingStudentData.parentName ??
+          pendingStudentData.guardianName ??
+          undefined,
+        ParentContact:
+          pendingStudentData.ParentContact ??
+          pendingStudentData.GuardianPhone ??
+          pendingStudentData.parentContact ??
+          pendingStudentData.guardianPhone ??
+          undefined,
+      };
+
+      let createdStudent = null;
+      try {
+        createdStudent = await createStudent(
+          Object.fromEntries(
+            Object.entries(studentPayload).filter(
+              ([, value]) => value !== undefined
+            )
+          )
+        );
+      } catch (studentErr) {
+        console.error("Failed to create student record:", studentErr);
+      }
+
+      const studentId =
+        createdStudent?.StudentID ??
+        createdStudent?.studentId ??
+        createdStudent?.UserID ??
+        createdStudent?.id ??
+        null;
+
+      const numericCourseIds = ids
+        .map((cid) => Number(cid))
+        .filter((cid) => !Number.isNaN(cid));
+
+      if (studentId && numericCourseIds.length) {
+        try {
+          await createEnrollmentsForStudent(studentId, numericCourseIds, {
+            EnrollmentDate: studentPayload.EnrollmentDate || undefined,
+            IsActive: true,
+          });
+        } catch (enrollErr) {
+          console.error("Failed to enroll student:", enrollErr);
+        }
+      }
+
+      await refreshStudents();
+      setShowCoursePicker(false);
+      setPendingStudentData(null);
+      setCourseSelection(defaultCourseSelection);
+      setCoursePickerError("");
+    } catch (err) {
+      console.error("Error creating student record:", err);
+      setCoursePickerError(
+        err?.message || "Unable to create student. Please try again."
+      );
+    } finally {
+      setCoursePickerSaving(false);
+    }
+  };
+
   if (loading) {
     return <Loader className="py-12" />;
   }
@@ -159,45 +356,70 @@ const TeacherStudents = () => {
       </h1>
 
       <div className="flex justify-end">
-        <UserFormDialog
-          triggerButton={
-            <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
-              Add New Student
-            </button>
-          }
-          forceUserType={3}
-          onSave={async (formData) => {
-            try {
-              const newUser = await createUser({
-                ...formData,
-                UserTypeID: 3,
-                IsActive: true,
-                ProfilePicture: null,
-              });
-              await createStudent({
-                UserID: newUser.UserID || newUser.id,
-                RollNumber: formData.RollNumber,
-                EnrollmentDate: formData.EnrollmentDate,
-                CurrentGrade: formData.CurrentGrade,
-                ParentName: formData.ParentName,
-                ParentContact: formData.ParentContact,
-              });
-              await refreshStudents();
-            } catch (err) {
-              console.error("Error creating student record:", err);
-              setStudents((prev) => [
-                ...prev,
-                {
-                  id: Date.now(),
-                  UserID: Date.now(),
-                  ...formData,
-                  UserTypeID: 3,
-                },
-              ]);
-            }
-          }}
-        />
+        <button
+          onClick={openCreateModal}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+        >
+          Add New Student
+        </button>
       </div>
+
+      <AnimatePresence>
+        {isCreateOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden"
+            >
+              <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Add New Student
+                </h2>
+                <button
+                  onClick={closeCreateModal}
+                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="p-4 space-y-4">
+                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
+                  <span>
+                    Step {createStep} of 2 ·{" "}
+                    {createStep === 1 ? "Account details" : "Student profile"}
+                  </span>
+                </div>
+
+                <UserForm
+                  onSubmit={handleCreateSubmit}
+                  loading={false}
+                  initialData={
+                    createStep === 1
+                      ? pendingCoreData || { UserTypeID: 3 }
+                      : {
+                          ...(pendingCoreData || {}),
+                          UserTypeID: 3,
+                        }
+                  }
+                  forceUserType={3}
+                  showCoreFields={createStep === 1}
+                  showRoleFields={createStep === 2}
+                  submitLabel={createStep === 1 ? "Next" : "Create"}
+                  onCancel={closeCreateModal}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="bg-gradient-to-br from-white to-indigo-50/70 dark:from-gray-900/70 dark:to-indigo-950/20 backdrop-blur shadow-lg ring-1 ring-indigo-100 dark:ring-indigo-800 rounded-2xl p-4 sm:p-6">
         <UserList
@@ -212,36 +434,6 @@ const TeacherStudents = () => {
               student.studentID ||
               student.studentId;
             return identifier ? `/teacher/students/${identifier}` : null;
-          }}
-          onAddStudent={async (formData) => {
-            try {
-              const newUser = await createUser({
-                ...formData,
-                UserTypeID: 3,
-                IsActive: true,
-                ProfilePicture: null,
-              });
-              await createStudent({
-                UserID: newUser.UserID || newUser.id,
-                RollNumber: formData.RollNumber,
-                EnrollmentDate: formData.EnrollmentDate,
-                CurrentGrade: formData.CurrentGrade,
-                ParentName: formData.ParentName,
-                ParentContact: formData.ParentContact,
-              });
-              await refreshStudents();
-            } catch (err) {
-              console.error("Error creating student record:", err);
-              setStudents((prev) => [
-                ...prev,
-                {
-                  id: Date.now(),
-                  UserID: Date.now(),
-                  ...formData,
-                  UserTypeID: 3,
-                },
-              ]);
-            }
           }}
           onEdit={async (userId) => {
             try {
@@ -282,6 +474,19 @@ const TeacherStudents = () => {
           }}
         />
       </div>
+
+      <CoursePickerModal
+        isOpen={showCoursePicker}
+        onClose={handleCoursePickerClose}
+        initialSelected={courseSelection}
+        title="Select Course for Student"
+        description="Choose a course to enroll the new student in."
+        multiSelect={false}
+        allowCreate={false}
+        saving={coursePickerSaving}
+        errorMessage={coursePickerError}
+        onProceed={handleCoursePickerProceed}
+      />
 
       {/* Edit Student Popup */}
       {isEditOpen && (

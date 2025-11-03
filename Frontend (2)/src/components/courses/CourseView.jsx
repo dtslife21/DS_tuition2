@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { getCourseDetails, updateCourse } from "../../services/courseService";
 import { getCourseMaterials } from "../../services/materialService";
@@ -17,6 +17,7 @@ import Button from "../common/Button";
 const CourseView = () => {
   const { id } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [materials, setMaterials] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -262,7 +263,10 @@ const CourseView = () => {
           Attendance Records
         </h3>
         {user.userType === "teacher" && (
-          <Button variant="primary" onClick={() => setShowQRModal(true)}>
+          <Button
+            variant="primary"
+            onClick={() => navigate(`/teacher/attendance/${id}`)}
+          >
             Take Attendance
           </Button>
         )}
