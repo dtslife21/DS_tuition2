@@ -198,10 +198,21 @@ const TeacherStudents = () => {
           }}
         />
       </div>
-      
+
       <div className="bg-gradient-to-br from-white to-indigo-50/70 dark:from-gray-900/70 dark:to-indigo-950/20 backdrop-blur shadow-lg ring-1 ring-indigo-100 dark:ring-indigo-800 rounded-2xl p-4 sm:p-6">
         <UserList
           users={students}
+          getDetailsPath={(student) => {
+            const identifier =
+              student.UserID ||
+              student.userID ||
+              student.userId ||
+              student.id ||
+              student.StudentID ||
+              student.studentID ||
+              student.studentId;
+            return identifier ? `/teacher/students/${identifier}` : null;
+          }}
           onAddStudent={async (formData) => {
             try {
               const newUser = await createUser({

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import { getUserById, updateUser } from "../../services/userService";
 import {
   getTeacherCourses,
@@ -32,7 +33,15 @@ const Pill = ({ children, color = "indigo" }) => (
   </span>
 );
 
-const UserDetailsPage = () => {
+const UserDetailsPage = ({
+  allowEdit = true,
+  showManageLink = true,
+  manageLinkPath = "/admin/users",
+  manageLinkText = "Manage Users",
+  backPath,
+  heading = "User Details",
+  listLabel = "Users",
+}) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -48,6 +57,23 @@ const UserDetailsPage = () => {
   const [studentDetails, setStudentDetails] = useState(null);
   const [studentLoading, setStudentLoading] = useState(false);
   const [studentError, setStudentError] = useState("");
+
+  const handleBackClick = () => {
+    if (backPath) {
+      navigate(backPath);
+      return;
+    }
+    navigate(-1);
+  };
+
+  const startEditing = () => {
+    if (!allowEdit) return;
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -202,6 +228,7 @@ const UserDetailsPage = () => {
   }, [user]);
 
   const handleSave = async (userData) => {
+    if (!allowEdit) return;
     try {
       const updatedUser = await updateUser(id, userData);
       setUser(updatedUser);
@@ -239,14 +266,16 @@ const UserDetailsPage = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            User Details
+            {heading}
           </h1>
-          <Link
-            to="/admin/users"
-            className="px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
-          >
-            Back to Users
-          </Link>
+          {manageLinkPath && (
+            <Link
+              to={manageLinkPath}
+              className="px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
+            >
+              {`Back to ${listLabel}`}
+            </Link>
+          )}
         </div>
         <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-md">
           {error}
@@ -265,41 +294,46 @@ const UserDetailsPage = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(-1)}
+            onClick={handleBackClick}
             className="px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
           >
             Back
           </button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            User Details
+            {heading}
           </h1>
         </div>
-        {!isEditing ? (
+        {(allowEdit || (showManageLink && manageLinkPath)) && (
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsEditing(true)}
-              className="px-3 py-1.5 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
-            >
-              Edit
-            </button>
-            <Link
-              to="/admin/users"
-              className="px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
-            >
-              Manage Users
-            </Link>
+            {allowEdit && !isEditing && (
+              <button
+                onClick={startEditing}
+                className="px-3 py-1.5 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                Edit
+              </button>
+            )}
+            {allowEdit && isEditing && (
+              <button
+                onClick={cancelEditing}
+                className="px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
+              >
+                Cancel
+              </button>
+            )}
+            {!isEditing && showManageLink && manageLinkPath && (
+              <Link
+                to={manageLinkPath}
+                className="px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
+              >
+                {manageLinkText}
+              </Link>
+            )}
           </div>
-        ) : (
-          <button
-            onClick={() => setIsEditing(false)}
-            className="px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
-          >
-            Cancel
-          </button>
         )}
       </div>
 
-      {isEditing ? (
+      {allowEdit && isEditing ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
           <UserForm
             onSubmit={handleSave}
@@ -558,14 +592,48 @@ const UserDetailsPage = () => {
                           </p>
                         </div>
                         <div className="ml-4 flex-shrink-0">
-                          <Link
-                            to={`/admin/courses/${
-                              course.id || course.CourseID || course.courseId
-                            }`}
-                            className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
-                          >
-                            View
-                          </Link>
+                          {(() => {
+                            try {
+                              const { user: authUser } = useAuth();
+                              const prefix =
+                                authUser && authUser.userType === "teacher"
+                                  ? "/teacher"
+                                  : "/admin";
+                              const cid =
+                                course.id || course.CourseID || course.courseId;
+                              if (!cid) {
+                                return (
+                                  <button
+                                    className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-gray-200 text-gray-700"
+                                    disabled
+                                  >
+                                    View
+                                  </button>
+                                );
+                              }
+
+                              return (
+                                <Link
+                                  to={`${prefix}/courses/${cid}`}
+                                  className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                                >
+                                  View
+                                </Link>
+                              );
+                            } catch (err) {
+                              // fallback to admin link on error
+                              const cid =
+                                course.id || course.CourseID || course.courseId;
+                              return (
+                                <Link
+                                  to={`/admin/courses/${cid}`}
+                                  className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                                >
+                                  View
+                                </Link>
+                              );
+                            }
+                          })()}
                         </div>
                       </div>
                       {course.description && (

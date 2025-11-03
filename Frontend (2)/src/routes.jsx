@@ -88,6 +88,20 @@ const RoutesConfig = () => {
           <Route path="attendance" element={<TeacherAttendance />} />
           <Route path="materials" element={<TeacherMaterials />} />
           <Route path="students" element={<TeacherStudents />} />
+          <Route
+            path="students/:id"
+            element={
+              <UserDetailsPage
+                allowEdit={false}
+                showManageLink={false}
+                manageLinkPath="/teacher/students"
+                manageLinkText="Back to Students"
+                backPath="/teacher/students"
+                heading="Student Details"
+                listLabel="Students"
+              />
+            }
+          />
           <Route path="complaints" element={<TeacherComplaints />} />
           <Route path="notices" element={<TeacherNotices />} />
         </Route>
