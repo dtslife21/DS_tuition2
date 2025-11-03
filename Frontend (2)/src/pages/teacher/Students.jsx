@@ -360,7 +360,7 @@ const TeacherStudents = () => {
           onClick={openCreateModal}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
         >
-          Add New Student
+          + Add Student
         </button>
       </div>
 
@@ -380,7 +380,7 @@ const TeacherStudents = () => {
             >
               <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Add New Student
+                  {"Create New User"}
                 </h2>
                 <button
                   onClick={closeCreateModal}
@@ -390,30 +390,21 @@ const TeacherStudents = () => {
                 </button>
               </div>
 
-              <div className="p-4 space-y-4">
-                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
-                  <span>
-                    Step {createStep} of 2 ·{" "}
-                    {createStep === 1 ? "Account details" : "Student profile"}
-                  </span>
-                </div>
-
+              <div className="p-4">
                 <UserForm
                   onSubmit={handleCreateSubmit}
                   loading={false}
-                  initialData={
-                    createStep === 1
-                      ? pendingCoreData || { UserTypeID: 3 }
-                      : {
-                          ...(pendingCoreData || {}),
-                          UserTypeID: 3,
-                        }
-                  }
+                  user={null}
+                  userTypes={[
+                    { id: 1, name: "Admin" },
+                    { id: 2, name: "Teacher" },
+                    { id: 3, name: "Student" },
+                  ]}
                   forceUserType={3}
+                  initialCourseSelection={defaultCourseSelection}
                   showCoreFields={createStep === 1}
                   showRoleFields={createStep === 2}
                   submitLabel={createStep === 1 ? "Next" : "Create"}
-                  onCancel={closeCreateModal}
                 />
               </div>
             </motion.div>
