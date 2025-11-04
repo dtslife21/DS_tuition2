@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import { getCourseDetails } from "../../services/courseService";
-import { getCourseMaterials } from "../../services/materialService";
+import {
+  getCourseMaterials,
+  getStudentMaterials,
+} from "../../services/materialService";
 import MaterialList from "../../components/materials/MaterialList";
 import Loader from "../../components/common/Loader";
 import MaterialForm from "../../components/materials/MaterialForm";
@@ -14,18 +18,10 @@ import {
   PlusIcon,
 } from "@heroicons/react/24/outline";
 
-const USE_MOCK_DATA = true;
-
-const mockCourse = {
-  id: "mock-course-1",
-  name: "Advanced Algebra",
-  description:
-    "Deep dive into algebraic structures, equations, and problem-solving techniques.",
-};
-
 
 const StudentMaterials = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const [materials, setMaterials] = useState([]);
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,12 +31,6 @@ const StudentMaterials = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (USE_MOCK_DATA) {
-          setMaterials(mockMaterials);
-          setCourse(mockCourse);
-          return;
-        }
-
         if (id) {
           const [materialsData, courseData] = await Promise.all([
             getCourseMaterials(id),
@@ -48,6 +38,25 @@ const StudentMaterials = () => {
           ]);
           setMaterials(materialsData);
           setCourse(courseData);
+        } else {
+          // No specific course id: load materials related to the logged-in student's courses
+          const studentId =
+            user?.StudentID ??
+            user?.studentID ??
+            user?.studentId ??
+            user?.UserID ??
+            user?.userID ??
+            user?.userId ??
+            user?.id ??
+            null;
+
+          if (studentId) {
+            const studentMats = await getStudentMaterials(studentId);
+            setMaterials(Array.isArray(studentMats) ? studentMats : []);
+          } else {
+            setMaterials([]);
+          }
+          setCourse(null);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -57,7 +66,7 @@ const StudentMaterials = () => {
     };
 
     fetchData();
-  }, [id]);
+  }, [id, user]);
 
   const handleMaterialSubmit = (newMaterial) => {
     setMaterials((prev) => [newMaterial, ...prev]);
@@ -129,7 +138,7 @@ const StudentMaterials = () => {
           Study Hub
         </p>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Materials for {course?.name}
+          {id ? `Materials for ${course?.name ?? "Selected Course"}` : "Your Study Materials"}
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Access shared resources, download attachments, and stay up to date.
@@ -142,66 +151,75 @@ const StudentMaterials = () => {
         ) : (
           <EmptyState
             title="No Materials Available"
-            description="There are no study materials available at this time. Upload an attachment to get started."
+            description={
+              id
+                ? "There are no study materials available for this course yet."
+                : "There are no study materials available for your courses yet."
+            }
           />
         )}
 
-        <div className="absolute bottom-0 right-0 flex items-center">
-          <div
-            className={`flex items-center gap-3 mr-3 transition-all duration-200 ease-out transform origin-right ${
-              fabOpen
-                ? "opacity-100 translate-x-0"
-                : "opacity-0 translate-x-4 pointer-events-none"
-            }`}
-          >
-            <ActionIconButton
-              icon={TrashIcon}
-              label="Bulk delete materials"
-              onClick={handleBulkDelete}
-              intent="danger"
-            />
-            <ActionIconButton
-              icon={ArrowUpTrayIcon}
-              label="Upload new material"
-              onClick={() => {
-                setShowUploadModal(true);
-                setFabOpen(false);
-              }}
-              intent="primary"
-            />
-            <ActionIconButton
-              icon={FunnelIcon}
-              label="Filter materials"
-              onClick={handleFilterClick}
-            />
-          </div>
-
-          <button
-            type="button"
-            aria-label={fabOpen ? "Close actions" : "Open actions"}
-            onClick={() => setFabOpen((s) => !s)}
-            className="h-14 w-14 rounded-full bg-green-600 text-white shadow-lg flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-          >
-            <PlusIcon
-              className={`h-6 w-6 transform transition-transform ${
-                fabOpen ? "rotate-45" : "rotate-0"
+        {/* Students shouldn't upload materials; show FAB only when viewing a specific course */}
+        {id && (
+          <div className="absolute bottom-0 right-0 flex items-center">
+            <div
+              className={`flex items-center gap-3 mr-3 transition-all duration-200 ease-out transform origin-right ${
+                fabOpen
+                  ? "opacity-100 translate-x-0"
+                  : "opacity-0 translate-x-4 pointer-events-none"
               }`}
-            />
-          </button>
-        </div>
+            >
+              <ActionIconButton
+                icon={TrashIcon}
+                label="Bulk delete materials"
+                onClick={handleBulkDelete}
+                intent="danger"
+              />
+              <ActionIconButton
+                icon={ArrowUpTrayIcon}
+                label="Upload new material"
+                onClick={() => {
+                  setShowUploadModal(true);
+                  setFabOpen(false);
+                }}
+                intent="primary"
+              />
+              <ActionIconButton
+                icon={FunnelIcon}
+                label="Filter materials"
+                onClick={handleFilterClick}
+              />
+            </div>
+
+            <button
+              type="button"
+              aria-label={fabOpen ? "Close actions" : "Open actions"}
+              onClick={() => setFabOpen((s) => !s)}
+              className="h-14 w-14 rounded-full bg-green-600 text-white shadow-lg flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              <PlusIcon
+                className={`h-6 w-6 transform transition-transform ${
+                  fabOpen ? "rotate-45" : "rotate-0"
+                }`}
+              />
+            </button>
+          </div>
+        )}
       </section>
 
-      <Modal
-        isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        title="Upload Study Material"
-      >
-        <MaterialForm
-          courseId={id || mockCourse.id}
-          onSuccess={handleMaterialSubmit}
-          onCancel={() => setShowUploadModal(false)}
-        />
-      </Modal>
+      {id && (
+        <Modal
+          isOpen={showUploadModal}
+          onClose={() => setShowUploadModal(false)}
+          title="Upload Study Material"
+        >
+          <MaterialForm
+            courseId={id}
+            onSuccess={handleMaterialSubmit}
+            onCancel={() => setShowUploadModal(false)}
+          />
+        </Modal>
+      )}
     </div>
   );
 };

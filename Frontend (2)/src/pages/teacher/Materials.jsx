@@ -36,8 +36,14 @@ const TeacherMaterials = () => {
         } else {
           // No specific course - load teacher's courses and their materials
           const teacherId =
-            user?.TeacherID ?? user?.teacherID ?? user?.teacherId ??
-            user?.UserID ?? user?.userID ?? user?.userId ?? user?.id ?? null;
+            user?.TeacherID ??
+            user?.teacherID ??
+            user?.teacherId ??
+            user?.UserID ??
+            user?.userID ??
+            user?.userId ??
+            user?.id ??
+            null;
 
           if (teacherId) {
             const courses = await getTeacherCourses(teacherId);
@@ -67,9 +73,18 @@ const TeacherMaterials = () => {
     } else if (modalCourseId) {
       setCoursesWithMaterials((prev) =>
         prev.map((entry) => {
-          const cid = String(entry.course.id ?? entry.course.CourseID ?? entry.course.CourseId ?? entry.course.courseId ?? "");
+          const cid = String(
+            entry.course.id ??
+              entry.course.CourseID ??
+              entry.course.CourseId ??
+              entry.course.courseId ??
+              ""
+          );
           if (cid === String(modalCourseId)) {
-            return { ...entry, materials: [newMaterial, ...(entry.materials || [])] };
+            return {
+              ...entry,
+              materials: [newMaterial, ...(entry.materials || [])],
+            };
           }
           return entry;
         })
@@ -104,7 +119,13 @@ const TeacherMaterials = () => {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white border-l-4 border-indigo-500/60 dark:border-indigo-400/60 pl-3">
               Materials for {course?.name}
             </h1>
-            <Button variant="primary" onClick={() => { setModalCourseId(id); setShowModal(true); }}>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setModalCourseId(id);
+                setShowModal(true);
+              }}
+            >
               Upload Material
             </Button>
           </div>
@@ -124,11 +145,18 @@ const TeacherMaterials = () => {
           <div className="space-y-6">
             {coursesWithMaterials && coursesWithMaterials.length ? (
               coursesWithMaterials.map(({ course: c, materials: mats }) => {
-                const cid = String(c.id ?? c.CourseID ?? c.CourseId ?? c.courseId ?? "");
+                const cid = String(
+                  c.id ?? c.CourseID ?? c.CourseId ?? c.courseId ?? ""
+                );
                 return (
-                  <div key={cid} className="bg-gradient-to-br from-white to-indigo-50/70 dark:from-gray-900/70 dark:to-indigo-950/20 backdrop-blur shadow-lg ring-1 ring-indigo-100 dark:ring-indigo-800 rounded-2xl p-4 sm:p-6">
+                  <div
+                    key={cid}
+                    className="bg-gradient-to-br from-white to-indigo-50/70 dark:from-gray-900/70 dark:to-indigo-950/20 backdrop-blur shadow-lg ring-1 ring-indigo-100 dark:ring-indigo-800 rounded-2xl p-4 sm:p-6"
+                  >
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{c.name || c.CourseName || `Course ${cid}`}</h2>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {c.name || c.CourseName || `Course ${cid}`}
+                      </h2>
                       <Button
                         onClick={() => {
                           setModalCourseId(cid);
@@ -144,7 +172,10 @@ const TeacherMaterials = () => {
                 );
               })
             ) : (
-              <EmptyState title="No courses found" description="You don't have any courses yet. Create a course to add materials." />
+              <EmptyState
+                title="No courses found"
+                description="You don't have any courses yet. Create a course to add materials."
+              />
             )}
           </div>
         </div>
@@ -152,13 +183,19 @@ const TeacherMaterials = () => {
 
       <Modal
         isOpen={showModal}
-        onClose={() => { setShowModal(false); setModalCourseId(null); }}
+        onClose={() => {
+          setShowModal(false);
+          setModalCourseId(null);
+        }}
         title="Upload Study Material"
       >
         <MaterialForm
           courseId={modalCourseId}
           onSuccess={handleMaterialSubmit}
-          onCancel={() => { setShowModal(false); setModalCourseId(null); }}
+          onCancel={() => {
+            setShowModal(false);
+            setModalCourseId(null);
+          }}
         />
       </Modal>
     </div>
