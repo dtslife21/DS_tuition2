@@ -18,7 +18,6 @@ import {
   PlusIcon,
 } from "@heroicons/react/24/outline";
 
-
 const StudentMaterials = () => {
   const { id } = useParams();
   const { user } = useAuth();
@@ -138,7 +137,9 @@ const StudentMaterials = () => {
           Study Hub
         </p>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {id ? `Materials for ${course?.name ?? "Selected Course"}` : "Your Study Materials"}
+          {id
+            ? `Materials for ${course?.name ?? "Selected Course"}`
+            : "Your Study Materials"}
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Access shared resources, download attachments, and stay up to date.
