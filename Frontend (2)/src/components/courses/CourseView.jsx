@@ -13,6 +13,7 @@ import MaterialForm from "../materials/MaterialForm";
 import QRGenerator from "../attendance/QRGenerator";
 import Loader from "../common/Loader";
 import Button from "../common/Button";
+import { createSubject, updateSubject } from "../../services/subjectService";
 
 const CourseView = () => {
   const { id } = useParams();
@@ -180,6 +181,7 @@ const CourseView = () => {
                     No subjects assigned yet.
                   </span>
                 )}
+                {/* Subjects can be managed in the Edit Course form (open Edit) */}
               </dd>
             </div>
             <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -307,6 +309,11 @@ const CourseView = () => {
             description: course.description,
             academicYear: course.academicYear,
             subjectId: course.subjectId,
+            subjects: Array.isArray(course.subjects)
+              ? course.subjects
+              : course.subject
+              ? [course.subject]
+              : [],
             teacherId: course.teacherId,
           }}
           onCancel={() => setShowEditModal(false)}
@@ -314,7 +321,94 @@ const CourseView = () => {
           onSubmit={async (values) => {
             setSavingEdit(true);
             try {
-              const updated = await updateCourse(id, values);
+              // If form provided subjects array, create/link them before updating course
+              const subjectsList = Array.isArray(values.subjects)
+                ? values.subjects
+                : [];
+
+              const courseIdValue = course?.id ?? course?.CourseID ?? id;
+              const courseNameValue = course?.name ?? course?.CourseName ?? "";
+              const courseCodeValue = course?.code ?? course?.CourseCode ?? "";
+
+              for (const s of subjectsList) {
+                try {
+                  // If subject already has an id -> link/update
+                  if (s?.id) {
+                    const payload = {
+                      ...(s || {}),
+                      courseId: courseIdValue,
+                      CourseID: courseIdValue,
+                      CourseId: courseIdValue,
+                      courseName: courseNameValue,
+                      CourseName: courseNameValue,
+                      courseCode: courseCodeValue,
+                      CourseCode: courseCodeValue,
+                    };
+                    await updateSubject(s.id, payload);
+                  } else if (s?.isNew && s?.draft) {
+                    // create then link
+                    const created = await createSubject(s.draft);
+                    const createdId =
+                      created?.id ??
+                      created?.SubjectID ??
+                      created?.subjectId ??
+                      null;
+                    if (createdId) {
+                      const payload = {
+                        ...(s.draft || {}),
+                        id: createdId,
+                        SubjectID: createdId,
+                        subjectId: createdId,
+                        courseId: courseIdValue,
+                        CourseID: courseIdValue,
+                        CourseId: courseIdValue,
+                        courseName: courseNameValue,
+                        CourseName: courseNameValue,
+                        courseCode: courseCodeValue,
+                        CourseCode: courseCodeValue,
+                      };
+                      await updateSubject(createdId, payload);
+                    }
+                  } else if (s?.name) {
+                    // create minimal subject with name then link
+                    const created = await createSubject({
+                      name: s.name,
+                      subjectName: s.name,
+                    });
+                    const createdId =
+                      created?.id ??
+                      created?.SubjectID ??
+                      created?.subjectId ??
+                      null;
+                    if (createdId) {
+                      const payload = {
+                        id: createdId,
+                        SubjectID: createdId,
+                        subjectId: createdId,
+                        name: s.name,
+                        subjectName: s.name,
+                        courseId: courseIdValue,
+                        CourseID: courseIdValue,
+                        CourseId: courseIdValue,
+                        courseName: courseNameValue,
+                        CourseName: courseNameValue,
+                        courseCode: courseCodeValue,
+                        CourseCode: courseCodeValue,
+                      };
+                      await updateSubject(createdId, payload);
+                    }
+                  }
+                } catch (innerErr) {
+                  console.error(
+                    "Failed to create/link subject in course edit:",
+                    innerErr
+                  );
+                }
+              }
+
+              // Now update course fields (exclude subjects array)
+              const { subjects, ...courseValues } = values;
+              const updated = await updateCourse(id, courseValues);
               setCourse(updated);
               setShowEditModal(false);
             } catch (err) {

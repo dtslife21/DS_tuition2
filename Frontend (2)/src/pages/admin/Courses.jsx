@@ -110,7 +110,7 @@ const AdminCourses = () => {
           variant="primary"
           onClick={() => {
             setCreatedSubject(null);
-            setShowSubjectModal(true);
+            setShowModal(true);
           }}
           disabled={savingCourse}
         >
@@ -120,31 +120,17 @@ const AdminCourses = () => {
 
       <CourseList courses={courses} basePath="/admin/courses" />
 
-      {/* Subject form opens first */}
-      <Modal
-        isOpen={showSubjectModal}
-        onClose={() => setShowSubjectModal(false)}
-        title="Step 1 of 2 — Add Subject"
-      >
-        <SubjectForm
-          step={1}
-          onSubmit={handleSubjectSubmit}
-          onCancel={() => setShowSubjectModal(false)}
-          loading={savingSubject}
-        />
-      </Modal>
-
-      {/* Course form opens after subject is created, with subjectId pre-filled */}
+      {/* Course form modal (single-step) */}
       <Modal
         isOpen={showModal}
         onClose={() => {
           setShowModal(false);
           setCreatedSubject(null);
         }}
-        title="Step 2 of 2 — Add Course"
+        title="Add Course"
       >
         <CourseForm
-          step={2}
+          step={1}
           onSubmit={handleCourseSubmit}
           onCancel={() => {
             setShowModal(false);

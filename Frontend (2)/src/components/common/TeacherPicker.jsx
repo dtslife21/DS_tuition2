@@ -1,0 +1,376 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Button from "./Button";
+import Modal from "./Modal";
+import Loader from "./Loader";
+import UserForm from "../users/UserForm";
+import { getAllUsers, createUser } from "../../services/userService";
+import { createTeacher } from "../../services/teacherService";
+import { updateCourse } from "../../services/courseService";
+
+const resolveTeacherId = (candidate) => {
+  if (!candidate || typeof candidate !== "object") {
+    return "";
+  }
+
+  const possible = [
+    candidate.teacherId,
+    candidate.TeacherID,
+    candidate.teacherID,
+    candidate.id,
+    candidate.Id,
+    candidate.userId,
+    candidate.UserId,
+    candidate.userID,
+    candidate.UserID,
+  ];
+
+  const found = possible.find((value) => {
+    if (value === undefined || value === null) return false;
+    const str = String(value).trim();
+    return str.length > 0;
+  });
+
+  return found !== undefined && found !== null ? String(found).trim() : "";
+};
+
+const formatTeacherOption = (user) => {
+  if (!user) return null;
+
+  const id = resolveTeacherId(user);
+  if (!id) return null;
+
+  const firstName =
+    user.firstName ?? user.FirstName ?? user.raw?.FirstName ?? "";
+  const lastName = user.lastName ?? user.LastName ?? user.raw?.LastName ?? "";
+  const username = user.username ?? user.Username ?? "";
+
+  const labelParts = [
+    `${firstName} ${lastName}`.trim(),
+    username ? `(${username})` : "",
+  ].filter(Boolean);
+
+  return {
+    id,
+    label: labelParts.length ? labelParts.join(" ") : `Teacher #${id}`,
+  };
+};
+
+const TeacherPicker = ({
+  value,
+  onChange,
+  onBlur,
+  disabled = false,
+  placeholder = "Select a teacher",
+  allowClear = true,
+}) => {
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [createStep, setCreateStep] = useState(1);
+  const [pendingCoreData, setPendingCoreData] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const normalizedValue = useMemo(() => {
+    if (value === undefined || value === null) return "";
+    const str = String(value).trim();
+    return str;
+  }, [value]);
+
+  const fetchTeachers = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const users = await getAllUsers();
+      const teacherUsers = (users || []).filter((user) => {
+        const typeName = String(user?.userType || "").toLowerCase();
+        if (typeName === "teacher") return true;
+
+        const typeId = String(
+          user?.UserTypeID ?? user?.userTypeID ?? user?.userTypeId ?? ""
+        ).trim();
+        return typeId === "2"; // 2 == teacher role
+      });
+
+      const options = teacherUsers
+        .map((user) => {
+          const option = formatTeacherOption(user);
+          if (!option) return null;
+          return {
+            ...option,
+            raw: user,
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.label.localeCompare(b.label));
+
+      setTeachers(options);
+    } catch (err) {
+      console.error("Failed to load teachers", err);
+      setError(
+        err?.message || "Unable to load teachers. Please try again later."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTeachers();
+  }, [fetchTeachers]);
+
+  const handleSelectChange = (event) => {
+    const nextValue = event.target.value;
+    if (!nextValue && allowClear) {
+      onChange?.("");
+      return;
+    }
+    onChange?.(nextValue);
+  };
+
+  const openModal = () => {
+    setIsModalOpen(true);
+    setCreateStep(1);
+    setPendingCoreData(null);
+    setFormError("");
+  };
+
+  const closeModal = () => {
+    if (isSubmitting) return;
+    setIsModalOpen(false);
+    setCreateStep(1);
+    setPendingCoreData(null);
+    setFormError("");
+  };
+
+  const handleFormCancel = () => {
+    if (isSubmitting) return;
+    if (createStep === 2) {
+      setCreateStep(1);
+      return;
+    }
+    closeModal();
+  };
+
+  const handleTeacherCreated = (option) => {
+    setTeachers((prev) => {
+      const exists = prev.some((item) => item.id === option.id);
+      if (exists) return prev;
+      return [...prev, option].sort((a, b) => a.label.localeCompare(b.label));
+    });
+    onChange?.(option.id);
+  };
+
+  const handleTeacherSubmit = async (formData) => {
+    if (createStep === 1) {
+      setPendingCoreData(formData);
+      setCreateStep(2);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFormError("");
+    try {
+      const merged = {
+        ...(pendingCoreData || {}),
+        ...formData,
+        UserTypeID: 2,
+        IsActive: true,
+      };
+
+      if (!merged.Username) {
+        throw new Error("Username is required to create a teacher");
+      }
+
+      const createdUser = await createUser(merged);
+
+      const teacherPayload = {
+        TeacherID:
+          merged.TeacherID ??
+          merged.teacherID ??
+          merged.teacherId ??
+          resolveTeacherId(createdUser),
+        EmployeeID: merged.EmployeeID ?? undefined,
+        Department: merged.Department ?? undefined,
+        Qualification: merged.Qualification ?? undefined,
+        JoiningDate: merged.JoiningDate ?? undefined,
+        Bio: merged.Bio ?? undefined,
+      };
+
+      const createdTeacher = await createTeacher(
+        Object.fromEntries(
+          Object.entries(teacherPayload).filter(([, v]) => v !== undefined)
+        )
+      );
+
+      const teacherId = resolveTeacherId({
+        ...createdUser,
+        ...createdTeacher,
+        TeacherID: createdTeacher?.TeacherID ?? teacherPayload.TeacherID,
+      });
+
+      // If courses were selected during creation, assign them now.
+      const courseIds = (merged.CourseIDs || [])
+        .map((id) => {
+          if (id === undefined || id === null) return null;
+          const trimmed = String(id).trim();
+          if (!trimmed) return null;
+          return Number.isNaN(Number(trimmed)) ? trimmed : Number(trimmed);
+        })
+        .filter((id) => id !== null);
+
+      if (teacherId && courseIds.length) {
+        for (const courseId of courseIds) {
+          try {
+            await updateCourse(courseId, { TeacherID: teacherId });
+          } catch (assignErr) {
+            console.error("Failed to assign teacher to course", assignErr);
+          }
+        }
+      }
+
+      // Refresh list to include the new teacher.
+      await fetchTeachers();
+
+      if (teacherId) {
+        const labelOption = formatTeacherOption({
+          ...createdUser,
+          TeacherID: teacherId,
+        }) || {
+          id: teacherId,
+          label: `Teacher #${teacherId}`,
+        };
+        handleTeacherCreated(labelOption);
+      }
+
+      setIsSubmitting(false);
+      closeModal();
+    } catch (err) {
+      console.error("Failed to create teacher", err);
+      setFormError(err?.message || "Failed to create teacher. Please retry.");
+      setIsSubmitting(false);
+    }
+  };
+
+  const optionList = useMemo(() => {
+    if (!teachers || !teachers.length) return teachers;
+    return [...teachers].sort((a, b) => a.label.localeCompare(b.label));
+  }, [teachers]);
+
+  const hasValueOption =
+    normalizedValue && optionList.some((opt) => opt.id === normalizedValue);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <select
+            value={normalizedValue}
+            onChange={handleSelectChange}
+            onBlur={onBlur}
+            disabled={disabled || loading || !!error}
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white p-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+          >
+            <option value="">{placeholder}</option>
+            {optionList.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+            {normalizedValue && !hasValueOption ? (
+              <option
+                value={normalizedValue}
+              >{`Teacher #${normalizedValue}`}</option>
+            ) : null}
+          </select>
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={openModal}
+          disabled={disabled || loading}
+        >
+          + New
+        </Button>
+        <button
+          type="button"
+          onClick={fetchTeachers}
+          disabled={loading}
+          className="text-sm font-medium text-indigo-600 hover:underline disabled:cursor-not-allowed disabled:text-gray-400"
+        >
+          Refresh
+        </button>
+      </div>
+
+      {loading && (
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <Loader size="sm" />
+          <span>Loading teachers...</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
+          <div className="flex items-center justify-between gap-2">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={fetchTeachers}
+              className="text-sm font-medium text-indigo-600 hover:underline"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        title={createStep === 1 ? "Add Teacher" : "Teacher Details"}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+            <span>Step {createStep} of 2</span>
+            {createStep === 2 && (
+              <button
+                type="button"
+                onClick={() => setCreateStep(1)}
+                className="text-indigo-600 hover:underline"
+              >
+                Back to account
+              </button>
+            )}
+          </div>
+
+          {formError && (
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
+              {formError}
+            </div>
+          )}
+
+          <UserForm
+            onSubmit={handleTeacherSubmit}
+            loading={isSubmitting}
+            userTypes={[{ id: 2, name: "Teacher" }]}
+            forceUserType={2}
+            onCancel={handleFormCancel}
+            showCoreFields={createStep === 1}
+            showRoleFields={createStep === 2}
+            submitLabel={
+              createStep === 1
+                ? "Next"
+                : isSubmitting
+                ? "Creating..."
+                : "Create Teacher"
+            }
+          />
+        </div>
+      </Modal>
+    </div>
+  );
+};
+
+export default TeacherPicker;

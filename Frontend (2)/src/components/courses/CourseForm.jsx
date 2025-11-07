@@ -1,7 +1,13 @@
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import Button from "../common/Button";
-import { getLatestSubjectId } from "../../services/subjectService";
+import Modal from "../common/Modal";
+import SubjectForm from "../admin/SubjectForm";
+import {
+  getLatestSubjectId,
+  getAllSubjects,
+} from "../../services/subjectService";
+import TeacherPicker from "../common/TeacherPicker";
 
 const CourseForm = ({
   onSubmit,
@@ -13,11 +19,18 @@ const CourseForm = ({
   const {
     register,
     handleSubmit,
+    control,
     setValue,
     formState: { errors },
   } = useForm({
     defaultValues: initialData,
   });
+
+  const [selectedSubjects, setSelectedSubjects] = useState([]);
+  const [showSubjectModal, setShowSubjectModal] = useState(false);
+  const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [loadingAvailableSubjects, setLoadingAvailableSubjects] =
+    useState(false);
 
   // Auto-fill the Subject ID with the latest from backend if not provided
   useEffect(() => {
@@ -41,13 +54,63 @@ const CourseForm = ({
     };
   }, [initialData, setValue]);
 
+  // Initialize selectedSubjects from initialData if present
+  useEffect(() => {
+    const list = [];
+    if (Array.isArray(initialData?.subjects) && initialData.subjects.length) {
+      for (const s of initialData.subjects) {
+        if (typeof s === "string") {
+          list.push({ id: null, name: s, isNew: false });
+        } else if (s && typeof s === "object") {
+          list.push({
+            id: s.id ?? null,
+            name: s.name ?? s.subjectName ?? s.SubjectName ?? "",
+            isNew: false,
+          });
+        }
+      }
+    } else if (initialData?.subject) {
+      list.push({
+        id: initialData.subjectId ?? null,
+        name: initialData.subject,
+        isNew: false,
+      });
+    } else if (initialData?.subjectId && initialData?.subjectName) {
+      list.push({
+        id: initialData.subjectId,
+        name: initialData.subjectName,
+        isNew: false,
+      });
+    }
+    setSelectedSubjects(list);
+  }, [initialData]);
+
+  const loadAvailableSubjects = async () => {
+    setLoadingAvailableSubjects(true);
+    try {
+      const subs = await getAllSubjects();
+      setAvailableSubjects(subs || []);
+    } catch (err) {
+      console.error("Failed to load subjects for picker", err);
+      setAvailableSubjects([]);
+    } finally {
+      setLoadingAvailableSubjects(false);
+    }
+  };
+
+  useEffect(() => {
+    // pre-load subjects so picker is responsive
+    loadAvailableSubjects();
+  }, []);
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {step ? (
-        <div className="text-sm font-medium text-indigo-600">
-          Step {step} of 2
-        </div>
-      ) : null}
+    <form
+      onSubmit={handleSubmit((data) =>
+        onSubmit({ ...data, subjects: selectedSubjects })
+      )}
+      className="space-y-6"
+    >
+      {/* Step indicator removed per request - show the form directly */}
       <div>
         <label
           htmlFor="name"
@@ -87,18 +150,20 @@ const CourseForm = ({
       </div>
 
       <div>
-        <label
-          htmlFor="teacherId"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          Teacher ID
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Assigned Teacher
         </label>
-        <input
-          id="teacherId"
+        <Controller
           name="teacherId"
-          type="text"
-          {...register("teacherId")}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          control={control}
+          render={({ field }) => (
+            <TeacherPicker
+              value={field.value}
+              onChange={(val) => field.onChange(val ?? "")}
+              onBlur={field.onBlur}
+              disabled={loading}
+            />
+          )}
         />
         {errors.teacherId && (
           <p className="mt-1 text-sm text-red-600">
@@ -108,30 +173,118 @@ const CourseForm = ({
       </div>
 
       <div>
-        <label
-          htmlFor="subjectId"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          Subject ID
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Subjects
         </label>
-        <input
-          id="subjectId"
-          name="subjectId"
-          type="text"
-          {...register("subjectId", { required: "Subject ID is required" })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          readOnly={Boolean(initialData?.subjectId)}
-        />
-        {initialData?.subjectId ? (
-          <p className="mt-1 text-xs text-gray-500">
-            Prefilled from newly created subject
-          </p>
-        ) : null}
-        {errors.subjectId && (
-          <p className="mt-1 text-sm text-red-600">
-            {errors.subjectId.message}
-          </p>
-        )}
+        <div className="mt-2 space-y-2">
+          {selectedSubjects && selectedSubjects.length ? (
+            <ul className="list-disc list-inside">
+              {selectedSubjects.map((s, idx) => (
+                <li
+                  key={`${s.name}-${idx}`}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <div className="text-sm">{s.name}</div>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedSubjects((prev) =>
+                          prev.filter((_, i) => i !== idx)
+                        )
+                      }
+                      className="text-sm text-red-600 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-sm text-gray-500">No subjects selected.</div>
+          )}
+
+          <div className="flex gap-2 pt-2">
+            <div className="flex-1">
+              <select
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) return;
+                  const found = (availableSubjects || []).find(
+                    (a) => String(a.id) === String(val)
+                  );
+                  if (found) {
+                    const name =
+                      found.name ??
+                      found.subjectName ??
+                      found.SubjectName ??
+                      "";
+                    // avoid duplicates by name
+                    if (
+                      !selectedSubjects.some(
+                        (ss) =>
+                          String(ss.name).toLowerCase() ===
+                          String(name).toLowerCase()
+                      )
+                    ) {
+                      setSelectedSubjects((prev) => [
+                        ...prev,
+                        { id: found.id ?? null, name, isNew: false },
+                      ]);
+                    }
+                  }
+                  // reset select
+                  e.target.value = "";
+                }}
+                className="w-full rounded-md border-gray-300 p-2 bg-white dark:bg-gray-800"
+                disabled={loadingAvailableSubjects}
+              >
+                <option value="">-- Choose existing subject --</option>
+                {(availableSubjects || []).map((s) => {
+                  const name = s.name ?? s.subjectName ?? s.SubjectName ?? "";
+                  return (
+                    <option key={String(s.id)} value={String(s.id)}>
+                      {name}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div className="flex-shrink-0">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowSubjectModal(true)}
+              >
+                + New
+              </Button>
+            </div>
+          </div>
+          {showSubjectModal && (
+            <Modal
+              isOpen={showSubjectModal}
+              onClose={() => setShowSubjectModal(false)}
+              title="Add new subject"
+              size="md"
+            >
+              <SubjectForm
+                onSubmit={(data) => {
+                  const name =
+                    data.name ?? data.subjectName ?? data.SubjectName ?? "";
+                  setSelectedSubjects((prev) => [
+                    ...prev,
+                    { id: null, name, isNew: true, draft: data },
+                  ]);
+                  setShowSubjectModal(false);
+                }}
+                onCancel={() => setShowSubjectModal(false)}
+                initial={{ courseName: initialData?.name }}
+              />
+            </Modal>
+          )}
+        </div>
       </div>
 
       <div>

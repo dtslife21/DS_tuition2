@@ -7,7 +7,6 @@ import {
   getTeacherCourseStudents,
 } from "../../services/courseService";
 import UserList from "../../components/users/UserList";
-import UserFormDialog from "../../components/common/UserFormDialog";
 import UserForm from "../../components/users/UserForm";
 import {
   createUser,
