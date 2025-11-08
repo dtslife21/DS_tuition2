@@ -13,7 +13,11 @@ import MaterialForm from "../materials/MaterialForm";
 import QRGenerator from "../attendance/QRGenerator";
 import Loader from "../common/Loader";
 import Button from "../common/Button";
-import { createSubject, updateSubject } from "../../services/subjectService";
+import {
+  createSubject,
+  updateSubject,
+  getAllSubjects,
+} from "../../services/subjectService";
 
 const CourseView = () => {
   const { id } = useParams();
@@ -321,7 +325,6 @@ const CourseView = () => {
           onSubmit={async (values) => {
             setSavingEdit(true);
             try {
-              // If form provided subjects array, create/link them before updating course
               const subjectsList = Array.isArray(values.subjects)
                 ? values.subjects
                 : [];
@@ -330,12 +333,187 @@ const CourseView = () => {
               const courseNameValue = course?.name ?? course?.CourseName ?? "";
               const courseCodeValue = course?.code ?? course?.CourseCode ?? "";
 
-              for (const s of subjectsList) {
+              const normalizeValue = (value) => String(value ?? "").trim();
+              const normalizeKey = (value) =>
+                normalizeValue(value).toLowerCase();
+
+              const subjectsByName = new Map();
+              const subjectsById = new Map();
+
+              const registerSubjectLookup = (subject) => {
+                if (!subject) return;
+                const idCandidate =
+                  subject?.id ??
+                  subject?.SubjectID ??
+                  subject?.subjectId ??
+                  subject?.subjectID ??
+                  null;
+                const nameKey = normalizeKey(
+                  subject?.name ??
+                    subject?.subjectName ??
+                    subject?.SubjectName ??
+                    subject?.title ??
+                    subject?.Title
+                );
+                if (idCandidate !== null && idCandidate !== undefined) {
+                  const idKey = String(idCandidate);
+                  if (!subjectsById.has(idKey)) {
+                    subjectsById.set(idKey, subject);
+                  }
+                }
+                if (nameKey && !subjectsByName.has(nameKey)) {
+                  subjectsByName.set(nameKey, subject);
+                }
+              };
+
+              try {
+                const existingSubjects = await getAllSubjects();
+                for (const entry of existingSubjects || []) {
+                  registerSubjectLookup(entry);
+                }
+              } catch (lookupError) {
+                console.warn(
+                  "Unable to prefetch subjects before course update",
+                  lookupError
+                );
+              }
+
+              let primarySubjectId =
+                values.subjectId ??
+                values.SubjectID ??
+                values.subjectID ??
+                course?.subjectId ??
+                course?.SubjectID ??
+                null;
+
+              for (const [index, subjectEntry] of subjectsList.entries()) {
                 try {
-                  // If subject already has an id -> link/update
-                  if (s?.id) {
+                  const nameRaw =
+                    typeof subjectEntry === "string"
+                      ? subjectEntry
+                      : subjectEntry?.name ??
+                        subjectEntry?.subjectName ??
+                        subjectEntry?.SubjectName ??
+                        "";
+                  const trimmedName = normalizeValue(nameRaw);
+                  if (!trimmedName) continue;
+
+                  let subjectId =
+                    subjectEntry?.id ??
+                    subjectEntry?.SubjectID ??
+                    subjectEntry?.subjectId ??
+                    subjectEntry?.subjectID ??
+                    subjectEntry?.draft?.id ??
+                    subjectEntry?.draft?.SubjectID ??
+                    subjectEntry?.draft?.subjectId ??
+                    null;
+
+                  let subjectRecord = null;
+                  if (subjectId !== null && subjectId !== undefined) {
+                    subjectRecord =
+                      subjectsById.get(String(subjectId)) ??
+                      subjectEntry?.draft ??
+                      null;
+                  }
+
+                  if (!subjectRecord) {
+                    const match = subjectsByName.get(normalizeKey(trimmedName));
+                    if (match) {
+                      subjectRecord = match;
+                      if (subjectId === null || subjectId === undefined) {
+                        subjectId =
+                          match?.id ??
+                          match?.SubjectID ??
+                          match?.subjectId ??
+                          match?.subjectID ??
+                          null;
+                      }
+                    }
+                  }
+
+                  const baseSource =
+                    subjectRecord ?? subjectEntry?.draft ?? subjectEntry;
+
+                  if (subjectId === null || subjectId === undefined) {
+                    const creationPayload = {
+                      name: trimmedName,
+                      subjectName: trimmedName,
+                    };
+                    const codeCandidate =
+                      baseSource?.subjectCode ??
+                      baseSource?.SubjectCode ??
+                      baseSource?.code ??
+                      baseSource?.Code;
+                    if (codeCandidate) {
+                      creationPayload.subjectCode = codeCandidate;
+                    }
+                    const descriptionCandidate =
+                      baseSource?.description ?? baseSource?.Description;
+                    if (descriptionCandidate) {
+                      creationPayload.description = descriptionCandidate;
+                    }
+
+                    const created = await createSubject(creationPayload);
+                    subjectId =
+                      created?.id ??
+                      created?.SubjectID ??
+                      created?.subjectId ??
+                      created?.subjectID ??
+                      null;
+                    subjectRecord = {
+                      ...creationPayload,
+                      ...created,
+                      id: subjectId,
+                      name: created?.name ?? trimmedName,
+                    };
+                    registerSubjectLookup(subjectRecord);
+                  }
+
+                  if (subjectId !== null && subjectId !== undefined) {
                     const payload = {
-                      ...(s || {}),
+                      name:
+                        baseSource?.name ??
+                        baseSource?.subjectName ??
+                        baseSource?.SubjectName ??
+                        trimmedName,
+                      subjectName:
+                        baseSource?.subjectName ??
+                        baseSource?.SubjectName ??
+                        baseSource?.name ??
+                        trimmedName,
+                      SubjectName:
+                        baseSource?.subjectName ??
+                        baseSource?.SubjectName ??
+                        baseSource?.name ??
+                        trimmedName,
+                      subjectCode:
+                        baseSource?.subjectCode ??
+                        baseSource?.SubjectCode ??
+                        baseSource?.code ??
+                        baseSource?.Code ??
+                        subjectRecord?.subjectCode ??
+                        subjectRecord?.SubjectCode ??
+                        subjectRecord?.code ??
+                        subjectRecord?.Code,
+                      SubjectCode:
+                        baseSource?.subjectCode ??
+                        baseSource?.SubjectCode ??
+                        baseSource?.code ??
+                        baseSource?.Code ??
+                        subjectRecord?.subjectCode ??
+                        subjectRecord?.SubjectCode ??
+                        subjectRecord?.code ??
+                        subjectRecord?.Code,
+                      description:
+                        baseSource?.description ??
+                        baseSource?.Description ??
+                        subjectRecord?.description ??
+                        subjectRecord?.Description,
+                      Description:
+                        baseSource?.description ??
+                        baseSource?.Description ??
+                        subjectRecord?.description ??
+                        subjectRecord?.Description,
                       courseId: courseIdValue,
                       CourseID: courseIdValue,
                       CourseId: courseIdValue,
@@ -344,70 +522,33 @@ const CourseView = () => {
                       courseCode: courseCodeValue,
                       CourseCode: courseCodeValue,
                     };
-                    await updateSubject(s.id, payload);
-                  } else if (s?.isNew && s?.draft) {
-                    // create then link
-                    const created = await createSubject(s.draft);
-                    const createdId =
-                      created?.id ??
-                      created?.SubjectID ??
-                      created?.subjectId ??
-                      null;
-                    if (createdId) {
-                      const payload = {
-                        ...(s.draft || {}),
-                        id: createdId,
-                        SubjectID: createdId,
-                        subjectId: createdId,
-                        courseId: courseIdValue,
-                        CourseID: courseIdValue,
-                        CourseId: courseIdValue,
-                        courseName: courseNameValue,
-                        CourseName: courseNameValue,
-                        courseCode: courseCodeValue,
-                        CourseCode: courseCodeValue,
-                      };
-                      await updateSubject(createdId, payload);
-                    }
-                  } else if (s?.name) {
-                    // create minimal subject with name then link
-                    const created = await createSubject({
-                      name: s.name,
-                      subjectName: s.name,
+
+                    await updateSubject(subjectId, payload);
+
+                    registerSubjectLookup({
+                      ...subjectRecord,
+                      id: subjectId,
+                      name: trimmedName,
                     });
-                    const createdId =
-                      created?.id ??
-                      created?.SubjectID ??
-                      created?.subjectId ??
-                      null;
-                    if (createdId) {
-                      const payload = {
-                        id: createdId,
-                        SubjectID: createdId,
-                        subjectId: createdId,
-                        name: s.name,
-                        subjectName: s.name,
-                        courseId: courseIdValue,
-                        CourseID: courseIdValue,
-                        CourseId: courseIdValue,
-                        courseName: courseNameValue,
-                        CourseName: courseNameValue,
-                        courseCode: courseCodeValue,
-                        CourseCode: courseCodeValue,
-                      };
-                      await updateSubject(createdId, payload);
+
+                    if (index === 0 && !primarySubjectId) {
+                      primarySubjectId = subjectId;
                     }
                   }
                 } catch (innerErr) {
                   console.error(
-                    "Failed to create/link subject in course edit:",
+                    "Failed to synchronise subject during course edit:",
                     innerErr
                   );
                 }
               }
 
-              // Now update course fields (exclude subjects array)
               const { subjects, ...courseValues } = values;
+              if (primarySubjectId !== null && primarySubjectId !== undefined) {
+                courseValues.subjectId = primarySubjectId;
+                courseValues.SubjectID = primarySubjectId;
+              }
+
               const updated = await updateCourse(id, courseValues);
               setCourse(updated);
               setShowEditModal(false);

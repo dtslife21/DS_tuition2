@@ -126,6 +126,85 @@ const CourseForm = ({
   }, []);
 
   useEffect(() => {
+    if (!Array.isArray(availableSubjects) || !availableSubjects.length) {
+      return;
+    }
+
+    setSelectedSubjects((prev) => {
+      if (!Array.isArray(prev) || !prev.length) {
+        return prev;
+      }
+
+      const normalize = (value) =>
+        String(value ?? "")
+          .trim()
+          .toLowerCase();
+
+      const lookup = new Map();
+      for (const subject of availableSubjects) {
+        const key = normalize(
+          subject?.name ??
+            subject?.subjectName ??
+            subject?.SubjectName ??
+            subject?.title ??
+            subject?.Title
+        );
+        if (!key || lookup.has(key)) continue;
+        const idCandidate =
+          subject?.id ??
+          subject?.SubjectID ??
+          subject?.subjectId ??
+          subject?.subjectID ??
+          null;
+        lookup.set(key, {
+          id: idCandidate,
+          name:
+            subject?.name ??
+            subject?.subjectName ??
+            subject?.SubjectName ??
+            subject?.title ??
+            subject?.Title ??
+            "",
+        });
+      }
+
+      const primaryId =
+        initialData?.subjectId ??
+        initialData?.SubjectID ??
+        initialData?.subjectID ??
+        null;
+
+      let changed = false;
+      const next = prev.map((entry, index) => {
+        if (!entry || entry.id) return entry;
+
+        const key = normalize(entry.name);
+        if (key && lookup.has(key)) {
+          const match = lookup.get(key);
+          if (match?.id !== undefined && match?.id !== null) {
+            changed = true;
+            return { ...entry, id: match.id };
+          }
+        }
+
+        if (index === 0 && primaryId !== null && primaryId !== undefined) {
+          changed = true;
+          return { ...entry, id: primaryId };
+        }
+
+        return entry;
+      });
+
+      return changed ? next : prev;
+    });
+  }, [
+    availableSubjects,
+    initialData?.subjectId,
+    initialData?.SubjectID,
+    initialData?.subjectID,
+  ]);
+
+  useEffect(() => {
     if (initialData?.code) {
       setCodeManuallyEdited(true);
     }
