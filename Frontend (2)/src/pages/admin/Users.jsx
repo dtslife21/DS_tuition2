@@ -196,6 +196,27 @@ const AdminUsers = () => {
           return;
         }
 
+        // If creating a teacher, synthesize the next user id from existing users
+        if (typeId === "2") {
+          try {
+            const existing = await getAllUsers();
+            const nums = (existing || []).map((u) => {
+              const id = u?.UserID ?? u?.id ?? u?.userID ?? u?.userId ?? 0;
+              const n = Number(id);
+              return Number.isNaN(n) ? 0 : n;
+            });
+            const max = nums.length ? Math.max(...nums) : 0;
+            const nextId = max + 1;
+            // prefer not to overwrite if caller already supplied an id
+            mergedCreate.UserID = mergedCreate.UserID ?? nextId;
+            mergedCreate.userID = mergedCreate.userID ?? nextId;
+            mergedCreate.id = mergedCreate.id ?? nextId;
+          } catch (err) {
+            // ignore and proceed without injected id
+            console.warn("Failed to auto-generate next user id:", err);
+          }
+        }
+
         // Create base user
         const createdUser = await createUser(mergedCreate);
 

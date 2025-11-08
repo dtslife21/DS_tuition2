@@ -1,3 +1,6 @@
+import React from "react";
+import { createPortal } from "react-dom";
+
 const sizeClasses = {
   sm: "max-w-sm",
   md: "max-w-md",
@@ -11,7 +14,7 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
 
   const widthClass = sizeClasses[size] || sizeClasses.md;
 
-  return (
+  const modal = (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 fade-in">
       <div
         className={`bg-white dark:bg-gray-800 rounded-lg p-6 ${widthClass} w-full shadow-xl ring-1 ring-gray-200 dark:ring-0 scale-in soft-shadow-md`}
@@ -38,6 +41,14 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
       </div>
     </div>
   );
+
+  // render modal into document body so nested modals stack correctly
+  if (typeof document !== "undefined") {
+    return createPortal(modal, document.body);
+  }
+
+  // fallback for environments without document
+  return modal;
 };
 
 export default Modal;

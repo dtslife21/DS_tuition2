@@ -183,14 +183,35 @@ const TeacherPicker = ({
         throw new Error("Username is required to create a teacher");
       }
 
+      // Ensure new teacher follows the same auto-increment user id logic as Admin > Users flow
+      try {
+        const existing = await getAllUsers();
+        const nums = (existing || []).map((u) => {
+          const id = u?.UserID ?? u?.id ?? u?.userID ?? u?.userId ?? 0;
+          const n = Number(id);
+          return Number.isNaN(n) ? 0 : n;
+        });
+        const max = nums.length ? Math.max(...nums) : 0;
+        const nextId = max + 1;
+        // Do not override if provided already
+        merged.UserID = merged.UserID ?? nextId;
+        merged.userID = merged.userID ?? nextId;
+        merged.id = merged.id ?? nextId;
+      } catch (genErr) {
+        // proceed without injected id if anything fails
+        console.warn("Failed to auto-generate next user id:", genErr);
+      }
+
       const createdUser = await createUser(merged);
 
+      // Use the actual id returned by the server for the created user as the authoritative link
+      const createdUserId = resolveTeacherId(createdUser);
       const teacherPayload = {
         TeacherID:
-          merged.TeacherID ??
-          merged.teacherID ??
-          merged.teacherId ??
-          resolveTeacherId(createdUser),
+          createdUserId ||
+          merged.TeacherID ||
+          merged.teacherID ||
+          merged.teacherId,
         EmployeeID: merged.EmployeeID ?? undefined,
         Department: merged.Department ?? undefined,
         Qualification: merged.Qualification ?? undefined,
