@@ -6,6 +6,7 @@ import {
   getCourseMaterials,
   getStudentMaterials,
 } from "../../services/materialService";
+import { getStudentCourses } from "../../services/courseService";
 import MaterialList from "../../components/materials/MaterialList";
 import Loader from "../../components/common/Loader";
 import MaterialForm from "../../components/materials/MaterialForm";
@@ -16,12 +17,14 @@ import {
   FunnelIcon,
   TrashIcon,
   PlusIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 
 const StudentMaterials = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const [materials, setMaterials] = useState([]);
+  const [groupedMaterials, setGroupedMaterials] = useState([]); // [{ course, materials: [] }]
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fabOpen, setFabOpen] = useState(false);
@@ -38,7 +41,7 @@ const StudentMaterials = () => {
           setMaterials(materialsData);
           setCourse(courseData);
         } else {
-          // No specific course id: load materials related to the logged-in student's courses
+          // No specific course id: load materials grouped by the logged-in student's courses
           const studentId =
             user?.StudentID ??
             user?.studentID ??
@@ -50,12 +53,67 @@ const StudentMaterials = () => {
             null;
 
           if (studentId) {
-            const studentMats = await getStudentMaterials(studentId);
-            setMaterials(Array.isArray(studentMats) ? studentMats : []);
+            // Try to get enrolled courses first
+            const courses = await getStudentCourses(studentId);
+
+            if (Array.isArray(courses) && courses.length) {
+              // Initialize grouped state to show skeletons and allow per-course loading
+              setGroupedMaterials(
+                courses.map((c) => ({
+                  course: c,
+                  materials: [],
+                  loading: true,
+                  expanded: true,
+                }))
+              );
+
+              // Fetch materials per-course and update state as they resolve
+              courses.forEach(async (c) => {
+                try {
+                  const mats = await getCourseMaterials(
+                    c.id ?? c.CourseID ?? c.courseId
+                  );
+                  setGroupedMaterials((prev) =>
+                    prev.map((g) =>
+                      String(
+                        g.course?.id ?? g.course?.CourseID ?? g.course?.courseId
+                      ) === String(c.id ?? c.CourseID ?? c.courseId)
+                        ? {
+                            ...g,
+                            materials: Array.isArray(mats) ? mats : [],
+                            loading: false,
+                          }
+                        : g
+                    )
+                  );
+                } catch (e) {
+                  setGroupedMaterials((prev) =>
+                    prev.map((g) =>
+                      String(
+                        g.course?.id ?? g.course?.CourseID ?? g.course?.courseId
+                      ) === String(c.id ?? c.CourseID ?? c.courseId)
+                        ? { ...g, materials: [], loading: false }
+                        : g
+                    )
+                  );
+                }
+              });
+
+              // Clear flat materials and course detail
+              setMaterials([]);
+              setCourse(null);
+            } else {
+              // Fallback: fetch student materials if courses cannot be determined
+              const studentMats = await getStudentMaterials(studentId);
+              setMaterials(Array.isArray(studentMats) ? studentMats : []);
+              setGroupedMaterials([]);
+              setCourse(null);
+            }
           } else {
             setMaterials([]);
+            setGroupedMaterials([]);
+            setCourse(null);
           }
-          setCourse(null);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -147,15 +205,118 @@ const StudentMaterials = () => {
       </header>
 
       <section className="relative rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 px-6 py-8 sm:px-10 sm:py-12 shadow-sm transition">
-        {materials.length > 0 ? (
+        {id ? (
+          materials.length > 0 ? (
+            <MaterialList materials={materials} className="bg-transparent" />
+          ) : (
+            <EmptyState
+              title="No Materials Available"
+              description={
+                "There are no study materials available for this course yet."
+              }
+            />
+          )
+        ) : groupedMaterials.length ? (
+          // Render grouped materials by course (collapsible cards)
+          <div className="space-y-6">
+            {groupedMaterials.map(
+              ({ course: c, materials: mats, loading, expanded }) => {
+                const key =
+                  c?.id ?? c?.CourseID ?? c?.courseId ?? Math.random();
+                const courseTitle =
+                  c?.name ?? c?.CourseName ?? "Untitled Course";
+                const courseSubtitle =
+                  c?.subject ||
+                  c?.subjectDetails?.name ||
+                  c?.code ||
+                  "Course materials";
+                const teacherName =
+                  c?.teacher?.firstName || c?.teacher?.lastName
+                    ? `${c?.teacher?.firstName ?? ""} ${
+                        c?.teacher?.lastName ?? ""
+                      }`.trim()
+                    : null;
+
+                return (
+                  <div
+                    key={key}
+                    className="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 overflow-hidden"
+                  >
+                    <div className="px-4 py-3 sm:px-6 flex items-center justify-between">
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                          {courseTitle}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          {courseSubtitle}
+                          {teacherName ? ` • ${teacherName}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {loading
+                            ? "Loading…"
+                            : `${mats.length} ${
+                                mats.length === 1 ? "material" : "materials"
+                              }`}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setGroupedMaterials((prev) =>
+                              prev.map((g) =>
+                                String(
+                                  g.course?.id ??
+                                    g.course?.CourseID ??
+                                    g.course?.courseId
+                                ) ===
+                                String(c?.id ?? c?.CourseID ?? c?.courseId)
+                                  ? { ...g, expanded: !g.expanded }
+                                  : g
+                              )
+                            )
+                          }
+                          className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                          aria-expanded={expanded}
+                          aria-label={
+                            expanded
+                              ? `Collapse ${courseTitle}`
+                              : `Expand ${courseTitle}`
+                          }
+                        >
+                          <ChevronDownIcon
+                            className={`h-5 w-5 transform transition-transform ${
+                              expanded ? "rotate-180" : "rotate-0"
+                            } text-gray-600 dark:text-gray-300`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+
+                    {expanded && (
+                      <div className="px-4 pb-4 sm:px-6">
+                        {loading ? (
+                          <div className="py-6 flex justify-center">
+                            <Loader />
+                          </div>
+                        ) : (
+                          <MaterialList materials={mats} compact={true} />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+            )}
+          </div>
+        ) : materials.length > 0 ? (
+          // Fallback: flat list of student materials
           <MaterialList materials={materials} className="bg-transparent" />
         ) : (
           <EmptyState
             title="No Materials Available"
             description={
-              id
-                ? "There are no study materials available for this course yet."
-                : "There are no study materials available for your courses yet."
+              "There are no study materials available for your courses yet."
             }
           />
         )}

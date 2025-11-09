@@ -12,6 +12,7 @@ import MaterialForm from "../../components/materials/MaterialForm";
 import EmptyState from "../../components/common/EmptyState";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
 const TeacherMaterials = () => {
   const { id } = useParams();
@@ -22,6 +23,8 @@ const TeacherMaterials = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalCourseId, setModalCourseId] = useState(null);
   const [coursesWithMaterials, setCoursesWithMaterials] = useState([]);
+  const [expandedCourses, setExpandedCourses] = useState(new Set());
+  const [courseLoading, setCourseLoading] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,14 +50,48 @@ const TeacherMaterials = () => {
 
           if (teacherId) {
             const courses = await getTeacherCourses(teacherId);
-            const grouped = await Promise.all(
-              (courses || []).map(async (c) => {
-                const cid = c.id ?? c.CourseID ?? c.CourseId ?? c.courseId;
-                const mats = cid ? await getCourseMaterials(cid) : [];
-                return { course: c, materials: mats };
-              })
-            );
+
+            // Do not eagerly load all materials - render collapsible cards and fetch per-course when expanded
+            const grouped = (courses || []).map((c) => ({
+              course: c,
+              materials: null, // null means not loaded yet
+              materialsCount: null, // will be populated with the count when available
+            }));
             setCoursesWithMaterials(grouped || []);
+            // Kick off lightweight count requests so headers can show material counts immediately
+            (grouped || []).forEach(async (entry) => {
+              const cid = String(
+                entry.course.id ??
+                  entry.course.CourseID ??
+                  entry.course.CourseId ??
+                  entry.course.courseId ??
+                  ""
+              );
+              try {
+                const mats = await getCourseMaterials(cid);
+                setCoursesWithMaterials((prev) =>
+                  prev.map((e) => {
+                    const idStr = String(
+                      e.course.id ??
+                        e.course.CourseID ??
+                        e.course.courseId ??
+                        ""
+                    );
+                    if (idStr === cid) {
+                      // Only set the count here; keep materials null so toggle still triggers detailed load
+                      return {
+                        ...e,
+                        materialsCount: Array.isArray(mats) ? mats.length : 0,
+                      };
+                    }
+                    return e;
+                  })
+                );
+              } catch (err) {
+                // ignore individual failures; count will remain null
+                // console.debug(`Failed to fetch count for course ${cid}`, err);
+              }
+            });
           }
         }
       } catch (error) {
@@ -81,9 +118,16 @@ const TeacherMaterials = () => {
               ""
           );
           if (cid === String(modalCourseId)) {
+            const prevCount =
+              entry.materialsCount != null
+                ? entry.materialsCount
+                : Array.isArray(entry.materials)
+                ? entry.materials.length
+                : 0;
             return {
               ...entry,
               materials: [newMaterial, ...(entry.materials || [])],
+              materialsCount: prevCount + 1,
             };
           }
           return entry;
@@ -91,6 +135,53 @@ const TeacherMaterials = () => {
       );
     }
     setShowModal(false);
+  };
+
+  const toggleCourse = async (courseEntry) => {
+    const cid = String(
+      courseEntry.course.id ??
+        courseEntry.course.CourseID ??
+        courseEntry.course.CourseId ??
+        courseEntry.course.courseId ??
+        ""
+    );
+
+    setExpandedCourses((prev) => {
+      const next = new Set(prev);
+      if (next.has(cid)) next.delete(cid);
+      else next.add(cid);
+      return next;
+    });
+
+    // If materials not loaded yet, fetch them
+    if (!courseEntry.materials || courseEntry.materials === null) {
+      setCourseLoading((s) => ({ ...s, [cid]: true }));
+      try {
+        const mats = await getCourseMaterials(cid);
+        setCoursesWithMaterials((prev) =>
+          prev.map((entry) => {
+            const idStr = String(
+              entry.course.id ??
+                entry.course.CourseID ??
+                entry.course.courseId ??
+                ""
+            );
+            if (idStr === cid) {
+              return {
+                ...entry,
+                materials: Array.isArray(mats) ? mats : [],
+                materialsCount: Array.isArray(mats) ? mats.length : 0,
+              };
+            }
+            return entry;
+          })
+        );
+      } catch (e) {
+        console.error(`Failed to load materials for course ${cid}`, e);
+      } finally {
+        setCourseLoading((s) => ({ ...s, [cid]: false }));
+      }
+    }
   };
 
   if (loading) {
@@ -144,33 +235,80 @@ const TeacherMaterials = () => {
 
           <div className="space-y-6">
             {coursesWithMaterials && coursesWithMaterials.length ? (
-              coursesWithMaterials.map(({ course: c, materials: mats }) => {
-                const cid = String(
-                  c.id ?? c.CourseID ?? c.CourseId ?? c.courseId ?? ""
-                );
-                return (
-                  <div
-                    key={cid}
-                    className="bg-gradient-to-br from-white to-indigo-50/70 dark:from-gray-900/70 dark:to-indigo-950/20 backdrop-blur shadow-lg ring-1 ring-indigo-100 dark:ring-indigo-800 rounded-2xl p-4 sm:p-6"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {c.name || c.CourseName || `Course ${cid}`}
-                      </h2>
-                      <Button
-                        onClick={() => {
-                          setModalCourseId(cid);
-                          setShowModal(true);
-                        }}
-                        className="bg-green-600 hover:bg-green-700 focus:ring-green-500 text-white"
-                      >
-                        Upload for this course
-                      </Button>
+              coursesWithMaterials.map(
+                ({ course: c, materials: mats, materialsCount: count }) => {
+                  const cid = String(
+                    c.id ?? c.CourseID ?? c.CourseId ?? c.courseId ?? ""
+                  );
+                  const isExpanded = expandedCourses.has(cid);
+                  const isLoading = Boolean(courseLoading[cid]);
+                  return (
+                    <div
+                      key={cid}
+                      className="bg-gradient-to-br from-white to-indigo-50/70 dark:from-gray-900/70 dark:to-indigo-950/20 backdrop-blur shadow-lg ring-1 ring-indigo-100 dark:ring-indigo-800 rounded-2xl p-4 sm:p-6"
+                    >
+                      <div className="flex items-start justify-between mb-4 gap-4">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            toggleCourse({ course: c, materials: mats })
+                          }
+                          className="flex items-center gap-3 text-left focus:outline-none"
+                        >
+                          <ChevronDownIcon
+                            className={`h-5 w-5 text-indigo-600 transform transition-transform ${
+                              isExpanded ? "-rotate-180" : "rotate-0"
+                            }`}
+                          />
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {c.name || c.CourseName || `Course ${cid}`}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {c.subject ||
+                                c.subjectDetails?.name ||
+                                "Course materials"}
+                            </p>
+                          </div>
+                        </button>
+
+                        <div className="flex items-center gap-3">
+                          <div className="text-sm text-gray-600 dark:text-gray-300">
+                            {count !== null && count !== undefined
+                              ? `${count} material${count === 1 ? "" : "s"}`
+                              : Array.isArray(mats)
+                              ? `${mats.length} material${
+                                  mats.length === 1 ? "" : "s"
+                                }`
+                              : "—"}
+                          </div>
+                          <Button
+                            onClick={() => {
+                              setModalCourseId(cid);
+                              setShowModal(true);
+                            }}
+                            className="bg-green-600 hover:bg-green-700 focus:ring-green-500 text-white"
+                          >
+                            Upload for this course
+                          </Button>
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div>
+                          {isLoading ? (
+                            <div className="py-6">
+                              <Loader />
+                            </div>
+                          ) : (
+                            <MaterialList materials={mats || []} />
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <MaterialList materials={mats || []} />
-                  </div>
-                );
-              })
+                  );
+                }
+              )
             ) : (
               <EmptyState
                 title="No courses found"
