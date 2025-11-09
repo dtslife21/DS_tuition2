@@ -22,6 +22,7 @@ import TeacherNotices from "./pages/teacher/Notices";
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentCourses from "./pages/student/Courses";
 import CourseView from "./components/courses/CourseView";
+import SubjectView from "./components/subjects/SubjectView";
 import StudentAttendance from "./pages/student/Attendance";
 import StudentMaterials from "./pages/student/Materials";
 import StudentComplaints from "./pages/student/Complaints";
@@ -150,6 +151,18 @@ const RoutesConfig = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Shared Subject view route (accessible by authenticated users)
+            Render inside MainLayout via nested route so Outlet receives SubjectView */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="subjects/:id" element={<SubjectView />} />
+        </Route>
 
         {/* 404 Route */}
         <Route path="*" element={<NotFound />} />

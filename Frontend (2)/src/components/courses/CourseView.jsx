@@ -177,7 +177,14 @@ const CourseView = () => {
                 {subjects.length ? (
                   <ul className="list-disc list-inside space-y-1">
                     {subjects.map((subjectName) => (
-                      <li key={subjectName}>{subjectName}</li>
+                      <li key={subjectName}>
+                        <Link
+                          to={`/subjects/${encodeURIComponent(subjectName)}`}
+                          className="text-indigo-600 dark:text-indigo-400 hover:underline hover:text-indigo-700"
+                        >
+                          {subjectName}
+                        </Link>
+                      </li>
                     ))}
                   </ul>
                 ) : (
