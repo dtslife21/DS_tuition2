@@ -147,8 +147,11 @@ const AdminUsers = () => {
   useEffect(() => {
     const qs = new URLSearchParams(location.search || "");
     const tab = (qs.get("tab") || location.state?.tab || "").toString();
-    const courseParam = (qs.get("course") || location.state?.course || "")
-      .toString();
+    const courseParam = (
+      qs.get("course") ||
+      location.state?.course ||
+      ""
+    ).toString();
 
     if (tab === "students") {
       setActiveTab("students");
@@ -178,7 +181,9 @@ const AdminUsers = () => {
               const enrollments = await getEnrollmentsByStudent(sid);
               if (
                 Array.isArray(enrollments) &&
-                enrollments.some((e) => String(e.CourseID) === String(courseParam))
+                enrollments.some(
+                  (e) => String(e.CourseID) === String(courseParam)
+                )
               ) {
                 matching.add(String(sid));
               }
@@ -690,11 +695,13 @@ const AdminUsers = () => {
         const filtered = filterUsersByTab(users, activeTab);
         // If admin was navigated here with a course filter, further narrow student list
         const displayUsers =
-          activeTab === "students" && filteredStudentIds && filteredStudentIds.size
+          activeTab === "students" &&
+          filteredStudentIds &&
+          filteredStudentIds.size
             ? filtered.filter((u) => {
-                  const sid = u.UserID ?? u.id ?? u.userID ?? u.userId ?? null;
-                  return sid && filteredStudentIds.has(String(sid));
-                })
+                const sid = u.UserID ?? u.id ?? u.userID ?? u.userId ?? null;
+                return sid && filteredStudentIds.has(String(sid));
+              })
             : filtered;
 
         return (

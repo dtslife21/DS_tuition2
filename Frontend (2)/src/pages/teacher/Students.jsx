@@ -71,7 +71,11 @@ const TeacherStudents = () => {
   const [coursePickerError, setCoursePickerError] = useState("");
   const teacherId = resolveTeacherId(user);
   const queryCourse = new URLSearchParams(location.search || "").get("course");
-  const courseId = queryCourse ? String(queryCourse).trim() : id ? String(id).trim() : null;
+  const courseId = queryCourse
+    ? String(queryCourse).trim()
+    : id
+    ? String(id).trim()
+    : null;
   const defaultCourseSelection = courseId ? [String(courseId)] : [];
 
   const refreshStudents = async () => {

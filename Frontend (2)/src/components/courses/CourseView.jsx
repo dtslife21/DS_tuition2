@@ -13,17 +13,26 @@ import { getUserById } from "../../services/userService";
 import MaterialList from "../materials/MaterialList";
 import AttendanceList from "../attendance/AttendanceList";
 import Modal from "../common/Modal";
+import StudentPickerModal from "../common/StudentPickerModal";
 import UserList from "../users/UserList";
 import CourseForm from "./CourseForm";
 import MaterialForm from "../materials/MaterialForm";
 import QRGenerator from "../attendance/QRGenerator";
 import Loader from "../common/Loader";
 import Button from "../common/Button";
+import UserForm from "../users/UserForm";
 import {
   createSubject,
   updateSubject,
   getAllSubjects,
 } from "../../services/subjectService";
+import {
+  createEnrollment,
+  createEnrollmentsForStudent,
+} from "../../services/enrollmentService";
+import { createStudent } from "../../services/studentService";
+import { createUser } from "../../services/userService";
+import Toast from "../common/Toast";
 
 const CourseView = () => {
   const { id } = useParams();
@@ -43,6 +52,14 @@ const CourseView = () => {
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(true);
   const [studentsError, setStudentsError] = useState(null);
+  const [showStudentPicker, setShowStudentPicker] = useState(false);
+  const [addingStudents, setAddingStudents] = useState(false);
+  const [studentActionError, setStudentActionError] = useState("");
+  const [studentsRefreshCounter, setStudentsRefreshCounter] = useState(0);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showStudentMenu, setShowStudentMenu] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState("success");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -135,7 +152,10 @@ const CourseView = () => {
             const { students: teacherScopedStudents } =
               await getTeacherCourseStudents(courseTeacherId, id);
             if (!isActive) return;
-            if (Array.isArray(teacherScopedStudents) && teacherScopedStudents.length) {
+            if (
+              Array.isArray(teacherScopedStudents) &&
+              teacherScopedStudents.length
+            ) {
               setStudents(teacherScopedStudents);
               return;
             }
@@ -194,7 +214,7 @@ const CourseView = () => {
     return () => {
       isActive = false;
     };
-  }, [id, user, loading, course?.teacherId]);
+  }, [id, user, loading, course?.teacherId, studentsRefreshCounter]);
 
   useEffect(() => {
     const teacherId = course?.teacherId;
@@ -237,6 +257,250 @@ const CourseView = () => {
     };
   }, [course?.teacherId]);
 
+  const resolveStudentId = (candidate) => {
+    if (!candidate || typeof candidate !== "object") {
+      return "";
+    }
+
+    const values = [
+      candidate.StudentID,
+      candidate.studentID,
+      candidate.studentId,
+      candidate.UserID,
+      candidate.userID,
+      candidate.userId,
+      candidate.id,
+    ];
+
+    for (const value of values) {
+      if (value === undefined || value === null) continue;
+      const str = String(value).trim();
+      if (str) return str;
+    }
+
+    return "";
+  };
+
+  const handleExistingStudentConfirm = async (selectedIds = []) => {
+    if (!Array.isArray(selectedIds) || !selectedIds.length) {
+      setStudentActionError("Select at least one student to enroll.");
+      return;
+    }
+
+    const uniqueIds = Array.from(
+      new Set(
+        selectedIds
+          .map((id) => String(id || "").trim())
+          .filter((value) => Boolean(value))
+      )
+    );
+
+    if (!uniqueIds.length) {
+      setStudentActionError("Select at least one student to enroll.");
+      return;
+    }
+
+    const rawCourseId =
+      course?.id ??
+      course?.CourseID ??
+      course?.courseID ??
+      course?.CourseId ??
+      course?.courseId ??
+      id;
+
+    if (rawCourseId === undefined || rawCourseId === null) {
+      setStudentActionError("Course information is missing.");
+      return;
+    }
+
+    const numericCourseId = Number(rawCourseId);
+    const useNumericCourseId = !Number.isNaN(numericCourseId);
+    const enrollmentOptions = {
+      EnrollmentDate: new Date().toISOString(),
+      IsActive: true,
+    };
+
+    setAddingStudents(true);
+    setStudentActionError("");
+
+    try {
+      for (const studentId of uniqueIds) {
+        const numericStudentId = Number(studentId);
+        const resolvedStudentId = Number.isNaN(numericStudentId)
+          ? studentId
+          : numericStudentId;
+
+        if (useNumericCourseId) {
+          await createEnrollmentsForStudent(resolvedStudentId, [numericCourseId], enrollmentOptions);
+        } else {
+          await createEnrollment({
+            StudentID: resolvedStudentId,
+            CourseID: rawCourseId,
+            EnrollmentDate: enrollmentOptions.EnrollmentDate,
+            IsActive: enrollmentOptions.IsActive,
+          });
+        }
+      }
+
+      setStudentActionError("");
+      setShowStudentPicker(false);
+      setStudentsRefreshCounter((prev) => prev + 1);
+      setToastType("success");
+      setToastMessage(
+        uniqueIds.length > 1
+          ? `Added ${uniqueIds.length} students to the course.`
+          : `Added 1 student to the course.`
+      );
+    } catch (error) {
+      console.error("Failed to enroll selected students", error);
+      setStudentActionError(
+        error?.message || "Unable to add selected students. Please try again."
+      );
+    } finally {
+      setAddingStudents(false);
+    }
+  };
+
+  const handleStudentPickerClose = () => {
+    if (!addingStudents) {
+      setShowStudentPicker(false);
+    }
+  };
+
+  const handleCreateStudent = async (formData) => {
+    setStudentActionError("");
+
+    const rawCourseId =
+      course?.id ??
+      course?.CourseID ??
+      course?.courseID ??
+      course?.CourseId ??
+      course?.courseId ??
+      id;
+
+    try {
+      const userPayload = {
+        ...formData,
+        UserTypeID: 3,
+        IsActive: true,
+        ProfilePicture:
+          formData?.ProfilePicture ?? formData?.profilePicture ?? null,
+      };
+
+      const createdUser = await createUser(userPayload);
+
+      const enrollmentDateValue =
+        formData?.EnrollmentDate ?? formData?.enrollmentDate ?? null;
+
+      const studentPayload = {
+        UserID:
+          createdUser?.UserID ??
+          createdUser?.userID ??
+          createdUser?.userId ??
+          createdUser?.id ??
+          formData?.UserID ??
+          formData?.userID ??
+          formData?.userId ??
+          null,
+        RollNumber:
+          formData?.RollNumber ??
+          formData?.rollNumber ??
+          formData?.IDNumber ??
+          formData?.idNumber ??
+          undefined,
+        EnrollmentDate: enrollmentDateValue ?? undefined,
+        CurrentGrade:
+          formData?.CurrentGrade ??
+          formData?.currentGrade ??
+          formData?.Class ??
+          formData?.class ??
+          undefined,
+        ParentName:
+          formData?.ParentName ??
+          formData?.parentName ??
+          formData?.GuardianName ??
+          formData?.guardianName ??
+          undefined,
+        ParentContact:
+          formData?.ParentContact ??
+          formData?.parentContact ??
+          formData?.GuardianPhone ??
+          formData?.guardianPhone ??
+          undefined,
+      };
+
+      const cleanedStudentPayload = Object.fromEntries(
+        Object.entries(studentPayload).filter(
+          ([, value]) => value !== undefined && value !== null
+        )
+      );
+
+      const createdStudent = await createStudent(cleanedStudentPayload);
+
+      const studentIdentifierCandidates = [
+        createdStudent?.StudentID,
+        createdStudent?.studentID,
+        createdStudent?.studentId,
+        createdStudent?.UserID,
+        createdStudent?.userID,
+        createdStudent?.userId,
+        createdStudent?.id,
+        createdUser?.StudentID,
+        createdUser?.studentID,
+        createdUser?.studentId,
+        createdUser?.UserID,
+        createdUser?.userID,
+        createdUser?.userId,
+        createdUser?.id,
+      ];
+
+      let resolvedStudentId = null;
+      for (const candidate of studentIdentifierCandidates) {
+        if (candidate === undefined || candidate === null) continue;
+        const trimmed = String(candidate).trim();
+        if (!trimmed) continue;
+        resolvedStudentId = Number.isNaN(Number(trimmed))
+          ? trimmed
+          : Number(trimmed);
+        break;
+      }
+
+      if (
+        resolvedStudentId !== null &&
+        resolvedStudentId !== undefined &&
+        rawCourseId !== undefined &&
+        rawCourseId !== null
+      ) {
+        const numericCourseId = Number(rawCourseId);
+        if (!Number.isNaN(numericCourseId)) {
+          await createEnrollmentsForStudent(resolvedStudentId, [numericCourseId], {
+            EnrollmentDate: enrollmentDateValue || undefined,
+            IsActive: true,
+          });
+        } else {
+          await createEnrollment({
+            StudentID: resolvedStudentId,
+            CourseID: rawCourseId,
+            EnrollmentDate:
+              enrollmentDateValue || new Date().toISOString(),
+            IsActive: true,
+          });
+        }
+      }
+
+      setStudentActionError("");
+  setStudentsRefreshCounter((prev) => prev + 1);
+  setToastType("success");
+  setToastMessage("Student created and enrolled in the course.");
+    } catch (error) {
+      console.error("Failed to create student", error);
+      const message =
+        error?.message || "Failed to create student. Please try again.";
+      setStudentActionError(message);
+      throw error;
+    }
+  };
+
   const handleMaterialSubmit = (newMaterial) => {
     setMaterials([newMaterial, ...materials]);
     setShowMaterialModal(false);
@@ -271,6 +535,10 @@ const CourseView = () => {
     courseTeacherId ??
     null;
   const isAdmin = user?.userType === "admin";
+  const canModifyStudents = user?.userType === "teacher" || isAdmin;
+  const enrolledStudentIds = Array.from(
+    new Set((students || []).map((student) => resolveStudentId(student)).filter(Boolean))
+  );
 
   return (
     <div className="space-y-8">
@@ -433,28 +701,82 @@ const CourseView = () => {
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
               Enrolled Students
             </h3>
-            {user.userType === "teacher" ? (
-              <Button
-                variant="primary"
-                onClick={() => navigate(`/teacher/students?course=${encodeURIComponent(id)}`)}
-              >
-                Manage Students
-              </Button>
-            ) : isAdmin ? (
-            <Button
-              variant="primary"
-              onClick={() =>
-                navigate(
-                  `/admin/users?tab=students&course=${encodeURIComponent(
-                    id
-                  )}`
-                )
-              }
-            >
-              Manage Students
-            </Button>
-          ) : null}
+            {canModifyStudents ? (
+              <div className="flex items-center gap-2">
+                {user.userType === "teacher" ? (
+                  <Button
+                    variant="primary"
+                    onClick={() =>
+                      navigate(
+                        `/teacher/students?course=${encodeURIComponent(id)}`
+                      )
+                    }
+                  >
+                    Manage Students
+                  </Button>
+                ) : isAdmin ? (
+                  <Button
+                    variant="primary"
+                    onClick={() =>
+                      navigate(
+                        `/admin/users?tab=students&course=${encodeURIComponent(
+                          id
+                        )}`
+                      )
+                    }
+                  >
+                    Manage Students
+                  </Button>
+                ) : null}
+                <div className="relative">
+                  <Button
+                    variant="primary"
+                    onClick={() => setShowStudentMenu((s) => !s)}
+                    disabled={addingStudents}
+                  >
+                    + Add Student
+                  </Button>
+                  {showStudentMenu && (
+                    <div className="absolute right-0 mt-2 w-44 rounded-md border bg-white dark:bg-gray-800 z-20 shadow-md">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowStudentMenu(false);
+                          setStudentActionError("");
+                          setShowStudentPicker(true);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200"
+                      >
+                        Add Existing
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowStudentMenu(false);
+                          setStudentActionError("");
+                          setShowRegisterModal(true);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200"
+                      >
+                        Register New Student
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
           </div>
+
+          {studentsError ? (
+            <div className="mt-3 text-sm text-red-600 dark:text-red-400">
+              {studentsError}
+            </div>
+          ) : null}
+          {studentActionError ? (
+            <div className="mt-3 text-sm text-red-600 dark:text-red-400">
+              {studentActionError}
+            </div>
+          ) : null}
 
           <div className="mt-4">
             {studentsLoading ? (
@@ -467,7 +789,13 @@ const CourseView = () => {
                 allowManage={false}
                 getDetailsPath={(student) => {
                   const identifier =
-                    student.UserID || student.userID || student.userId || student.id || student.StudentID || student.studentID || student.studentId;
+                    student.UserID ||
+                    student.userID ||
+                    student.userId ||
+                    student.id ||
+                    student.StudentID ||
+                    student.studentID ||
+                    student.studentId;
                   if (!identifier) return null;
                   return user?.userType === "teacher"
                     ? `/teacher/students/${identifier}`
@@ -480,6 +808,47 @@ const CourseView = () => {
           </div>
         </>
       )}
+      <StudentPickerModal
+        isOpen={showStudentPicker}
+        onClose={handleStudentPickerClose}
+        onConfirm={handleExistingStudentConfirm}
+        initialSelected={[]}
+        excludedIds={enrolledStudentIds}
+        title="Add Existing Students"
+        saving={addingStudents}
+        errorMessage={studentActionError}
+      />
+
+      <Modal
+        isOpen={showRegisterModal}
+        onClose={() => setShowRegisterModal(false)}
+        title="Register New Student"
+        size="lg"
+      >
+        <UserForm
+          onSubmit={async (formData) => {
+            try {
+              setAddingStudents(true);
+              await handleCreateStudent(formData);
+              setShowRegisterModal(false);
+            } catch (e) {
+              // handleCreateStudent sets studentActionError
+            } finally {
+              setAddingStudents(false);
+            }
+          }}
+          loading={addingStudents}
+          forceUserType={3}
+          showCoreFields={true}
+          showRoleFields={true}
+          submitLabel={addingStudents ? "Creating..." : "Create Student"}
+        />
+      </Modal>
+      <Toast
+        message={toastMessage}
+        type={toastType}
+        onClose={() => setToastMessage("")}
+      />
 
       <Modal
         isOpen={showMaterialModal}
