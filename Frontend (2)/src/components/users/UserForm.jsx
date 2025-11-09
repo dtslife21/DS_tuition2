@@ -12,6 +12,7 @@ import {
 import { getAllStudents } from "../../services/studentService";
 import CoursePickerModal from "../courses/CoursePickerModal";
 import { getAllTeachers } from "../../services/teacherService";
+import { getAllUsers } from "../../services/userService";
 
 const MAX_PROFILE_PHOTO_SIZE = 2 * 1024 * 1024; // 2 MB cap for inline uploads
 const PROFILE_PHOTO_ASPECT_RATIO = 1; // keep avatars square
@@ -148,6 +149,74 @@ const UserForm = ({
   } = useForm({
     defaultValues: getDefaults(initialUser, forceUserType),
   });
+
+  // Async uniqueness checks (soft-fail to true on API error to avoid blocking)
+  const isUsernameUnique = async (val) => {
+    try {
+      const v = String(val || "")
+        .trim()
+        .toLowerCase();
+      if (!v) return true;
+      // if editing and username unchanged, allow
+      const existingName = (
+        initialUser?.Username ||
+        initialUser?.username ||
+        ""
+      )
+        .toString()
+        .toLowerCase();
+      if (initialUser && existingName && existingName === v) return true;
+      const users = await getAllUsers();
+      const found = (users || []).find(
+        (u) => String(u.Username || u.username || "").toLowerCase() === v
+      );
+      if (!found) return true;
+      const foundId =
+        found.UserID ?? found.id ?? found.userID ?? found.userId ?? null;
+      const currentId = initialUser
+        ? initialUser.UserID ??
+          initialUser.id ??
+          initialUser.userID ??
+          initialUser.userId ??
+          null
+        : null;
+      if (currentId && String(foundId) === String(currentId)) return true;
+      return "Username already taken";
+    } catch (e) {
+      return true;
+    }
+  };
+
+  const isEmailUnique = async (val) => {
+    try {
+      const v = String(val || "")
+        .trim()
+        .toLowerCase();
+      if (!v) return true;
+      const existingEmail = (initialUser?.Email || initialUser?.email || "")
+        .toString()
+        .toLowerCase();
+      if (initialUser && existingEmail && existingEmail === v) return true;
+      const users = await getAllUsers();
+      const found = (users || []).find(
+        (u) => String(u.Email || u.email || "").toLowerCase() === v
+      );
+      if (!found) return true;
+      const foundId =
+        found.UserID ?? found.id ?? found.userID ?? found.userId ?? null;
+      const currentId = initialUser
+        ? initialUser.UserID ??
+          initialUser.id ??
+          initialUser.userID ??
+          initialUser.userId ??
+          null
+        : null;
+      if (currentId && String(foundId) === String(currentId)) return true;
+      return "Email already in use";
+    } catch (e) {
+      return true;
+    }
+  };
 
   const initialProfilePicture =
     initialUser?.ProfilePicture || initialUser?.profilePicture || "";
@@ -673,6 +742,18 @@ const UserForm = ({
   }, []);
 
   const handleFormSubmit = (data) => {
+    // sanitize/trims: remove accidental whitespace from key text fields
+    data = {
+      ...(data || {}),
+      Username: (data?.Username || "").trim(),
+      Email: (data?.Email || "").trim(),
+      FirstName: (data?.FirstName || "").trim(),
+      LastName: (data?.LastName || "").trim(),
+      EmployeeID: (data?.EmployeeID || "").trim(),
+      Department: (data?.Department || "").trim(),
+      Qualification: (data?.Qualification || "").trim(),
+      Bio: (data?.Bio || "").trim(),
+    };
     // When creating a student via the redesigned form, synthesize core fields
     const isStudent = String(data.UserTypeID) === "3";
 
@@ -830,7 +911,19 @@ const UserForm = ({
                 id="Username"
                 name="Username"
                 type="text"
-                {...register("Username", { required: "Username is required" })}
+                {...register("Username", {
+                  required: "Username is required",
+                  minLength: {
+                    value: 3,
+                    message: "Username must be at least 3 characters",
+                  },
+                  pattern: {
+                    value: /^[a-zA-Z0-9._-]+$/,
+                    message:
+                      "Username can contain letters, numbers, dot, underscore or hyphen",
+                  },
+                  validate: isUsernameUnique,
+                })}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
               {errors.Username && (
@@ -933,6 +1026,7 @@ const UserForm = ({
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                   message: "Invalid email address",
                 },
+                validate: isEmailUnique,
               })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
@@ -969,6 +1063,16 @@ const UserForm = ({
                     placeholder="Enter username"
                     {...register("Username", {
                       required: "Username is required",
+                      minLength: {
+                        value: 3,
+                        message: "Username must be at least 3 characters",
+                      },
+                      pattern: {
+                        value: /^[a-zA-Z0-9._-]+$/,
+                        message:
+                          "Username can contain letters, numbers, dot, underscore or hyphen",
+                      },
+                      validate: isUsernameUnique,
                     })}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
@@ -998,6 +1102,7 @@ const UserForm = ({
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                         message: "Invalid email address",
                       },
+                      validate: isEmailUnique,
                     })}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
@@ -1336,7 +1441,11 @@ const UserForm = ({
               name="EmployeeID"
               type="text"
               {...register("EmployeeID", {
-                required: "Employee ID is recommended for teachers",
+                // optional but if provided should match common patterns like EMP001 or numeric ids
+                validate: (v) =>
+                  !v ||
+                  /^EMP?\d+$/i.test(String(v)) ||
+                  "Employee ID should be numeric or like 'EMP001'",
               })}
               disabled={isEmployeeIdGenerating}
               placeholder={isEmployeeIdGenerating ? "Generating..." : undefined}
@@ -1402,9 +1511,19 @@ const UserForm = ({
               id="JoiningDate"
               name="JoiningDate"
               type="date"
-              {...register("JoiningDate")}
+              {...register("JoiningDate", {
+                validate: (v) =>
+                  !v ||
+                  new Date(v) <= new Date() ||
+                  "Joining date can't be in the future",
+              })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
+            {errors.JoiningDate && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.JoiningDate.message}
+              </p>
+            )}
           </div>
 
           <div className="sm:col-span-2">
@@ -1418,77 +1537,87 @@ const UserForm = ({
               id="Bio"
               name="Bio"
               rows={3}
-              {...register("Bio")}
+              {...register("Bio", {
+                maxLength: {
+                  value: 1000,
+                  message: "Bio must be under 1000 characters",
+                },
+              })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
+            {errors.Bio && (
+              <p className="mt-1 text-sm text-red-600">{errors.Bio.message}</p>
+            )}
           </div>
 
-          {/* Teacher: Manage assigned courses (available in create and edit) */}
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Assigned Courses
-            </label>
-            <div className="mt-2 rounded-md border dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
-              {selectedCourseIds.length ? (
-                <ul className="flex flex-wrap gap-2">
-                  {selectedCourseIds.map((cid) => {
-                    const c = (courses || []).find(
-                      (x) =>
-                        String(
-                          x.id ?? x.CourseID ?? x.CourseId ?? x.courseId ?? ""
-                        ) === String(cid)
-                    );
-                    const label =
-                      c?.name ||
-                      c?.CourseName ||
-                      c?.title ||
-                      c?.courseName ||
-                      `Course ${cid}`;
-                    return (
-                      <li
-                        key={cid}
-                        className="inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200"
-                      >
-                        {label}
-                        <button
-                          type="button"
-                          className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
-                          onClick={() =>
-                            setSelectedCourseIds((prev) =>
-                              prev.filter((id) => id !== cid)
-                            )
-                          }
+          {/* Teacher: Manage assigned courses (edit only) */}
+          {userTypeID === "2" && showRoleFields && initialUser ? (
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Assigned Courses
+              </label>
+              <div className="mt-2 rounded-md border dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
+                {selectedCourseIds.length ? (
+                  <ul className="flex flex-wrap gap-2">
+                    {selectedCourseIds.map((cid) => {
+                      const c = (courses || []).find(
+                        (x) =>
+                          String(
+                            x.id ?? x.CourseID ?? x.CourseId ?? x.courseId ?? ""
+                          ) === String(cid)
+                      );
+                      const label =
+                        c?.name ||
+                        c?.CourseName ||
+                        c?.title ||
+                        c?.courseName ||
+                        `Course ${cid}`;
+                      return (
+                        <li
+                          key={cid}
+                          className="inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200"
                         >
-                          ✕
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <div className="text-xs text-gray-500">
-                  No courses assigned yet.
-                </div>
-              )}
+                          {label}
+                          <button
+                            type="button"
+                            className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
+                            onClick={() =>
+                              setSelectedCourseIds((prev) =>
+                                prev.filter((id) => id !== cid)
+                              )
+                            }
+                          >
+                            ✕
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="text-xs text-gray-500">
+                    No courses assigned yet.
+                  </div>
+                )}
 
-              <div className="mt-3 flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowTeacherCoursePicker(true)}
-                >
-                  Manage Courses
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setShowCourseModal(true)}
-                >
-                  + Add New Course
-                </Button>
+                <div className="mt-3 flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowTeacherCoursePicker(true)}
+                  >
+                    Manage Courses
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setShowCourseModal(true)}
+                  >
+                    + Add New Course
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+          ) : null}
         </div>
       )}
 

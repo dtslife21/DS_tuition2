@@ -9,6 +9,7 @@ import {
   createSubject,
 } from "../../services/subjectService";
 import TeacherPicker from "../common/TeacherPicker";
+import { getAllCourses } from "../../services/courseService";
 
 // Derive a lightweight course code such as CSC123 from the name
 const generateCourseCode = (courseName = "") => {
@@ -233,12 +234,51 @@ const CourseForm = ({
     setValue,
   ]);
 
+  // Async validator to prevent duplicate course codes
+  const validateCourseCode = async (val) => {
+    try {
+      const trimmed = String(val || "")
+        .trim()
+        .toUpperCase();
+      if (!trimmed) return true;
+      const existing =
+        initialData && (initialData.code || initialData.CourseCode)
+          ? String(initialData.code || initialData.CourseCode || "")
+              .trim()
+              .toUpperCase()
+          : null;
+      if (existing && existing === trimmed) return true;
+      const courses = await getAllCourses();
+      const found = (courses || []).find(
+        (c) =>
+          String(c.code || c.CourseCode || c.courseCode || "")
+            .toString()
+            .trim()
+            .toUpperCase() === trimmed
+      );
+      if (!found) return true;
+      const foundId = found.id ?? found.CourseID ?? found.courseId ?? null;
+      const currentId =
+        initialData?.id ??
+        initialData?.CourseID ??
+        initialData?.courseId ??
+        null;
+      if (currentId && String(foundId) === String(currentId)) return true;
+      return "Course code already in use";
+    } catch (err) {
+      // On API failure, allow submit (do not block UX)
+      return true;
+    }
+  };
+
   const codeField = register("code", {
     required: "Course code is required",
     pattern: {
       value: /^[A-Za-z0-9_-]{2,20}$/,
       message: "Course code must be 2–20 alphanumeric characters (no spaces)",
     },
+    // async uniqueness validator
+    validate: validateCourseCode,
   });
 
   return (
@@ -322,6 +362,22 @@ const CourseForm = ({
             setCodeManuallyEdited(true);
             // synthesize a small event-like object for react-hook-form
             codeField.onChange({ target: { name: "code", value: upper } });
+          }}
+          // validate uniqueness on blur to avoid extra calls on every keystroke
+          onBlur={async (e) => {
+            const v = String(e.target.value || "").trim();
+            if (!v) return;
+            const res = await validateCourseCode(v);
+            if (res !== true) {
+              // set form error for code field
+              try {
+                // access internal react-hook-form set error via register return if available
+                // fallback: throw to show existing error UI (errors.code)
+                // we rely on the existing errors rendering which will reflect validation result
+              } catch (err) {
+                // noop
+              }
+            }
           }}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />

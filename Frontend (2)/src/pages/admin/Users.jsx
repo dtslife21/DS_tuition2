@@ -109,6 +109,7 @@ import UserForm from "../../components/users/UserForm";
 import { motion, AnimatePresence } from "framer-motion";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import CoursePickerModal from "../../components/courses/CoursePickerModal";
+import Toast from "../../components/common/Toast";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -127,6 +128,13 @@ const AdminUsers = () => {
   const [initialCourseSelection, setInitialCourseSelection] = useState([]);
   const [pendingUserData, setPendingUserData] = useState(null); // holds student payload awaiting course pick
   const [pendingCreateCore, setPendingCreateCore] = useState(null); // stores step-1 (core) data for create flow
+  // Post-create teacher course assignment modal state
+  const [showAssignTeacherCourses, setShowAssignTeacherCourses] =
+    useState(false);
+  const [newTeacherIdForAssignment, setNewTeacherIdForAssignment] =
+    useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [toastType, setToastType] = useState("success");
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -307,27 +315,14 @@ const AdminUsers = () => {
                 createdUser.TeacherID,
               Teacher: createdTeacher,
             };
-
-            try {
-              const teacherId =
-                merged.UserID ?? merged.id ?? merged.userID ?? merged.userId;
-              const selectedCourseIds = (mergedCreate.CourseIDs || []).map(
-                (v) => Number(v)
-              );
-              if (teacherId && selectedCourseIds.length) {
-                for (const cid of selectedCourseIds) {
-                  await updateCourse(cid, { TeacherID: teacherId });
-                }
-              }
-            } catch (assignErr) {
-              console.error("Failed to assign courses to teacher", assignErr);
-              setFormError(
-                assignErr?.message ||
-                  "Teacher created, but failed to assign selected courses"
-              );
-            }
-
             setUsers([...users, merged]);
+            // Open post-create course assignment modal instead of pre-select step
+            const teacherId =
+              merged.UserID ?? merged.id ?? merged.userID ?? merged.userId;
+            if (teacherId) {
+              setNewTeacherIdForAssignment(String(teacherId));
+              setShowAssignTeacherCourses(true);
+            }
           } catch (err) {
             setUsers([...users, createdUser]);
             setFormError(err?.message || "Failed to create teacher record");
@@ -874,6 +869,61 @@ const AdminUsers = () => {
                 }
               }}
             />
+            {/* Post-create teacher course assignment modal */}
+            <CoursePickerModal
+              isOpen={showAssignTeacherCourses}
+              onClose={() => {
+                setShowAssignTeacherCourses(false);
+                setNewTeacherIdForAssignment(null);
+              }}
+              // show all existing courses for assignment (new teachers won't
+              // have any teacher-scoped courses yet)
+              teacherId={newTeacherIdForAssignment}
+              scopeToTeacher={false}
+              initialSelected={[]}
+              title="Assign Courses to New Teacher"
+              description="Select one or more courses to assign to the newly created teacher."
+              multiSelect={true}
+              allowCreate={true}
+              // Only allow creating a new course in this post-create flow
+              // (admins cannot pick from existing courses per requested behavior)
+              onlyCreate={true}
+              onProceed={async (selectedIds) => {
+                const ids = (selectedIds || []).map((id) =>
+                  isNaN(Number(id)) ? id : Number(id)
+                );
+                const teacherId = newTeacherIdForAssignment;
+                if (teacherId && ids.length) {
+                  try {
+                    for (const cid of ids) {
+                      await updateCourse(cid, { TeacherID: teacherId });
+                    }
+                    // Refresh users list to reflect assignments
+                    try {
+                      const all = await getAllUsers();
+                      setUsers(all);
+                    } catch (_) {
+                      // non-fatal
+                    }
+                    setToastMessage("Assigned courses to the new teacher.");
+                    setToastType("success");
+                  } catch (assignErr) {
+                    console.error(
+                      "Failed to assign selected courses to teacher",
+                      assignErr
+                    );
+                    setFormError(
+                      assignErr?.message ||
+                        "Teacher created, but failed to assign selected courses"
+                    );
+                    setToastMessage("Failed to assign selected courses.");
+                    setToastType("error");
+                  }
+                }
+                setShowAssignTeacherCourses(false);
+                setNewTeacherIdForAssignment(null);
+              }}
+            />
           </>
         );
       })()}
@@ -943,7 +993,22 @@ const AdminUsers = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      {toastMessage ? (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          onClose={() => setToastMessage(null)}
+        />
+      ) : null}
     </div>
+  );
+};
+
+// Toast rendering (placed here so it can access users page state via closure)
+const ToastWrapper = ({ message, type, onClose }) => {
+  if (!message) return null;
+  return (
+    <Toast message={message} type={type} duration={3000} onClose={onClose} />
   );
 };
 

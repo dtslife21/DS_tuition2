@@ -30,8 +30,14 @@ const CoursePickerModal = ({
   courseFormDefaults = null,
   // When provided, only show courses for this teacher and when creating a new
   // course from the picker, attach the teacher id so the new course is scoped
-  // to that teacher.
+  // to that teacher. Set `scopeToTeacher` to false when you want the picker to
+  // show all existing courses (useful for assigning existing courses to a
+  // newly-created teacher).
   teacherId = null,
+  scopeToTeacher = true,
+  // when true, hide existing course list and only show inline CourseForm for creating
+  // a new course. After creation the picker will call `onProceed` with the created id.
+  onlyCreate = false,
 }) => {
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
@@ -40,24 +46,36 @@ const CoursePickerModal = ({
   );
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [query, setQuery] = useState("");
-
   useEffect(() => {
     let mounted = true;
     const load = async () => {
       try {
         setLoadingCourses(true);
-        // If a teacherId is provided prefer teacher-scoped courses. The
-        // service falls back to filtering the full list when the dedicated
-        // endpoint isn't available.
-        const all = teacherId
-          ? await getTeacherCourses(teacherId)
-          : await getAllCourses();
+
+        // If this picker is only for creating a new course, skip loading
+        // existing courses to save work and avoid showing the list.
+        if (onlyCreate) {
+          if (!mounted) return;
+          setCourses([]);
+          setLoadingCourses(false);
+          return;
+        }
+
+        // Determine whether to scope to teacher courses or show all courses.
+        // By default we prefer teacher-scoped courses when a teacherId is
+        // provided, but callers can set `scopeToTeacher=false` to show all
+        // courses (for example, when assigning existing system courses to a
+        // newly-created teacher).
+        const all =
+          teacherId && scopeToTeacher
+            ? await getTeacherCourses(teacherId)
+            : await getAllCourses();
+
         if (!mounted) return;
         setCourses(all || []);
+        setLoadingCourses(false);
       } catch (err) {
         console.error("Failed to load courses for picker", err);
-        setCourses([]);
-      } finally {
         if (mounted) setLoadingCourses(false);
       }
     };
@@ -66,7 +84,7 @@ const CoursePickerModal = ({
     return () => {
       mounted = false;
     };
-  }, [isOpen]);
+  }, [isOpen, teacherId, scopeToTeacher, onlyCreate]);
 
   useEffect(() => {
     setSelectedCourseIds((initialSelected || []).map((c) => String(c)));
@@ -113,6 +131,48 @@ const CoursePickerModal = ({
     if (saving) return;
     onProceed(selectedCourseIds);
   };
+
+  // If this picker is used only to create a new course for a new teacher,
+  // render CourseForm directly and short-circuit the normal list UI. After
+  // successful creation call `onProceed` with the new course id and close.
+  if (onlyCreate) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} title={title}>
+        <div className="space-y-4">
+          {description && (
+            <p className="text-sm text-gray-500">{description}</p>
+          )}
+          <CourseForm
+            onSubmit={async (data) => {
+              try {
+                const payload = teacherId
+                  ? { ...data, TeacherID: teacherId, teacherId }
+                  : data;
+                const newCourse = await createCourse(payload);
+                const newId = String(
+                  newCourse.id ?? newCourse.CourseID ?? newCourse.CourseId ?? ""
+                );
+                // Inform parent immediately with the created course id
+                try {
+                  onProceed([newId]);
+                } catch (e) {
+                  // parent may expect async handling
+                }
+                onClose();
+              } catch (err) {
+                console.error(
+                  "Failed to create course from picker (onlyCreate)",
+                  err
+                );
+              }
+            }}
+            onCancel={onClose}
+            initialData={courseFormDefaults || {}}
+          />
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>

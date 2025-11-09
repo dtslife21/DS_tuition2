@@ -63,6 +63,13 @@ const SubjectForm = ({
       setSubjectCodeError("Subject code is required");
       hasError = true;
     }
+    // enforce format: uppercase alnum, dash or underscore, 2-20 chars
+    if (trimmedCode && !/^[A-Z0-9_-]{2,20}$/.test(trimmedCode)) {
+      setSubjectCodeError(
+        "Subject code must be 2–20 alphanumeric characters (no spaces)"
+      );
+      hasError = true;
+    }
     if (trimmedDescription.length > 500) {
       setDescriptionError("Description must be 500 characters or less.");
       hasError = true;
