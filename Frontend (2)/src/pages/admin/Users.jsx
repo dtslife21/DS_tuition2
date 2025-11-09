@@ -76,6 +76,7 @@
 // export default AdminUsers
 
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   getAllUsers,
   createUser,
@@ -111,6 +112,8 @@ import CoursePickerModal from "../../components/courses/CoursePickerModal";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
+  const [filteredStudentIds, setFilteredStudentIds] = useState(new Set());
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("all");
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -139,6 +142,58 @@ const AdminUsers = () => {
 
     fetchUsers();
   }, []);
+
+  // Apply initial tab/course filter from URL (either search params or navigation state)
+  useEffect(() => {
+    const qs = new URLSearchParams(location.search || "");
+    const tab = (qs.get("tab") || location.state?.tab || "").toString();
+    const courseParam = (qs.get("course") || location.state?.course || "")
+      .toString();
+
+    if (tab === "students") {
+      setActiveTab("students");
+    }
+
+    if (courseParam) {
+      // set students tab if not already
+      setActiveTab("students");
+      // compute student ids enrolled in the course and store in state
+      (async () => {
+        try {
+          const matching = new Set();
+          // For each user that is a student, check enrollments
+          const allUsers = users && users.length ? users : await getAllUsers();
+          const studentUsers = (allUsers || []).filter((u) =>
+            ["3", 3].includes(
+              Number(
+                u.UserTypeID ?? u.userTypeID ?? u.UserType ?? u.userType ?? 0
+              )
+            )
+          );
+
+          for (const u of studentUsers) {
+            const sid = u.UserID ?? u.id ?? u.userID ?? u.userId ?? null;
+            if (!sid) continue;
+            try {
+              const enrollments = await getEnrollmentsByStudent(sid);
+              if (
+                Array.isArray(enrollments) &&
+                enrollments.some((e) => String(e.CourseID) === String(courseParam))
+              ) {
+                matching.add(String(sid));
+              }
+            } catch (e) {
+              // ignore per-user errors
+            }
+          }
+
+          setFilteredStudentIds(matching);
+        } catch (err) {
+          console.warn("Failed to pre-filter students by course", err);
+        }
+      })();
+    }
+  }, [location.search, location.state, users]);
 
   const handleUserSubmit = async (userData) => {
     try {
@@ -633,6 +688,14 @@ const AdminUsers = () => {
       {/* Filter users by active tab and show role-specific add button */}
       {(() => {
         const filtered = filterUsersByTab(users, activeTab);
+        // If admin was navigated here with a course filter, further narrow student list
+        const displayUsers =
+          activeTab === "students" && filteredStudentIds && filteredStudentIds.size
+            ? filtered.filter((u) => {
+                  const sid = u.UserID ?? u.id ?? u.userID ?? u.userId ?? null;
+                  return sid && filteredStudentIds.has(String(sid));
+                })
+            : filtered;
 
         return (
           <>
@@ -666,7 +729,7 @@ const AdminUsers = () => {
             </div>
 
             <UserList
-              users={filtered}
+              users={displayUsers}
               onEdit={handleEditUser}
               onDelete={handleDeleteUser}
             />

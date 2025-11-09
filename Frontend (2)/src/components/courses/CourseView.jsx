@@ -1,13 +1,19 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { getCourseDetails, updateCourse } from "../../services/courseService";
+import {
+  getCourseDetails,
+  updateCourse,
+  getTeacherCourseStudents,
+  getTeacherStudents,
+} from "../../services/courseService";
 import { getCourseMaterials } from "../../services/materialService";
 import { getCourseAttendance } from "../../services/attendanceService";
 import { getUserById } from "../../services/userService";
 import MaterialList from "../materials/MaterialList";
 import AttendanceList from "../attendance/AttendanceList";
 import Modal from "../common/Modal";
+import UserList from "../users/UserList";
 import CourseForm from "./CourseForm";
 import MaterialForm from "../materials/MaterialForm";
 import QRGenerator from "../attendance/QRGenerator";
@@ -34,6 +40,9 @@ const CourseView = () => {
   const [teacher, setTeacher] = useState(null);
   const [teacherLoading, setTeacherLoading] = useState(false);
   const [teacherError, setTeacherError] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [studentsLoading, setStudentsLoading] = useState(true);
+  const [studentsError, setStudentsError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,6 +64,137 @@ const CourseView = () => {
 
     fetchData();
   }, [id]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const resolveTeacherId = (u) => {
+      if (!u || typeof u !== "object") return null;
+      return (
+        u.TeacherID ??
+        u.teacherID ??
+        u.teacherId ??
+        u.UserID ??
+        u.userID ??
+        u.userId ??
+        u.id ??
+        null
+      );
+    };
+
+    const fetchStudents = async () => {
+      // Do not fetch or show students when the current user is a student
+      if (user?.userType === "student") {
+        setStudents([]);
+        setStudentsLoading(false);
+        setStudentsError(null);
+        return;
+      }
+
+      if (!user) {
+        setStudents([]);
+        setStudentsLoading(false);
+        setStudentsError(null);
+        return;
+      }
+
+      setStudentsLoading(true);
+      setStudentsError(null);
+      try {
+        // If the current user is a teacher, prefer teacher endpoints
+        if (user?.userType === "teacher") {
+          const teacherId = resolveTeacherId(user);
+          if (teacherId) {
+            try {
+              const { students: scopedStudents } =
+                await getTeacherCourseStudents(teacherId, id);
+              if (!isActive) return;
+              setStudents(scopedStudents || []);
+              return;
+            } catch (err) {
+              // fallback to course-scoped students
+              console.warn(
+                "Teacher route unavailable, falling back to course-scoped students",
+                err
+              );
+            }
+          }
+        }
+
+        // Admins (and other roles) - fetch students for the course via course-scoped helper
+        // Attempt to use the course's assigned teacher (if available) for a more reliable lookup
+        const courseTeacherId =
+          course?.teacherId ??
+          course?.TeacherID ??
+          course?.teacherID ??
+          course?.TeacherId ??
+          null;
+
+        if (courseTeacherId) {
+          try {
+            const { students: teacherScopedStudents } =
+              await getTeacherCourseStudents(courseTeacherId, id);
+            if (!isActive) return;
+            if (Array.isArray(teacherScopedStudents) && teacherScopedStudents.length) {
+              setStudents(teacherScopedStudents);
+              return;
+            }
+          } catch (err) {
+            console.warn(
+              "Teacher-specific course students endpoint unavailable, continuing with course scope",
+              err
+            );
+          }
+        }
+
+        try {
+          const courseStudents = await getTeacherStudents(id, {
+            scope: "course",
+          });
+          if (!isActive) return;
+          const filteredStudents = Array.isArray(courseStudents)
+            ? courseStudents.filter((student) => {
+                const studentCourseId =
+                  student?.CourseID ??
+                  student?.courseID ??
+                  student?.courseId ??
+                  student?.CourseId ??
+                  null;
+                if (studentCourseId === null || studentCourseId === undefined) {
+                  return true;
+                }
+                return String(studentCourseId) === String(id);
+              })
+            : [];
+          setStudents(filteredStudents);
+        } catch (err) {
+          console.error("Failed to load course students:", err);
+          if (!isActive) return;
+          setStudents([]);
+          setStudentsError("Unable to load enrolled students.");
+        }
+      } catch (err) {
+        if (!isActive) return;
+        console.error("Unexpected error loading students:", err);
+        setStudents([]);
+        setStudentsError("Unable to load enrolled students.");
+      } finally {
+        if (isActive) setStudentsLoading(false);
+      }
+    };
+
+    // Wait until course details have been loaded (ensures course teacher id availability)
+    if (loading) {
+      setStudentsLoading(true);
+      return;
+    }
+
+    fetchStudents();
+
+    return () => {
+      isActive = false;
+    };
+  }, [id, user, loading, course?.teacherId]);
 
   useEffect(() => {
     const teacherId = course?.teacherId;
@@ -285,6 +425,61 @@ const CourseView = () => {
         )}
       </div>
       <AttendanceList attendance={attendance} />
+
+      {/* Do not show enrolled students list to student users */}
+      {user?.userType !== "student" && (
+        <>
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Enrolled Students
+            </h3>
+            {user.userType === "teacher" ? (
+              <Button
+                variant="primary"
+                onClick={() => navigate(`/teacher/students?course=${encodeURIComponent(id)}`)}
+              >
+                Manage Students
+              </Button>
+            ) : isAdmin ? (
+            <Button
+              variant="primary"
+              onClick={() =>
+                navigate(
+                  `/admin/users?tab=students&course=${encodeURIComponent(
+                    id
+                  )}`
+                )
+              }
+            >
+              Manage Students
+            </Button>
+          ) : null}
+          </div>
+
+          <div className="mt-4">
+            {studentsLoading ? (
+              <Loader className="py-8" />
+            ) : (
+              <UserList
+                users={students}
+                // In the course view we don't want inline edit/delete buttons;
+                // management should happen on the dedicated Students pages.
+                allowManage={false}
+                getDetailsPath={(student) => {
+                  const identifier =
+                    student.UserID || student.userID || student.userId || student.id || student.StudentID || student.studentID || student.studentId;
+                  if (!identifier) return null;
+                  return user?.userType === "teacher"
+                    ? `/teacher/students/${identifier}`
+                    : `/admin/users/${identifier}`;
+                }}
+                onEdit={null}
+                onDelete={null}
+              />
+            )}
+          </div>
+        </>
+      )}
 
       <Modal
         isOpen={showMaterialModal}

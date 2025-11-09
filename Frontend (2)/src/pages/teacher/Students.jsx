@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   getTeacherStudents,
@@ -50,6 +50,7 @@ const resolveTeacherId = (user) => {
 
 const TeacherStudents = () => {
   const { id } = useParams();
+  const location = useLocation();
   const { user } = useAuth();
   const [students, setStudents] = useState([]);
   const [course, setCourse] = useState(null);
@@ -69,7 +70,8 @@ const TeacherStudents = () => {
   const [coursePickerSaving, setCoursePickerSaving] = useState(false);
   const [coursePickerError, setCoursePickerError] = useState("");
   const teacherId = resolveTeacherId(user);
-  const courseId = id ? String(id).trim() : null;
+  const queryCourse = new URLSearchParams(location.search || "").get("course");
+  const courseId = queryCourse ? String(queryCourse).trim() : id ? String(id).trim() : null;
   const defaultCourseSelection = courseId ? [String(courseId)] : [];
 
   const refreshStudents = async () => {
