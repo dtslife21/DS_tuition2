@@ -42,6 +42,24 @@ const Sidebar = () => {
       ? teacherNavigation
       : studentNavigation;
 
+  // Choose a single best navigation item to mark active. We pick the
+  // most-specific match (longest href) whose href equals or prefixes the
+  // current pathname. This prevents the dashboard (/admin) parent item from
+  // being highlighted when a more-specific child route (e.g. /admin/users)
+  // should be active.
+  const activeNavItem = (() => {
+    if (!navigation || !navigation.length) return null;
+    const path = location.pathname || "";
+    let best = null;
+    for (const item of navigation) {
+      const href = item.href || "";
+      if (path === href || (href !== "/" && path.startsWith(href))) {
+        if (!best || href.length > (best.href || "").length) best = item;
+      }
+    }
+    return best;
+  })();
+
   const getIcon = (iconName) => {
     switch (iconName) {
       case "home":
@@ -238,9 +256,7 @@ const Sidebar = () => {
               <nav className="flex-1 px-2 space-y-1">
                 {navigation.map((item) => {
                   const isActive =
-                    location.pathname === item.href ||
-                    (item.href !== "/" &&
-                      location.pathname.startsWith(item.href));
+                    activeNavItem && activeNavItem.href === item.href;
 
                   const classes = `group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-base hover-lift ${
                     isActive
@@ -305,9 +321,7 @@ const Sidebar = () => {
             <nav className="flex-1 px-2 space-y-1">
               {navigation.map((item) => {
                 const isActive =
-                  location.pathname === item.href ||
-                  (item.href !== "/" &&
-                    location.pathname.startsWith(item.href));
+                  activeNavItem && activeNavItem.href === item.href;
 
                 const classes = `group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-base hover-lift ${
                   isActive

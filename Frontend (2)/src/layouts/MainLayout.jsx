@@ -7,7 +7,7 @@ const MainLayout = () => {
   const { user } = useAuth();
 
   return (
-    <div className="flex h-screen w-full bg-gray-100 dark:bg-gray-900">
+    <div className="flex h-screen w-full overflow-hidden bg-gray-100 dark:bg-gray-900">
       <Sidebar user={user} />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <Navbar user={user} />
