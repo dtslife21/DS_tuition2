@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { getUserById, updateUser } from "../../services/userService";
 import {
   getTeacherCourses,
   getStudentCourses,
+  updateCourse,
 } from "../../services/courseService";
 import { getStudentById } from "../../services/studentService";
 import { getTeacherById } from "../../services/teacherService";
@@ -12,6 +13,7 @@ import UserForm from "../../components/users/UserForm";
 import Card from "../../components/common/Card";
 import Avatar from "../../components/common/Avatar";
 import Loader from "../../components/common/Loader";
+import CoursePickerModal from "../../components/courses/CoursePickerModal";
 // No direct CourseCard usage here because admin links differ from teacher view
 
 const InfoRow = ({ label, value }) => (
@@ -57,6 +59,52 @@ const UserDetailsPage = ({
   const [studentDetails, setStudentDetails] = useState(null);
   const [studentLoading, setStudentLoading] = useState(false);
   const [studentError, setStudentError] = useState("");
+  const [isAssignCoursesOpen, setIsAssignCoursesOpen] = useState(false);
+  const [assigningCourses, setAssigningCourses] = useState(false);
+  const [assignCoursesError, setAssignCoursesError] = useState("");
+
+  const isTeacherUser = useMemo(() => {
+    if (!user) return false;
+    const roleId = String(user.UserTypeID || user.userTypeID || "").trim();
+    if (roleId === "2") return true;
+    const roleName = String(user.userType || "").toLowerCase();
+    return roleName === "teacher";
+  }, [user]);
+
+  const isStudentUser = useMemo(() => {
+    if (!user) return false;
+    const roleId = String(user.UserTypeID || user.userTypeID || "").trim();
+    if (roleId === "3") return true;
+    const roleName = String(user.userType || "").toLowerCase();
+    return roleName === "student";
+  }, [user]);
+
+  const teacherIdentifier = useMemo(() => {
+    const candidates = [
+      user?.TeacherID,
+      user?.teacherID,
+      user?.teacherId,
+      teacherDetails?.TeacherID,
+      teacherDetails?.teacherID,
+      teacherDetails?.teacherId,
+      teacherDetails?.id,
+      user?.UserID,
+      user?.id,
+    ];
+    for (const value of candidates) {
+      if (value === undefined || value === null) continue;
+      const str = String(value).trim();
+      if (str.length) return str;
+    }
+    return "";
+  }, [teacherDetails, user]);
+
+  const resolvedTeacherId = useMemo(() => {
+    if (!teacherIdentifier) return null;
+    return !Number.isNaN(Number(teacherIdentifier))
+      ? Number(teacherIdentifier)
+      : teacherIdentifier;
+  }, [teacherIdentifier]);
 
   const handleBackClick = () => {
     if (backPath) {
@@ -91,55 +139,155 @@ const UserDetailsPage = ({
   }, [id]);
 
   // When the loaded user is a teacher or student, fetch their courses for admin view
-  useEffect(() => {
-    const fetchCourses = async () => {
-      if (!user) return;
+  const loadCourses = useCallback(async () => {
+    if (!user) {
+      setCourses([]);
+      return;
+    }
 
-      const isTeacherType =
-        String(user.UserTypeID || user.userTypeID || "").trim() === "2" ||
-        String((user.userType || "").toLowerCase()) === "teacher";
-      const isStudentType =
-        String(user.UserTypeID || user.userTypeID || "").trim() === "3" ||
-        String((user.userType || "").toLowerCase()) === "student";
+    try {
+      setCoursesLoading(true);
+      setCoursesError("");
 
-      // Derive ids for both roles
-      const teacherId =
-        user.TeacherID ?? user.teacherID ?? user.teacherId ?? null;
-      const studentId =
-        user.StudentID ?? user.studentID ?? user.studentId ?? null;
-
-      // Choose fetching strategy
-      try {
-        setCoursesLoading(true);
-        setCoursesError("");
-        let list = [];
-        if (isTeacherType) {
-          const idForTeacher =
-            teacherId ?? user.id ?? user.UserID ?? user.userID;
-          list = await getTeacherCourses(idForTeacher);
-        } else if (isStudentType) {
-          const idForStudent =
-            studentId ?? user.id ?? user.UserID ?? user.userID;
-          list = await getStudentCourses(idForStudent);
-        } else {
-          // Not teacher or student, skip
+      if (isTeacherUser) {
+        if (!teacherIdentifier) {
           setCourses([]);
           return;
         }
-        setCourses(Array.isArray(list) ? list : []);
-      } catch (err) {
-        setCoursesError(
-          isTeacherType
-            ? "Failed to load teacher courses"
-            : "Failed to load student courses"
-        );
-      } finally {
-        setCoursesLoading(false);
-      }
-    };
 
-    fetchCourses();
-  }, [user]);
+        const normalizedTeacherId = !Number.isNaN(Number(teacherIdentifier))
+          ? Number(teacherIdentifier)
+          : teacherIdentifier;
+        const list = await getTeacherCourses(normalizedTeacherId);
+        setCourses(Array.isArray(list) ? list : []);
+        return;
+      }
+
+      if (isStudentUser) {
+        const rawStudentId =
+          user.StudentID ??
+          user.studentID ??
+          user.studentId ??
+          user.id ??
+          user.UserID ??
+          user.userID ??
+          null;
+
+        if (!rawStudentId) {
+          setCourses([]);
+          return;
+        }
+
+        const normalizedStudentId = !Number.isNaN(Number(rawStudentId))
+          ? Number(rawStudentId)
+          : rawStudentId;
+        const list = await getStudentCourses(normalizedStudentId);
+        setCourses(Array.isArray(list) ? list : []);
+        return;
+      }
+
+      // Not teacher or student, skip
+      setCourses([]);
+    } catch (err) {
+      setCoursesError(
+        isTeacherUser
+          ? "Failed to load teacher courses"
+          : isStudentUser
+          ? "Failed to load student courses"
+          : "Failed to load courses"
+      );
+    } finally {
+      setCoursesLoading(false);
+    }
+  }, [isStudentUser, isTeacherUser, teacherIdentifier, user]);
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
+
+  const assignedCourseIds = useMemo(() => {
+    return (courses || [])
+      .map((course) => {
+        const id =
+          course?.id ??
+          course?.CourseID ??
+          course?.courseId ??
+          course?.CourseId;
+        if (id === undefined || id === null) return null;
+        const str = String(id).trim();
+        return str.length ? str : null;
+      })
+      .filter(Boolean);
+  }, [courses]);
+
+  const handleOpenAssignCourses = () => {
+    if (!isTeacherUser) return;
+    setAssignCoursesError("");
+    setIsAssignCoursesOpen(true);
+  };
+
+  const handleCloseAssignCourses = () => {
+    if (assigningCourses) return;
+    setIsAssignCoursesOpen(false);
+    setAssignCoursesError("");
+  };
+
+  const handleAssignCourses = async (selectedIds) => {
+    if (!isTeacherUser) {
+      setAssignCoursesError(
+        "Course assignments are only available for teachers."
+      );
+      return;
+    }
+
+    if (resolvedTeacherId === null || resolvedTeacherId === "") {
+      setAssignCoursesError(
+        "Missing teacher identifier. Please reload and try again."
+      );
+      return;
+    }
+
+    const preparedCourseIds = [];
+    for (const rawId of selectedIds || []) {
+      if (rawId === undefined || rawId === null) continue;
+      const str = String(rawId).trim();
+      if (!str) continue;
+      const alreadyPrepared = preparedCourseIds.some(
+        (item) => item.key === str
+      );
+      if (alreadyPrepared) continue;
+      const value = !Number.isNaN(Number(str)) ? Number(str) : str;
+      preparedCourseIds.push({ key: str, value });
+    }
+
+    const pendingAssignments = preparedCourseIds.filter(
+      (item) => !assignedCourseIds.includes(item.key)
+    );
+
+    if (!pendingAssignments.length) {
+      setAssignCoursesError("Select at least one new course to assign.");
+      return;
+    }
+
+    setAssigningCourses(true);
+    setAssignCoursesError("");
+
+    try {
+      for (const { value } of pendingAssignments) {
+        await updateCourse(value, { TeacherID: resolvedTeacherId });
+      }
+
+      setIsAssignCoursesOpen(false);
+      await loadCourses();
+    } catch (err) {
+      console.error("Failed to assign courses to teacher", err);
+      setAssignCoursesError(
+        err?.message || "Failed to assign courses. Please try again."
+      );
+    } finally {
+      setAssigningCourses(false);
+    }
+  };
 
   // Fetch teacher record (department/qualification/bio/etc.) when user is a teacher
   useEffect(() => {
@@ -547,14 +695,24 @@ const UserDetailsPage = ({
           String(user.UserTypeID || user.userTypeID || "").trim() === "3" ||
           String((user.userType || "").toLowerCase()) === "student") && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {String(user.UserTypeID || user.userTypeID || "").trim() ===
-                  "2" ||
-                String((user.userType || "").toLowerCase()) === "teacher"
-                  ? "Assigned Courses"
-                  : "Enrolled Courses"}
-              </h2>
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {String(user.UserTypeID || user.userTypeID || "").trim() ===
+                    "2" ||
+                  String((user.userType || "").toLowerCase()) === "teacher"
+                    ? "Assigned Courses"
+                    : "Enrolled Courses"}
+                </h2>
+                {isTeacherUser && (
+                  <button
+                    onClick={handleOpenAssignCourses}
+                    className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+                  >
+                    Assign Course
+                  </button>
+                )}
+              </div>
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {coursesLoading ? "Loading..." : `${courses.length} course(s)`}
               </span>
@@ -657,6 +815,31 @@ const UserDetailsPage = ({
                     : "No courses enrolled for this student."}
                 </div>
               )}
+
+            {isTeacherUser && (
+              <CoursePickerModal
+                isOpen={isAssignCoursesOpen}
+                onClose={handleCloseAssignCourses}
+                initialSelected={[]}
+                title="Assign Course"
+                description="Select one or more courses to assign to this teacher."
+                multiSelect
+                allowCreate
+                teacherId={
+                  resolvedTeacherId === null || resolvedTeacherId === ""
+                    ? undefined
+                    : resolvedTeacherId
+                }
+                scopeToTeacher={false}
+                excludedIds={assignedCourseIds}
+                saving={assigningCourses}
+                proceedLabel={
+                  assigningCourses ? "Assigning..." : "Assign Courses"
+                }
+                errorMessage={assignCoursesError}
+                onProceed={handleAssignCourses}
+              />
+            )}
           </div>
         )}
     </div>
