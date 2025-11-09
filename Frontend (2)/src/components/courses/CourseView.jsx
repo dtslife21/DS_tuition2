@@ -331,7 +331,11 @@ const CourseView = () => {
           : numericStudentId;
 
         if (useNumericCourseId) {
-          await createEnrollmentsForStudent(resolvedStudentId, [numericCourseId], enrollmentOptions);
+          await createEnrollmentsForStudent(
+            resolvedStudentId,
+            [numericCourseId],
+            enrollmentOptions
+          );
         } else {
           await createEnrollment({
             StudentID: resolvedStudentId,
@@ -473,25 +477,28 @@ const CourseView = () => {
       ) {
         const numericCourseId = Number(rawCourseId);
         if (!Number.isNaN(numericCourseId)) {
-          await createEnrollmentsForStudent(resolvedStudentId, [numericCourseId], {
-            EnrollmentDate: enrollmentDateValue || undefined,
-            IsActive: true,
-          });
+          await createEnrollmentsForStudent(
+            resolvedStudentId,
+            [numericCourseId],
+            {
+              EnrollmentDate: enrollmentDateValue || undefined,
+              IsActive: true,
+            }
+          );
         } else {
           await createEnrollment({
             StudentID: resolvedStudentId,
             CourseID: rawCourseId,
-            EnrollmentDate:
-              enrollmentDateValue || new Date().toISOString(),
+            EnrollmentDate: enrollmentDateValue || new Date().toISOString(),
             IsActive: true,
           });
         }
       }
 
       setStudentActionError("");
-  setStudentsRefreshCounter((prev) => prev + 1);
-  setToastType("success");
-  setToastMessage("Student created and enrolled in the course.");
+      setStudentsRefreshCounter((prev) => prev + 1);
+      setToastType("success");
+      setToastMessage("Student created and enrolled in the course.");
     } catch (error) {
       console.error("Failed to create student", error);
       const message =
@@ -537,7 +544,11 @@ const CourseView = () => {
   const isAdmin = user?.userType === "admin";
   const canModifyStudents = user?.userType === "teacher" || isAdmin;
   const enrolledStudentIds = Array.from(
-    new Set((students || []).map((student) => resolveStudentId(student)).filter(Boolean))
+    new Set(
+      (students || [])
+        .map((student) => resolveStudentId(student))
+        .filter(Boolean)
+    )
   );
 
   return (
@@ -745,7 +756,7 @@ const CourseView = () => {
                           setStudentActionError("");
                           setShowStudentPicker(true);
                         }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
                       >
                         Add Existing
                       </button>
@@ -756,7 +767,7 @@ const CourseView = () => {
                           setStudentActionError("");
                           setShowRegisterModal(true);
                         }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
                       >
                         Register New Student
                       </button>
