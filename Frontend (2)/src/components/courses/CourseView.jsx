@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -60,6 +60,25 @@ const CourseView = () => {
   const [showStudentMenu, setShowStudentMenu] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("success");
+  // Ref for student menu wrapper to detect outside clicks
+  const studentMenuRef = useRef(null);
+
+  // Close student menu when clicking outside of it
+  useEffect(() => {
+    if (!showStudentMenu) return;
+
+    const handleDocumentClick = (event) => {
+      const node = studentMenuRef.current;
+      if (!node) return;
+      // If the click is outside the menu wrapper, close the menu
+      if (!node.contains(event.target)) {
+        setShowStudentMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleDocumentClick);
+    return () => document.removeEventListener("mousedown", handleDocumentClick);
+  }, [showStudentMenu]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -739,7 +758,7 @@ const CourseView = () => {
                     Manage Students
                   </Button>
                 ) : null}
-                <div className="relative">
+                <div className="relative" ref={studentMenuRef}>
                   <Button
                     variant="primary"
                     onClick={() => setShowStudentMenu((s) => !s)}

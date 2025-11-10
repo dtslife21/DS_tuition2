@@ -14,6 +14,8 @@ import Card from "../../components/common/Card";
 import Avatar from "../../components/common/Avatar";
 import Loader from "../../components/common/Loader";
 import CoursePickerModal from "../../components/courses/CoursePickerModal";
+import AttendanceList from "../../components/attendance/AttendanceList";
+import { getStudentAttendance } from "../../services/attendanceService";
 // No direct CourseCard usage here because admin links differ from teacher view
 
 const InfoRow = ({ label, value }) => (
@@ -59,6 +61,9 @@ const UserDetailsPage = ({
   const [studentDetails, setStudentDetails] = useState(null);
   const [studentLoading, setStudentLoading] = useState(false);
   const [studentError, setStudentError] = useState("");
+  const [studentAttendance, setStudentAttendance] = useState([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [attendanceError, setAttendanceError] = useState("");
   const [isAssignCoursesOpen, setIsAssignCoursesOpen] = useState(false);
   const [assigningCourses, setAssigningCourses] = useState(false);
   const [assignCoursesError, setAssignCoursesError] = useState("");
@@ -375,6 +380,51 @@ const UserDetailsPage = ({
     fetchStudent();
   }, [user]);
 
+  // Load attendance records for the viewed student (admin/teacher view)
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      if (!isStudentUser) {
+        setStudentAttendance([]);
+        setAttendanceError("");
+        setAttendanceLoading(false);
+        return;
+      }
+
+      // Prefer studentDetails (service-fetched) but fall back to user props
+      const rawStudentId =
+        studentDetails?.StudentID ??
+        studentDetails?.studentID ??
+        studentDetails?.studentId ??
+        user?.StudentID ??
+        user?.studentID ??
+        user?.studentId ??
+        user?.UserID ??
+        user?.userID ??
+        user?.id ??
+        null;
+
+      if (!rawStudentId) {
+        setStudentAttendance([]);
+        return;
+      }
+
+      try {
+        setAttendanceLoading(true);
+        setAttendanceError("");
+        const records = await getStudentAttendance(rawStudentId);
+        setStudentAttendance(Array.isArray(records) ? records : []);
+      } catch (err) {
+        console.error("Failed to load student attendance", err);
+        setAttendanceError("Unable to load attendance records.");
+        setStudentAttendance([]);
+      } finally {
+        setAttendanceLoading(false);
+      }
+    };
+
+    fetchAttendance();
+  }, [isStudentUser, studentDetails, user, id]);
+
   const handleSave = async (userData) => {
     if (!allowEdit) return;
     try {
@@ -542,7 +592,7 @@ const UserDetailsPage = ({
               label="User Type ID"
               value={user.UserTypeID || user.userTypeID}
             /> */}
-            <InfoRow label="User ID" value={user.UserID || user.id} />
+            {/* <InfoRow label="User ID" value={user.UserID || user.id} /> */}
             {(user.EmployeeID || user.employeeID) && (
               <InfoRow
                 label="Employee ID"
@@ -685,6 +735,34 @@ const UserDetailsPage = ({
               />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Attendance records for the student (visible to admin/teacher when viewing a student) */}
+      {isStudentUser && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Attendance Records
+            </h2>
+            <span className="text-sm text-gray-500">
+              {attendanceLoading
+                ? "Loading..."
+                : `${studentAttendance.length} record(s)`}
+            </span>
+          </div>
+
+          {attendanceError && (
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-3 rounded-md">
+              {attendanceError}
+            </div>
+          )}
+
+          {attendanceLoading ? (
+            <Loader className="h-32" />
+          ) : (
+            <AttendanceList attendance={studentAttendance || []} />
+          )}
         </div>
       )}
 
