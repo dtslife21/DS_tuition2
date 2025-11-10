@@ -277,13 +277,32 @@ const AdminSubjects = () => {
     try {
       const id = data.id ?? editSubject?.id;
       if (!id) throw new Error("Missing subject id");
+
+      // Persist subject updates immediately
       const updated = await updateSubject(id, data);
       setSubjects((list) =>
         (list || []).map((s) =>
           String(s.id) === String(id) ? { ...s, ...updated } : s
         )
       );
+
+      // After updating core subject fields, allow changing linked course.
+      // Prepare draft state and open the course picker preselected to current course.
+      const currentCourseId =
+        updated?.courseId ??
+        updated?.CourseID ??
+        updated?.CourseId ??
+        updated?.courseID ??
+        updated?.courseId ??
+        null;
+
+      setSubjectDraftData({ ...updated });
+      setSubjectInProgress({ ...updated });
+      setSelectedCourseIds(currentCourseId ? [String(currentCourseId)] : []);
+      // Close the edit modal then open the course picker so the user can change the linked course if desired
       setEditSubject(null);
+      setCourseStepError("");
+      setShowCoursePicker(true);
     } catch (err) {
       console.error("AdminSubjects.update:", err);
     }

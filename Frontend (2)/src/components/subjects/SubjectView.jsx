@@ -394,6 +394,12 @@ const SubjectView = () => {
     );
 
   const canEdit = user?.userType === "admin" || user?.userType === "teacher";
+  const routePrefix =
+    user && user.userType === "teacher"
+      ? "/teacher"
+      : user && user.userType === "admin"
+      ? "/admin"
+      : "/student";
 
   return (
     <div className="space-y-8">
@@ -535,7 +541,7 @@ const SubjectView = () => {
                     </div>
                     <div className="text-right">
                       <Link
-                        to={`/student/courses/${
+                        to={`${routePrefix}/courses/${
                           c.id || c.CourseID || c.courseId || ""
                         }`}
                         className="text-indigo-600"
@@ -612,7 +618,7 @@ const SubjectView = () => {
                             </span>
                             {courseLinkId && (
                               <Link
-                                to={`/student/courses/${courseLinkId}`}
+                                to={`${routePrefix}/courses/${courseLinkId}`}
                                 className="text-indigo-600"
                               >
                                 Open course
