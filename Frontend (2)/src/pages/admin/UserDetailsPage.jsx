@@ -898,7 +898,7 @@ const UserDetailsPage = ({
               <CoursePickerModal
                 isOpen={isAssignCoursesOpen}
                 onClose={handleCloseAssignCourses}
-                initialSelected={assignedCourseIds}
+                initialSelected={[]}
                 title="Assign Course"
                 description="Select one or more courses to assign to this teacher."
                 multiSelect
