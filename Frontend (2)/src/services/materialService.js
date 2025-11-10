@@ -1,5 +1,4 @@
 import axios from "axios";
-import { mockMaterials } from "../utils/mockData";
 
 const RESOURCE_BASE = "/studymaterials";
 
@@ -38,8 +37,6 @@ const filterVisibleMaterials = (materials = []) =>
 
     return visibility !== false;
   });
-
-const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const mapMaterial = (material) => {
   if (!material || typeof material !== "object") {
@@ -362,39 +359,21 @@ export const getCourseMaterials = async (courseId) => {
     // Return all visible materials for the course
     return courseMaterials;
   } catch (error) {
-    if (!isNotFound(error)) {
-      console.error(
-        "Failed to load course materials from API, using mocks",
-        error
-      );
+    if (isNotFound(error)) {
+      return [];
     }
+    console.error("Failed to load course materials from API", error);
+    throw error;
   }
-  await delay(300);
-  const fallbackMapped = mockMaterials
-    .filter(
-      (material) =>
-        String(material.courseId ?? material.CourseID) === resolvedId
-    )
-    .map(mapMaterial)
-    .filter(Boolean);
-  const visibleFallback = filterVisibleMaterials(fallbackMapped);
-  // Return all visible mock materials for the course
-  return visibleFallback;
 };
 
 export const getAllMaterials = async () => {
   try {
     return await getAllVisibleMaterialsFromApi();
   } catch (error) {
-    console.error(
-      "Failed to load study materials from API, using mocks",
-      error
-    );
+    console.error("Failed to load study materials from API", error);
+    throw error;
   }
-
-  await delay(300);
-  const fallbackMapped = mockMaterials.map(mapMaterial).filter(Boolean);
-  return filterVisibleMaterials(fallbackMapped);
 };
 
 export const getRecentMaterials = async (teacherId) => {
@@ -412,21 +391,12 @@ export const getRecentMaterials = async (teacherId) => {
       .sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate))
       .slice(0, 5);
   } catch (error) {
-    if (!isNotFound(error)) {
-      console.error(
-        "Failed to load teacher materials from API, using mocks",
-        error
-      );
+    if (isNotFound(error)) {
+      return [];
     }
+    console.error("Failed to load teacher materials from API", error);
+    throw error;
   }
-
-  await delay(300);
-  const fallbackMapped = mockMaterials.map(mapMaterial).filter(Boolean);
-  const visibleFallback = filterVisibleMaterials(fallbackMapped);
-  return filterByTeacher(visibleFallback, resolvedId)
-    .slice()
-    .sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate))
-    .slice(0, 5);
 };
 
 export const getStudentMaterials = async (studentId) => {
@@ -453,18 +423,12 @@ export const getStudentMaterials = async (studentId) => {
     const materials = await getAllMaterials();
     return filterByStudent(materials, resolvedId);
   } catch (error) {
-    if (!isNotFound(error)) {
-      console.error(
-        "Failed to load student materials from API, using mocks",
-        error
-      );
+    if (isNotFound(error)) {
+      return [];
     }
+    console.error("Failed to load student materials from API", error);
+    throw error;
   }
-
-  await delay(300);
-  const fallbackMapped = mockMaterials.map(mapMaterial).filter(Boolean);
-  const visibleFallback = filterVisibleMaterials(fallbackMapped);
-  return filterByStudent(visibleFallback, resolvedId);
 };
 
 const mapMaterialPayload = (materialData) => {
@@ -541,34 +505,9 @@ export const uploadMaterial = async (materialData) => {
     const response = await axios.post(RESOURCE_BASE, payload);
     return mapMaterial(response.data) ?? response.data;
   } catch (error) {
-    console.error(
-      "Failed to upload material via API, using mock fallback",
-      error
-    );
+    console.error("Failed to upload material via API", error);
+    throw error;
   }
-
-  await delay(300);
-  const nextId =
-    Math.max(0, ...mockMaterials.map((material) => Number(material.id) || 0)) +
-    1;
-  const newMaterial = mapMaterial({
-    id: nextId,
-    ...materialData,
-    uploadDate: new Date().toISOString(),
-  });
-
-  mockMaterials.push({
-    id: newMaterial.id,
-    courseId: newMaterial.courseId,
-    teacherId: newMaterial.teacherId,
-    title: newMaterial.title,
-    description: newMaterial.description,
-    filePath: newMaterial.filePath,
-    fileType: newMaterial.fileType,
-    uploadDate: newMaterial.uploadDate,
-  });
-
-  return newMaterial;
 };
 
 export const getMaterialById = async (materialId) => {
@@ -585,17 +524,9 @@ export const getMaterialById = async (materialId) => {
     if (isNotFound(error)) {
       return null;
     }
-    console.error(
-      "Failed to load study material from API, using mock fallback",
-      error
-    );
+    console.error("Failed to load study material from API", error);
+    throw error;
   }
-
-  await delay(300);
-  const fallback = mockMaterials.find(
-    (material) => String(material.id ?? material.MaterialID) === resolvedId
-  );
-  return fallback ? mapMaterial(fallback) : null;
 };
 
 export const updateMaterial = async (materialId, materialData) => {
@@ -646,19 +577,9 @@ export const updateMaterial = async (materialId, materialData) => {
     if (isNotFound(error)) {
       return null;
     }
-    console.error(
-      "Failed to update study material via API, using mock fallback",
-      error
-    );
+    console.error("Failed to update study material via API", error);
+    throw error;
   }
-
-  await delay(300);
-  return mapMaterial({
-    ...materialData,
-    MaterialID: payload.MaterialID ?? resolvedId,
-    materialId: payload.MaterialID ?? resolvedId,
-    id: payload.MaterialID ?? resolvedId,
-  });
 };
 
 export const deleteMaterial = async (materialId) => {
@@ -685,25 +606,7 @@ export const deleteMaterial = async (materialId) => {
     if (isNotFound(error)) {
       return null;
     }
-    console.error(
-      "Failed to delete study material via API, using mock fallback",
-      error
-    );
+    console.error("Failed to delete study material via API", error);
+    throw error;
   }
-
-  await delay(300);
-  const fallback = mockMaterials.find(
-    (material) => String(material.id ?? material.MaterialID) === resolvedId
-  );
-  if (fallback) {
-    fallback.isVisible = false;
-    fallback.IsVisible = false;
-    return mapMaterial({
-      ...fallback,
-      isVisible: false,
-      IsVisible: false,
-    });
-  }
-
-  return null;
 };

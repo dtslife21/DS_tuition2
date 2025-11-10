@@ -1,9 +1,6 @@
 import axios from "axios";
 import { getAllCourses } from "./courseService";
 
-// In-memory mock subjects (fallback when API not available).
-const mockSubjects = [];
-
 const mapSubject = (raw) => {
   if (!raw) return null;
   return {
@@ -39,11 +36,10 @@ export const getAllSubjects = async () => {
       : resp.data?.subjects || [];
     const subjects = raw.map(mapSubject).filter(Boolean);
     if (subjects.length) return subjects;
-  } catch (err) {
-    // ignore and fallback
+  } catch (_) {
+    // ignore and attempt course-derived fallback below
   }
 
-  // Derive from courses + include mockSubjects
   try {
     const courses = await getAllCourses();
     const fromCourses = [];
@@ -55,7 +51,6 @@ export const getAllSubjects = async () => {
         c.subjectNames ||
         c.SubjectNames ||
         [];
-      // if course has a primary subject
       if (c.subject || c.Subject) {
         const sname = c.subject || c.Subject;
         fromCourses.push({
@@ -70,29 +65,27 @@ export const getAllSubjects = async () => {
             typeof s === "string"
               ? s
               : s.name ?? s.subjectName ?? s.SubjectName ?? s.Title ?? s.title;
-          if (name)
+          if (name) {
             fromCourses.push({
               id: `${c.id}-${name}`,
               name,
               courseName: c.name || c.CourseName || "",
             });
+          }
         }
       }
     }
 
-    // Merge dedupe by name+courseName
-    const combined = [...mockSubjects, ...fromCourses];
     const map = new Map();
-    for (const s of combined) {
+    for (const s of fromCourses) {
       const key = `${String(s.name || "").toLowerCase()}|${String(
         s.courseName || ""
       ).toLowerCase()}`;
       if (!map.has(key)) map.set(key, mapSubject(s));
     }
     return Array.from(map.values());
-  } catch (err) {
-    // last resort, return mockSubjects mapped into subject shape
-    return mockSubjects.map(mapSubject);
+  } catch (_) {
+    return [];
   }
 };
 
@@ -101,13 +94,8 @@ export const createSubject = async (subjectData) => {
     const resp = await axios.post("/Subjects", subjectData);
     return mapSubject(resp.data);
   } catch (err) {
-    // fallback: push to mockSubjects
-    const nextId =
-      (mockSubjects.reduce((m, s) => Math.max(m, Number(s.id) || 0), 0) || 0) +
-      1;
-    const newSub = { id: nextId, ...subjectData };
-    mockSubjects.push(newSub);
-    return mapSubject(newSub);
+    console.error("Failed to create subject via API", err);
+    throw err;
   }
 };
 
@@ -116,15 +104,8 @@ export const deleteSubject = async (subjectId) => {
     await axios.delete(`/Subjects/${subjectId}`);
     return true;
   } catch (err) {
-    // fallback: remove from mockSubjects
-    const idx = mockSubjects.findIndex(
-      (s) => String(s.id) === String(subjectId)
-    );
-    if (idx !== -1) {
-      mockSubjects.splice(idx, 1);
-      return true;
-    }
-    return false;
+    console.error("Failed to delete subject via API", err);
+    throw err;
   }
 };
 
@@ -133,7 +114,7 @@ export const getSubjectById = async (subjectId) => {
     const resp = await axios.get(`/Subjects/${subjectId}`);
     return mapSubject(resp.data);
   } catch (err) {
-    // fallback: search in mockSubjects or derived list
+    // fallback: search in derived subject list
     const all = await getAllSubjects();
     return all.find((s) => String(s.id) === String(subjectId)) || null;
   }
@@ -161,20 +142,7 @@ export const updateSubject = async (subjectId, data) => {
     const resp = await axios.put(`/Subjects/${subjectId}`, payload);
     return mapSubject(resp.data || payload);
   } catch (err) {
-    // fallback: update in mockSubjects
-    const idx = mockSubjects.findIndex(
-      (s) => String(s.id) === String(subjectId)
-    );
-    if (idx !== -1) {
-      mockSubjects[idx] = { ...mockSubjects[idx], ...data };
-      return mapSubject(mockSubjects[idx]);
-    }
-    // if not found, attempt to merge into derived list by id
-    const current = await getSubjectById(subjectId);
-    if (current) {
-      const merged = { ...current, ...data, id: current.id };
-      return mapSubject(merged);
-    }
+    console.error("Failed to update subject via API", err);
     throw err;
   }
 };

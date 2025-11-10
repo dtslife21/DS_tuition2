@@ -1,5 +1,4 @@
 import axios from "axios";
-import { mockStudents } from "../utils/mockData";
 
 const mapStudent = (student) => {
   if (!student || typeof student !== "object") {
@@ -166,62 +165,21 @@ const mapStudentUpdatePayload = (studentData) => {
   );
 };
 
-const mapMockStudent = (student) => {
-  const studentRecord = {
-    StudentID: student.StudentID ?? student.id,
-    UserID: student.UserID ?? student.id,
-    RollNumber: student.RollNumber ?? student.rollNumber ?? "",
-    EnrollmentDate:
-      student.EnrollmentDate ??
-      student.enrollmentDate ??
-      student.enrollment_date ??
-      null,
-    CurrentGrade:
-      student.CurrentGrade ??
-      student.currentGrade ??
-      student.current_grade ??
-      "",
-    ParentName: student.ParentName ?? student.parentName ?? "",
-    ParentContact: student.ParentContact ?? student.parentContact ?? "",
-    FirstName: student.FirstName ?? student.firstName ?? "",
-    LastName: student.LastName ?? student.lastName ?? "",
-    Email: student.Email ?? student.email ?? "",
-    Username: student.Username ?? student.username ?? "",
-    IsActive: student.IsActive ?? true,
-  };
-
-  studentRecord.id =
-    studentRecord.StudentID ?? studentRecord.UserID ?? student.id;
-  studentRecord.studentId = studentRecord.StudentID ?? studentRecord.id;
-  studentRecord.userId = studentRecord.UserID ?? studentRecord.id;
-  studentRecord.rollNumber = studentRecord.RollNumber;
-  studentRecord.currentGrade = studentRecord.CurrentGrade;
-  studentRecord.parentName = studentRecord.ParentName;
-  studentRecord.parentContact = studentRecord.ParentContact;
-  studentRecord.firstName = studentRecord.FirstName;
-  studentRecord.lastName = studentRecord.LastName;
-  studentRecord.email = studentRecord.Email;
-  studentRecord.username = studentRecord.Username;
-
-  return studentRecord;
-};
-
 export const getAllStudents = async () => {
   try {
     const response = await axios.get("/Students");
-    const students = Array.isArray(response.data)
-      ? response.data.map(mapStudent).filter(Boolean)
+    const payload = response.data;
+    const collection = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.data)
+      ? payload.data
       : [];
 
-    if (students.length) {
-      return students;
-    }
+    return collection.map(mapStudent).filter(Boolean);
   } catch (error) {
-    console.error("Failed to load students from API, using mocks", error);
+    console.error("Failed to load students from API", error);
+    throw error;
   }
-
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  return mockStudents.map(mapMockStudent);
 };
 
 export const getStudentById = async (studentId) => {
@@ -229,12 +187,8 @@ export const getStudentById = async (studentId) => {
     const response = await axios.get(`/Students/${studentId}`);
     return mapStudent(response.data);
   } catch (error) {
-    console.error("Failed to load student from API, using mock", error);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const fallback = mockStudents.find(
-      (student) => String(student.id) === String(studentId)
-    );
-    return fallback ? mapMockStudent(fallback) : null;
+    console.error("Failed to load student from API", error);
+    throw error;
   }
 };
 
@@ -244,17 +198,8 @@ export const createStudent = async (studentData) => {
     const response = await axios.post("/Students", payload);
     return mapStudent(response.data);
   } catch (error) {
-    console.error("Failed to create student via API, using mock", error);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const nextId =
-      Math.max(0, ...mockStudents.map((student) => Number(student.id) || 0)) +
-      1;
-    const mockStudent = {
-      id: nextId,
-      ...studentData,
-    };
-    mockStudents.push(mockStudent);
-    return mapMockStudent(mockStudent);
+    console.error("Failed to create student via API", error);
+    throw error;
   }
 };
 
@@ -269,16 +214,8 @@ export const updateStudent = async (studentId, studentData) => {
       response.data ?? { ...studentData, StudentID: studentId }
     );
   } catch (error) {
-    console.error("Failed to update student via API, using mock", error);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const index = mockStudents.findIndex(
-      (student) => String(student.id) === String(studentId)
-    );
-    if (index !== -1) {
-      mockStudents[index] = { ...mockStudents[index], ...studentData };
-      return mapMockStudent(mockStudents[index]);
-    }
-    return null;
+    console.error("Failed to update student via API", error);
+    throw error;
   }
 };
 
@@ -287,16 +224,8 @@ export const deleteStudent = async (studentId) => {
     await axios.delete(`/Students/${studentId}`);
     return true;
   } catch (error) {
-    console.error("Failed to delete student via API, updating mock", error);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    const index = mockStudents.findIndex(
-      (student) => String(student.id) === String(studentId)
-    );
-    if (index !== -1) {
-      mockStudents.splice(index, 1);
-      return true;
-    }
-    return false;
+    console.error("Failed to delete student via API", error);
+    throw error;
   }
 };
 

@@ -1,8 +1,5 @@
 import axios from "axios";
-import { mockAttendance } from "../utils/mockData";
 import { ATTENDANCE_STATUS } from "../utils/constants";
-
-const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const sanitizeRecordPayload = (source) => {
   if (!source || typeof source !== "object") {
@@ -608,20 +605,11 @@ export const getCourseAttendance = async (courseId, teacherId) => {
     }
   } catch (error) {
     if (!isNotFound(error)) {
-      console.error(
-        "Failed to load course attendance from API, using mocks",
-        error
-      );
+      console.error("Failed to load course attendance from API", error);
+      throw error;
     }
   }
-
-  await delay(500);
-  return mockAttendance
-    .filter(
-      (att) =>
-        normalizeIdentifier(att.courseId ?? att.CourseID) === resolvedCourseId
-    )
-    .map(buildAttendanceRecord);
+  return [];
 };
 
 export const getStudentAttendance = async (studentId) => {
@@ -635,10 +623,8 @@ export const getStudentAttendance = async (studentId) => {
     return await fetchAttendance(`/Attendances/Student/${resolvedId}`);
   } catch (error) {
     if (!isNotFound(error)) {
-      console.error(
-        "Failed to load student attendance from API, using mocks",
-        error
-      );
+      console.error("Failed to load student attendance from API", error);
+      throw error;
     }
   }
 
@@ -652,20 +638,11 @@ export const getStudentAttendance = async (studentId) => {
     }
   } catch (error) {
     if (!isNotFound(error)) {
-      console.error(
-        "Failed to load student attendance from API, using mocks",
-        error
-      );
+      console.error("Failed to load student attendance from API", error);
+      throw error;
     }
   }
-
-  await delay(500);
-  return mockAttendance
-    .filter(
-      (att) =>
-        normalizeIdentifier(att.studentId ?? att.StudentID) === resolvedId
-    )
-    .map(buildAttendanceRecord);
+  return [];
 };
 
 export const generateQRSession = async (sessionData = {}) => {
@@ -742,59 +719,10 @@ export const generateQRSession = async (sessionData = {}) => {
       return { ...response.data };
     }
   } catch (error) {
-    console.error("Failed to generate QR session via API, using mock", error);
+    console.error("Failed to generate QR session via API", error);
+    throw error;
   }
-
-  await delay(500);
-  const now = Date.now();
-  const effectiveStart = startTime ?? new Date(now).toISOString();
-  const effectiveEnd =
-    endTime ?? new Date(now + durationMinutes * 60000).toISOString();
-  const effectiveExpiry =
-    expiryTime ??
-    new Date(new Date(effectiveEnd).getTime() + 5 * 60000).toISOString();
-
-  const fallback = buildQrSession({
-    SessionID: null,
-    CourseID: normalizedCourseId ?? normalizeIdentifier(courseId),
-    TeacherID: normalizedTeacherId ?? normalizeIdentifier(teacherId),
-    QRCodeData: `CLASS-${
-      normalizeIdentifier(courseId) ?? "course"
-    }-${Math.random().toString(36).substring(2, 10)}`,
-    SessionDate: effectiveStart,
-    StartTime: effectiveStart,
-    EndTime: effectiveEnd,
-    ExpiryTime: effectiveExpiry,
-    CreatedAt: new Date(now).toISOString(),
-    IsActive: true,
-  });
-
-  if (fallback) {
-    return fallback;
-  }
-
-  return {
-    id: Math.random().toString(36).substring(2, 10),
-    sessionId: null,
-    SessionID: null,
-    courseId: normalizeIdentifier(courseId),
-    CourseID: normalizeIdentifier(courseId),
-    teacherId: normalizeIdentifier(teacherId),
-    TeacherID: normalizeIdentifier(teacherId),
-    QRCodeData: `CLASS-${
-      normalizeIdentifier(courseId) ?? "course"
-    }-${Math.random().toString(36).substring(2, 10)}`,
-    sessionDate: effectiveStart,
-    SessionDate: effectiveStart,
-    startTime: effectiveStart,
-    StartTime: effectiveStart,
-    endTime: effectiveEnd,
-    EndTime: effectiveEnd,
-    expiryTime: effectiveExpiry,
-    ExpiryTime: effectiveExpiry,
-    isActive: true,
-    IsActive: true,
-  };
+  return null;
 };
 
 export const recordAttendance = async (arg1, arg2) => {
@@ -1014,34 +942,9 @@ export const recordAttendance = async (arg1, arg2) => {
         ),
     };
   } catch (error) {
-    console.error("Failed to record attendance via API, using mock", error);
+    console.error("Failed to record attendance via API", error);
+    throw error;
   }
-
-  await delay(500);
-  return {
-    id: Math.random().toString(36).substring(7),
-    sessionId:
-      sessionBody.SessionID ?? normalizeIdentifier(resolvedSessionId) ?? null,
-    studentId: String(resolvedStudentId),
-    courseId:
-      normalizedCourseId ?? rawPayload.courseId ?? rawPayload.CourseID ?? null,
-    teacherId:
-      normalizedTeacherId ??
-      rawPayload.teacherId ??
-      rawPayload.TeacherID ??
-      null,
-    attendanceDate:
-      rawPayload.attendanceDate ??
-      rawPayload.date ??
-      rawPayload.Date ??
-      new Date().toISOString(),
-    date:
-      rawPayload.date ??
-      rawPayload.Date ??
-      rawPayload.attendanceDate ??
-      new Date().toISOString(),
-    status: mapAttendanceStatus(statusValue),
-  };
 };
 
 export const getQRSessions = async () => {

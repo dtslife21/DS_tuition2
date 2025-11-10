@@ -1,5 +1,4 @@
 import axios from "axios";
-import { mockCourses, mockStudents } from "../utils/mockData";
 import mapStudent, { getAllStudents } from "./studentService";
 import { getStudentAttendance } from "./attendanceService";
 
@@ -571,7 +570,7 @@ const mapCourseToApiPayload = (courseData) => {
   );
 };
 
-// API-backed course service functions with mock fallbacks
+// API-backed course service functions
 export const getTeacherCourses = async (teacherId) => {
   const hasTeacherId = teacherId !== undefined && teacherId !== null;
 
@@ -610,12 +609,8 @@ export const getTeacherCourses = async (teacherId) => {
       (course) => String(course.teacherId) === String(teacherId)
     );
   } catch (error) {
-    console.error(
-      "Failed to load teacher courses from API, using mocks",
-      error
-    );
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return mockCourses.filter((course) => course.teacherId === teacherId);
+    console.error("Failed to load teacher courses from API", error);
+    throw error;
   }
 };
 
@@ -967,14 +962,11 @@ export const getTeacherStudents = async (teacherOrCourseId, options = {}) => {
 
     return [];
   } catch (error) {
-    console.error("Failed to load students, using mocks", error);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    if (!teacherIdStr && !courseIdStr) {
-      return mockStudents;
+    if (error?.response?.status === 404) {
+      return [];
     }
-
-    return [];
+    console.error("Failed to load students", error);
+    throw error;
   }
 };
 
@@ -983,10 +975,8 @@ export const getCourseDetails = async (courseId) => {
     const response = await axios.get(`/Courses/${courseId}`);
     return formatCourse(response.data);
   } catch (error) {
-    console.error("Failed to load course details from API, using mock", error);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const cid = Number(courseId);
-    return mockCourses.find((course) => course.id === cid);
+    console.error("Failed to load course details from API", error);
+    throw error;
   }
 };
 
@@ -994,19 +984,12 @@ export const getAllCourses = async () => {
   try {
     const response = await axios.get("/Courses");
     const courses = Array.isArray(response.data)
-      ? response.data.map(formatCourse)
+      ? response.data.map(formatCourse).filter(Boolean)
       : [];
-
-    if (!courses.length) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return mockCourses;
-    }
-
     return courses;
   } catch (error) {
-    console.error("Failed to load courses from API, using mocks", error);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return mockCourses;
+    console.error("Failed to load courses from API", error);
+    throw error;
   }
 };
 
@@ -1080,7 +1063,7 @@ export const getStudentCourses = async (studentId) => {
     // ignore and continue to last resort
   }
 
-  // 3) Last resort: mocks cannot infer enrollment reliably, return empty to avoid leaking unrelated courses
+  // 3) Last resort: return empty to avoid leaking unrelated courses
   return [];
 };
 
@@ -1117,10 +1100,8 @@ export const createCourse = async (courseData) => {
         created.CourseID = nextId;
         created.courseId = nextId;
       } catch (e) {
-        // If fetching fails, fall back to mock data
-        const nextId =
-          Math.max(0, ...mockCourses.map((course) => Number(course.id) || 0)) +
-          1;
+        // If fetching fails, fallback to a timestamp-based identifier so the UI has a stable key
+        const nextId = Date.now();
         if (!created) created = {};
         created.id = nextId;
         created.CourseID = nextId;
@@ -1130,19 +1111,8 @@ export const createCourse = async (courseData) => {
 
     return created;
   } catch (error) {
-    console.error(
-      "Failed to create course via API, using mock fallback",
-      error
-    );
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const nextId =
-      Math.max(0, ...mockCourses.map((course) => Number(course.id) || 0)) + 1;
-    const newCourse = {
-      id: nextId,
-      ...courseData,
-    };
-    mockCourses.push(newCourse);
-    return newCourse;
+    console.error("Failed to create course via API", error);
+    throw error;
   }
 };
 
@@ -1289,15 +1259,8 @@ export const deleteCourse = async (courseId) => {
     await axios.delete(`/Courses/${idStr}`);
     return true;
   } catch (err) {
-    // Fallback: remove from mockCourses if present
-    const idx = mockCourses.findIndex(
-      (c) => String(c.id ?? c.CourseID ?? c.courseId) === idStr
-    );
-    if (idx !== -1) {
-      mockCourses.splice(idx, 1);
-      return true;
-    }
-    return false;
+    console.error("Failed to delete course via API", err);
+    throw err;
   }
 };
 

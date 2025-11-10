@@ -15,6 +15,7 @@ const TeacherNoticesPage = () => {
   const [courses, setCourses] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const teacherId = useMemo(() => {
@@ -53,6 +54,14 @@ const TeacherNoticesPage = () => {
         ]);
         setCourses(cs);
         setAnnouncements(anns);
+        setError("");
+      } catch (err) {
+        console.error("Failed to load teacher notices", err);
+        setCourses([]);
+        setAnnouncements([]);
+        const message =
+          err?.response?.data?.message || err?.message || "Network error";
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -143,6 +152,10 @@ const TeacherNoticesPage = () => {
       <Card className="p-6">
         {loading ? (
           <div className="text-sm text-gray-500">Loading...</div>
+        ) : error ? (
+          <div className="text-sm text-red-600">
+            {error}. Please verify the backend service is reachable.
+          </div>
         ) : (
           <AnnouncementList
             announcements={[...announcements]

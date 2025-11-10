@@ -1,7 +1,4 @@
 import axios from "axios";
-import { mockAnnouncements, mockAttendance } from "../utils/mockData";
-
-const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const getCurrentTeacherId = () => {
   try {
@@ -242,18 +239,13 @@ export const getCourseAnnouncements = async (courseId) => {
       );
     }
   } catch (error) {
-    if (!isNotFound(error)) {
-      console.error(
-        "Failed to load course announcements from API, using mocks",
-        error
-      );
+    if (isNotFound(error)) {
+      return [];
     }
+    console.error("Failed to load course announcements from API", error);
+    throw error;
   }
-
-  await delay(250);
-  return mockAnnouncements
-    .filter((a) => String(a.courseId ?? a.CourseID) === resolvedId)
-    .map(mapAnnouncement);
+  return [];
 };
 
 export const getAllAnnouncements = async () => {
@@ -268,23 +260,12 @@ export const getAllAnnouncements = async () => {
     }
     return announcements;
   } catch (error) {
-    if (!isNotFound(error)) {
-      console.error(
-        "Failed to load announcements from API, using mocks",
-        error
-      );
+    if (isNotFound(error)) {
+      return [];
     }
+    console.error("Failed to load announcements from API", error);
+    throw error;
   }
-
-  await delay(250);
-  const currentTeacherId = getCurrentTeacherId();
-  const base = mockAnnouncements.map(mapAnnouncement);
-  if (currentTeacherId) {
-    return base.filter(
-      (a) => String(a.teacherId ?? a.TeacherID) === String(currentTeacherId)
-    );
-  }
-  return base;
 };
 
 const mapAnnouncementPayload = ({
@@ -341,32 +322,9 @@ export const createAnnouncement = async ({
 
     return mapped;
   } catch (error) {
-    console.error("Failed to create announcement via API, using mock", error);
+    console.error("Failed to create announcement via API", error);
+    throw error;
   }
-
-  await delay(250);
-  const nextId =
-    (mockAnnouncements.reduce((m, a) => Math.max(m, Number(a.id) || 0), 0) ||
-      0) + 1;
-  const newAnnouncement = mapAnnouncement({
-    id: nextId,
-    courseId: Number(courseId),
-    teacherId: Number(teacherId),
-    title,
-    content,
-    postDate: new Date().toISOString(),
-  });
-
-  mockAnnouncements.push({
-    id: newAnnouncement.id,
-    courseId: newAnnouncement.courseId,
-    teacherId: newAnnouncement.teacherId,
-    title: newAnnouncement.title,
-    content: newAnnouncement.content,
-    postDate: newAnnouncement.postDate,
-  });
-
-  return newAnnouncement;
 };
 
 export const getAnnouncementsByTeacher = async (teacherId) => {
@@ -415,18 +373,13 @@ export const getAnnouncementsByTeacher = async (teacherId) => {
       );
     }
   } catch (error) {
-    if (!isNotFound(error)) {
-      console.error(
-        "Failed to load teacher announcements from API, using mocks",
-        error
-      );
+    if (isNotFound(error)) {
+      return [];
     }
+    console.error("Failed to load teacher announcements from API", error);
+    throw error;
   }
-
-  await delay(250);
-  return mockAnnouncements
-    .filter((a) => String(a.teacherId ?? a.TeacherID) === resolvedId)
-    .map(mapAnnouncement);
+  return [];
 };
 
 export const getAnnouncementsForCourses = async (courseIds = []) => {
@@ -450,12 +403,7 @@ export const getAnnouncementsForCourses = async (courseIds = []) => {
       return true;
     });
   }
-
-  await delay(250);
-  const idSet = new Set(courseIds.map((id) => String(id)));
-  return mockAnnouncements
-    .filter((a) => idSet.has(String(a.courseId ?? a.CourseID)))
-    .map(mapAnnouncement);
+  return [];
 };
 
 export const getAnnouncementsForStudent = async (studentId) => {
@@ -503,34 +451,12 @@ export const getAnnouncementsForStudent = async (studentId) => {
       params: { studentId: resolvedId },
     });
   } catch (error) {
-    if (!isNotFound(error)) {
-      console.error(
-        "Failed to load student announcements from API, using mocks",
-        error
-      );
+    if (isNotFound(error)) {
+      return [];
     }
+    console.error("Failed to load student announcements from API", error);
+    throw error;
   }
 
-  await delay(250);
-  const courseIds = Array.from(
-    new Set(
-      mockAttendance
-        .filter(
-          (record) =>
-            String(record.studentId ?? record.StudentID) === resolvedId
-        )
-        .map((record) => String(record.courseId ?? record.CourseID))
-    )
-  );
-
-  if (!courseIds.length) {
-    return mockAnnouncements.map(mapAnnouncement);
-  }
-
-  const idSet = new Set(courseIds);
-  return mockAnnouncements
-    .filter((announcement) =>
-      idSet.has(String(announcement.courseId ?? announcement.CourseID))
-    )
-    .map(mapAnnouncement);
+  return [];
 };
