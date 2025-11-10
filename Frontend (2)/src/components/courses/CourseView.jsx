@@ -6,6 +6,7 @@ import {
   updateCourse,
   getTeacherCourseStudents,
   getTeacherStudents,
+  deleteCourse,
 } from "../../services/courseService";
 import { getCourseMaterials } from "../../services/materialService";
 import { getCourseAttendance } from "../../services/attendanceService";
@@ -46,6 +47,7 @@ const CourseView = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [teacher, setTeacher] = useState(null);
   const [teacherLoading, setTeacherLoading] = useState(false);
   const [teacherError, setTeacherError] = useState(null);
@@ -590,6 +592,46 @@ const CourseView = () => {
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 Edit
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                onClick={async () => {
+                  const candidateId =
+                    course?.id ?? course?.CourseID ?? course?.courseId ?? id;
+                  if (!candidateId) return;
+                  const confirmed = confirm(
+                    `Delete course "${
+                      course?.name || candidateId
+                    }"? This action cannot be undone.`
+                  );
+                  if (!confirmed) return;
+                  setDeleting(true);
+                  try {
+                    const ok = await deleteCourse(candidateId);
+                    if (ok) {
+                      setToastType("success");
+                      setToastMessage("Course deleted");
+                      const redirectPath = isAdmin
+                        ? "/admin/courses"
+                        : "/teacher/courses";
+                      navigate(redirectPath);
+                    } else {
+                      setToastType("error");
+                      setToastMessage("Failed to delete course");
+                    }
+                  } catch (err) {
+                    console.error("Failed to delete course:", err);
+                    setToastType("error");
+                    setToastMessage("Failed to delete course");
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+                disabled={deleting}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                {deleting ? "Deleting..." : "Delete"}
               </button>
             )}
             <span className="px-3 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60 dark:bg-emerald-900/40 dark:text-emerald-300 dark:ring-emerald-800">

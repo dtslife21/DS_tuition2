@@ -1273,6 +1273,34 @@ export const updateCourse = async (courseId, updates = {}) => {
   }
 };
 
+// Delete an existing course by id. Returns true if successful, false otherwise.
+export const deleteCourse = async (courseId) => {
+  const idStr = String(
+    courseId ??
+      (courseId && courseId.id) ??
+      (courseId && courseId.CourseID) ??
+      (courseId && courseId.courseId) ??
+      (courseId && courseId.courseID) ??
+      ""
+  ).trim();
+  if (!idStr) return false;
+
+  try {
+    await axios.delete(`/Courses/${idStr}`);
+    return true;
+  } catch (err) {
+    // Fallback: remove from mockCourses if present
+    const idx = mockCourses.findIndex(
+      (c) => String(c.id ?? c.CourseID ?? c.courseId) === idStr
+    );
+    if (idx !== -1) {
+      mockCourses.splice(idx, 1);
+      return true;
+    }
+    return false;
+  }
+};
+
 // Real service functions (reference)
 /*
 export const getTeacherCourses = async (teacherId) => {
