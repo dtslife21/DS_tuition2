@@ -12,7 +12,7 @@ const Sidebar = () => {
   const adminNavigation = [
     { name: "Dashboard", href: "/admin", icon: "home" },
     { name: "Courses", href: "/admin/courses", icon: "book" },
-    { name: "Subjects", href: "/admin/subjects", icon: "document-text" },
+    { name: "Subjects", href: "/admin/subjects", icon: "document-text", matchPaths: ["/admin/subjects", "/subjects"], },
     { name: "Users", href: "/admin/users", icon: "users" },
     { name: "Settings", href: "/admin/settings", icon: "cog" },
   ];
@@ -20,6 +20,13 @@ const Sidebar = () => {
   const teacherNavigation = [
     { name: "Dashboard", href: "/teacher", icon: "home" },
     { name: "Courses", href: "/teacher/courses", icon: "book" },
+    { name: "Subjects",
+      href: "/teacher/subjects",
+      icon: "document-text",
+      // also match the shared subject view so that when user opens /subjects/:id
+      // the teacher "Subjects" tab is highlighted
+      matchPaths: ["/teacher/subjects", "/subjects"],
+    },
     { name: "Attendance", href: "/teacher/attendance", icon: "check-circle" },
     { name: "Materials", href: "/teacher/materials", icon: "document-text" },
     { name: "Students", href: "/teacher/students", icon: "users" },
@@ -52,10 +59,22 @@ const Sidebar = () => {
     const path = location.pathname || "";
     let best = null;
     for (const item of navigation) {
-      const href = item.href || "";
-      if (path === href || (href !== "/" && path.startsWith(href))) {
-        if (!best || href.length > (best.href || "").length) best = item;
+      // allow items to declare multiple match paths (e.g. shared /subjects)
+      const candidates = item.matchPaths || [item.href || ""];
+      for (const href of candidates) {
+        if (!href) continue;
+        if (path === href || (href !== "/" && path.startsWith(href))) {
+          if (!best || href.length > (best.matchHrefLength || 0)) {
+            // store the matched href length so we can compare specificity
+            best = { ...item, matchHrefLength: href.length };
+          }
+        }
       }
+    }
+    // strip helper property before returning
+    if (best && best.matchHrefLength !== undefined) {
+      const { matchHrefLength, ...rest } = best;
+      return rest;
     }
     return best;
   })();

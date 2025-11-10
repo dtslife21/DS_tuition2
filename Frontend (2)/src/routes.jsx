@@ -14,6 +14,7 @@ import AdminSubjects from "./pages/admin/Subjects";
 import AdminSettings from "./pages/admin/Settings";
 import TeacherDashboard from "./pages/teacher/Dashboard";
 import TeacherCourses from "./pages/teacher/Courses";
+import TeacherSubjects from "./pages/teacher/Subjects";
 import TeacherAttendance from "./pages/teacher/Attendance";
 import TeacherMaterials from "./pages/teacher/Materials";
 import TeacherStudents from "./pages/teacher/Students";
@@ -87,6 +88,8 @@ const RoutesConfig = () => {
           <Route index element={<TeacherDashboard />} />
           <Route path="courses" element={<TeacherCourses />} />
           <Route path="courses/:id" element={<TeacherCourses />} />
+          <Route path="subjects" element={<TeacherSubjects />} />
+          <Route path="subjects/:id" element={<TeacherSubjects />} />
           <Route path="attendance" element={<TeacherAttendance />} />
           <Route path="attendance/:id" element={<TeacherAttendance />} />
           <Route path="materials" element={<TeacherMaterials />} />

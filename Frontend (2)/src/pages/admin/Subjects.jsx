@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   getAllSubjects,
   createSubject,
@@ -29,6 +30,7 @@ const AdminSubjects = () => {
   const [creatingSubject, setCreatingSubject] = useState(false);
   const [linkingCourse, setLinkingCourse] = useState(false);
   const [courseStepError, setCourseStepError] = useState("");
+  const navigate = useNavigate();
 
   const load = async () => {
     setLoading(true);
@@ -375,11 +377,21 @@ const AdminSubjects = () => {
             <Card
               key={s.id}
               className="p-4 cursor-pointer hover:shadow-lg"
-              onClick={() => openView(s)}
+              onClick={() => {
+                const ident = s?.id ?? s?.SubjectID ?? s?.subjectId ?? s?.name;
+                const target = ident ? encodeURIComponent(ident) : "";
+                if (target) {
+                  // navigate to the shared subject view route
+                  navigate(`/subjects/${target}`);
+                } else {
+                  // fallback to opening the modal when no identifier exists
+                  openView(s);
+                }
+              }}
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
+                  <h3 className="font-semibold text-lg text-indigo-700 dark:text-white">
                     {s.name}
                   </h3>
                   {s.courseName && (

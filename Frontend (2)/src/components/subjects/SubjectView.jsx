@@ -402,7 +402,7 @@ const SubjectView = () => {
         <div className="p-6 md:p-8 lg:p-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white dark:text-white">
                 {subject.name}
               </h1>
               <p className="mt-1 text-sm opacity-90">
@@ -422,7 +422,7 @@ const SubjectView = () => {
               </div>
             </div>
             <div>
-              <Button variant="secondary" onClick={() => navigate(-1)}>
+              <Button variant="primary" onClick={() => navigate(-1)}>
                 Back
               </Button>
             </div>
