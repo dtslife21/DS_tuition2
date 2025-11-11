@@ -7,6 +7,11 @@ import {
   getStudentCourses,
   updateCourse,
 } from "../../services/courseService";
+import {
+  createEnrollmentsForStudent,
+  getEnrollmentsByStudent,
+  deleteEnrollment,
+} from "../../services/enrollmentService";
 import { getStudentById } from "../../services/studentService";
 import { getTeacherById } from "../../services/teacherService";
 import UserForm from "../../components/users/UserForm";
@@ -48,6 +53,7 @@ const UserDetailsPage = ({
 }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -67,6 +73,12 @@ const UserDetailsPage = ({
   const [isAssignCoursesOpen, setIsAssignCoursesOpen] = useState(false);
   const [assigningCourses, setAssigningCourses] = useState(false);
   const [assignCoursesError, setAssignCoursesError] = useState("");
+  const [isEnrollOpen, setIsEnrollOpen] = useState(false);
+  const [enrollingCourses, setEnrollingCourses] = useState(false);
+  const [enrollCoursesError, setEnrollCoursesError] = useState("");
+  const [studentEnrollments, setStudentEnrollments] = useState([]);
+  const [unenrollingId, setUnenrollingId] = useState(null);
+  const [unenrollError, setUnenrollError] = useState("");
 
   const isTeacherUser = useMemo(() => {
     if (!user) return false;
@@ -188,6 +200,14 @@ const UserDetailsPage = ({
           : rawStudentId;
         const list = await getStudentCourses(normalizedStudentId);
         setCourses(Array.isArray(list) ? list : []);
+
+        try {
+          const enrolls = await getEnrollmentsByStudent(normalizedStudentId);
+          setStudentEnrollments(Array.isArray(enrolls) ? enrolls : []);
+        } catch (e) {
+          console.warn("Failed to load student enrollments", e);
+          setStudentEnrollments([]);
+        }
         return;
       }
 
@@ -225,10 +245,80 @@ const UserDetailsPage = ({
       .filter(Boolean);
   }, [courses]);
 
+  const isAdminViewer = useMemo(() => {
+    if (!authUser) return false;
+    const idVal = String(
+      authUser.UserTypeID || authUser.userTypeID || ""
+    ).trim();
+    if (idVal === "1") return true;
+    const name = String(
+      authUser.userType || authUser.UserType || ""
+    ).toLowerCase();
+    return name === "admin";
+  }, [authUser]);
+
+  const enrollmentIdByCourseId = useMemo(() => {
+    const map = new Map();
+    (studentEnrollments || []).forEach((e) => {
+      const cid = String(e.CourseID ?? e.courseID ?? e.courseId ?? "");
+      const eid =
+        e.EnrollmentID ??
+        e.enrollmentID ??
+        e.id ??
+        e.EnrollmentId ??
+        e.raw?.EnrollmentID ??
+        null;
+      if (cid) map.set(cid, eid);
+    });
+    return map;
+  }, [studentEnrollments]);
+
+  const handleUnenrollCourse = async (course) => {
+    if (!isStudentUser) return;
+    setUnenrollError("");
+
+    const cid = String(
+      course?.id ??
+        course?.CourseID ??
+        course?.courseId ??
+        course?.CourseId ??
+        ""
+    );
+    const enrollmentId = enrollmentIdByCourseId.get(cid);
+    if (!enrollmentId) {
+      setUnenrollError("No enrollment record found for this course.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to remove this course enrollment?`
+    );
+    if (!confirmed) return;
+
+    setUnenrollingId(enrollmentId);
+    try {
+      const ok = await deleteEnrollment(enrollmentId);
+      if (!ok) throw new Error("Failed to delete enrollment");
+      // refresh courses/enrollments
+      await loadCourses();
+    } catch (err) {
+      console.error("Failed to unenroll", err);
+      setUnenrollError(err?.message || "Unable to remove enrollment.");
+    } finally {
+      setUnenrollingId(null);
+    }
+  };
+
   const handleOpenAssignCourses = () => {
     if (!isTeacherUser) return;
     setAssignCoursesError("");
     setIsAssignCoursesOpen(true);
+  };
+
+  const handleOpenEnrollCourses = () => {
+    if (!isStudentUser) return;
+    setEnrollCoursesError("");
+    setIsEnrollOpen(true);
   };
 
   const handleCloseAssignCourses = () => {
@@ -291,6 +381,84 @@ const UserDetailsPage = ({
       );
     } finally {
       setAssigningCourses(false);
+    }
+  };
+
+  const studentIdentifier = useMemo(() => {
+    const candidates = [
+      user?.StudentID,
+      user?.studentID,
+      user?.studentId,
+      studentDetails?.StudentID,
+      studentDetails?.studentID,
+      studentDetails?.studentId,
+      studentDetails?.id,
+      user?.UserID,
+      user?.id,
+    ];
+    for (const value of candidates) {
+      if (value === undefined || value === null) continue;
+      const str = String(value).trim();
+      if (str.length) return str;
+    }
+    return "";
+  }, [studentDetails, user]);
+
+  const resolvedStudentId = useMemo(() => {
+    if (!studentIdentifier) return null;
+    return !Number.isNaN(Number(studentIdentifier))
+      ? Number(studentIdentifier)
+      : studentIdentifier;
+  }, [studentIdentifier]);
+
+  const handleCloseEnrollCourses = () => {
+    if (enrollingCourses) return;
+    setIsEnrollOpen(false);
+    setEnrollCoursesError("");
+  };
+
+  const handleEnrollCourses = async (selectedIds) => {
+    if (!isStudentUser) {
+      setEnrollCoursesError(
+        "Course enrollment is only available for students."
+      );
+      return;
+    }
+
+    if (resolvedStudentId === null || resolvedStudentId === "") {
+      setEnrollCoursesError(
+        "Missing student identifier. Please reload and try again."
+      );
+      return;
+    }
+
+    const preparedIds = (selectedIds || [])
+      .map((id) => (id === undefined || id === null ? null : String(id).trim()))
+      .filter(Boolean);
+
+    const pending = preparedIds.filter((id) => !assignedCourseIds.includes(id));
+
+    if (!pending.length) {
+      setEnrollCoursesError("Select at least one new course to enroll.");
+      return;
+    }
+
+    setEnrollingCourses(true);
+    setEnrollCoursesError("");
+    try {
+      await createEnrollmentsForStudent(
+        resolvedStudentId,
+        pending.map((id) => (Number.isNaN(Number(id)) ? id : Number(id)))
+      );
+      setIsEnrollOpen(false);
+      await loadCourses();
+    } catch (err) {
+      console.error("Failed to enroll courses for student", err);
+      setEnrollCoursesError(
+        err?.message || "Failed to enroll courses. Please try again."
+      );
+    } finally {
+      setEnrollingCourses(false);
     }
   };
 
@@ -790,6 +958,14 @@ const UserDetailsPage = ({
                     Assign Course
                   </button>
                 )}
+                {isStudentUser && (
+                  <button
+                    onClick={handleOpenEnrollCourses}
+                    className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+                  >
+                    Enroll Course
+                  </button>
+                )}
               </div>
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {coursesLoading ? "Loading..." : `${courses.length} course(s)`}
@@ -829,47 +1005,56 @@ const UserDetailsPage = ({
                         </div>
                         <div className="ml-4 flex-shrink-0">
                           {(() => {
-                            try {
-                              const { user: authUser } = useAuth();
-                              const prefix =
-                                authUser && authUser.userType === "teacher"
-                                  ? "/teacher"
-                                  : "/admin";
-                              const cid =
-                                course.id || course.CourseID || course.courseId;
-                              if (!cid) {
-                                return (
-                                  <button
-                                    className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-gray-200 text-gray-700"
-                                    disabled
-                                  >
-                                    View
-                                  </button>
-                                );
-                              }
-
+                            const prefix =
+                              authUser && authUser.userType === "teacher"
+                                ? "/teacher"
+                                : "/admin";
+                            const cid =
+                              course.id || course.CourseID || course.courseId;
+                            if (!cid) {
                               return (
-                                <Link
-                                  to={`${prefix}/courses/${cid}`}
-                                  className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                                <button
+                                  className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-gray-200 text-gray-700"
+                                  disabled
                                 >
                                   View
-                                </Link>
-                              );
-                            } catch (err) {
-                              // fallback to admin link on error
-                              const cid =
-                                course.id || course.CourseID || course.courseId;
-                              return (
-                                <Link
-                                  to={`/admin/courses/${cid}`}
-                                  className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
-                                >
-                                  View
-                                </Link>
+                                </button>
                               );
                             }
+
+                            return (
+                              <Link
+                                to={`${prefix}/courses/${cid}`}
+                                className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                              >
+                                View
+                              </Link>
+                            );
                           })()}
+                          {isStudentUser &&
+                            isAdminViewer &&
+                            (() => {
+                              const cid = String(
+                                course.id ??
+                                  course.CourseID ??
+                                  course.courseId ??
+                                  ""
+                              );
+                              const eid = enrollmentIdByCourseId.get(cid);
+                              return (
+                                <div className="mt-2">
+                                  <button
+                                    onClick={() => handleUnenrollCourse(course)}
+                                    disabled={!eid || unenrollingId === eid}
+                                    className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-gray-600 text-white hover:bg-gray-700"
+                                  >
+                                    {unenrollingId === eid
+                                      ? "Removing..."
+                                      : "Remove"}
+                                  </button>
+                                </div>
+                              );
+                            })()}
                         </div>
                       </div>
                       {course.description && (
@@ -916,6 +1101,26 @@ const UserDetailsPage = ({
                 }
                 errorMessage={assignCoursesError}
                 onProceed={handleAssignCourses}
+              />
+            )}
+            {isStudentUser && (
+              <CoursePickerModal
+                isOpen={isEnrollOpen}
+                onClose={handleCloseEnrollCourses}
+                initialSelected={[]}
+                title="Enroll Courses"
+                description="Select one or more courses to enroll this student in."
+                multiSelect
+                allowCreate
+                teacherId={undefined}
+                scopeToTeacher={false}
+                excludedIds={assignedCourseIds}
+                saving={enrollingCourses}
+                proceedLabel={
+                  enrollingCourses ? "Enrolling..." : "Enroll Courses"
+                }
+                errorMessage={enrollCoursesError}
+                onProceed={handleEnrollCourses}
               />
             )}
           </div>
