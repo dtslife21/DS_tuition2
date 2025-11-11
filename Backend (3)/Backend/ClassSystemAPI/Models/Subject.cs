@@ -17,5 +17,8 @@ namespace ClassSystemAPI.Models
         public string SubjectCode { get; set; }
 
         public string Description { get; set; }
+
+        // Navigation for many-to-many
+        public virtual ICollection<CourseSubjects> CourseSubjects { get; set; }
     }
 }

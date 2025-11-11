@@ -80,7 +80,7 @@ namespace ClassSystemAPI.Controllers
 
             var courses = db.Enrollments
                 .Where(e => e.StudentID == studentId && e.IsActive)
-                .Include(e => e.Course.Subject)
+                .Include(e => e.Course.CourseSubjects.Select(cs => cs.Subject))
                 .Include(e => e.Course.Teacher.User)
                 .Select(e => new
                 {
@@ -93,11 +93,12 @@ namespace ClassSystemAPI.Controllers
                         e.Course.CourseCode,
                         e.Course.AcademicYear,
                         e.Course.Description,
-                        Subject = e.Course.Subject == null ? null : new
-                        {
-                            e.Course.Subject.SubjectID,
-                            e.Course.Subject.Description
-                        },
+                        Subjects = e.Course.CourseSubjects
+                            .Select(cs => new
+                            {
+                                cs.Subject.SubjectID,
+                                cs.Subject.Description
+                            }),
                         Teacher = e.Course.Teacher == null ? null : new
                         {
                             e.Course.Teacher.TeacherID,

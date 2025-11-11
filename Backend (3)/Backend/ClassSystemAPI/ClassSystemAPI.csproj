@@ -205,12 +205,14 @@
     <Compile Include="Controllers\ValuesController.cs" />
     <Compile Include="Models\Announcement.cs" />
     <Compile Include="Models\Attendance.cs" />
+    <Compile Include="Models\CourseSubjects.cs" />
     <Compile Include="Models\ClassSchedule.cs" />
     <Compile Include="Models\ClassSystemContext.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\Course.cs" />
+    <Compile Include="Models\DTOs\CourseCreateDto.cs" />
     <Compile Include="Models\DTOs\StudentDto.cs" />
     <Compile Include="Models\Enrollment.cs" />
     <Compile Include="Models\LoginRequest.cs" />

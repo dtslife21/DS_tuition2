@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;
 
 namespace ClassSystemAPI.Models
 {
@@ -8,14 +9,12 @@ namespace ClassSystemAPI.Models
         [Key]
         public int CourseID { get; set; }
 
-        [Required]
-        [StringLength(100)]
+        [Required, StringLength(100)]
         public string CourseName { get; set; }
 
         [StringLength(20)]
         public string CourseCode { get; set; }
 
-        public int SubjectID { get; set; }
         public int TeacherID { get; set; }
 
         [StringLength(20)]
@@ -25,9 +24,7 @@ namespace ClassSystemAPI.Models
 
         public bool IsActive { get; set; }
 
-        // Navigation properties
-        [ForeignKey("SubjectID")]
-        public virtual Subject Subject { get; set; }
+        public virtual ICollection<CourseSubjects> CourseSubjects { get; set; }
 
         [ForeignKey("TeacherID")]
         public virtual Teacher Teacher { get; set; }
