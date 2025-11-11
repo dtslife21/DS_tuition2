@@ -256,7 +256,9 @@ const AdminUsers = () => {
           // Student: after step 2, open course picker to finish
           setPendingUserData(mergedCreate);
           setShowModal(false);
-          setInitialCourseSelection([]);
+          setInitialCourseSelection(
+            (mergedCreate.StudentCourseIDs || []).map((id) => String(id))
+          );
           setShowCoursePicker(true);
           // reset wizard state
           setCreateStep(1);
@@ -742,15 +744,15 @@ const AdminUsers = () => {
               initialSelected={initialCourseSelection}
               title={
                 pendingUserData
-                  ? "Select Course for Student"
+                  ? "Select Courses for Student"
                   : "Select Courses for Teacher"
               }
               description={
                 pendingUserData
-                  ? "Choose a course to enroll the new student in."
+                  ? "Choose one or more courses to enroll the new student in."
                   : "Select one or more courses to assign to the new teacher."
               }
-              multiSelect={!pendingUserData}
+              multiSelect={true}
               // when enrolling a student, disallow creating new courses from the picker
               allowCreate={!pendingUserData}
               // when enrolling a pending student, hide courses already passed in (if any)

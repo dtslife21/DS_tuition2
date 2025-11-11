@@ -1192,7 +1192,11 @@ const CourseView = () => {
               const subjectIds = (subjects || [])
                 .map((s) =>
                   s && typeof s === "object"
-                    ? s?.id ?? s?.SubjectID ?? s?.subjectId ?? s?.draft?.id ?? null
+                    ? s?.id ??
+                      s?.SubjectID ??
+                      s?.subjectId ??
+                      s?.draft?.id ??
+                      null
                     : null
                 )
                 .filter((v) => v !== null && v !== undefined)

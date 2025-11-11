@@ -551,18 +551,17 @@ const mapCourseToApiPayload = (courseData) => {
       courseData.subject?.Id ??
       null,
     // new backend expects an array of subject IDs
-    SubjectIDs:
-      Array.isArray(courseData.SubjectIDs)
-        ? courseData.SubjectIDs
-        : Array.isArray(courseData.subjects)
-        ? courseData.subjects
-            .map((s) => s?.id ?? s?.SubjectID ?? s?.subjectId ?? null)
-            .filter((v) => v !== null && v !== undefined)
-        : Array.isArray(courseData.subjectList)
-        ? courseData.subjectList
-            .map((s) => s?.id ?? s?.SubjectID ?? s?.subjectId ?? null)
-            .filter((v) => v !== null && v !== undefined)
-        : undefined,
+    SubjectIDs: Array.isArray(courseData.SubjectIDs)
+      ? courseData.SubjectIDs
+      : Array.isArray(courseData.subjects)
+      ? courseData.subjects
+          .map((s) => s?.id ?? s?.SubjectID ?? s?.subjectId ?? null)
+          .filter((v) => v !== null && v !== undefined)
+      : Array.isArray(courseData.subjectList)
+      ? courseData.subjectList
+          .map((s) => s?.id ?? s?.SubjectID ?? s?.subjectId ?? null)
+          .filter((v) => v !== null && v !== undefined)
+      : undefined,
     SubjectName:
       courseData.subjectName ??
       courseData.subject?.name ??
@@ -577,13 +576,11 @@ const mapCourseToApiPayload = (courseData) => {
   };
 
   return Object.fromEntries(
-    Object.entries(payload).filter(
-      ([key, value]) => {
-        // keep SubjectIDs even when it's an empty array so backend can clear links
-        if (key === "SubjectIDs") return value !== undefined;
-        return value !== undefined && value !== null;
-      }
-    )
+    Object.entries(payload).filter(([key, value]) => {
+      // keep SubjectIDs even when it's an empty array so backend can clear links
+      if (key === "SubjectIDs") return value !== undefined;
+      return value !== undefined && value !== null;
+    })
   );
 };
 
@@ -1228,14 +1225,13 @@ export const updateCourse = async (courseId, updates = {}) => {
     TeacherID: teacherId,
     SubjectID: subjectId,
     // include SubjectIDs when present in updates (array) so backend can sync associations
-    SubjectIDs:
-      Array.isArray(updates?.SubjectIDs)
-        ? updates.SubjectIDs
-        : Array.isArray(updates?.subjects)
-        ? updates.subjects
-            .map((s) => s?.id ?? s?.SubjectID ?? s?.subjectId ?? null)
-            .filter((v) => v !== null && v !== undefined)
-        : undefined,
+    SubjectIDs: Array.isArray(updates?.SubjectIDs)
+      ? updates.SubjectIDs
+      : Array.isArray(updates?.subjects)
+      ? updates.subjects
+          .map((s) => s?.id ?? s?.SubjectID ?? s?.subjectId ?? null)
+          .filter((v) => v !== null && v !== undefined)
+      : undefined,
     SubjectName:
       updates?.SubjectName ??
       updates?.subjectName ??
