@@ -57,9 +57,16 @@ const AdminCourses = () => {
         formValues.subjectId ??
         undefined;
 
+      // Prefer SubjectIDs array if provided by the form. Fall back to single subjectId
       const payload = {
         ...formValues,
         subjectId: subjectIdToUse,
+        SubjectIDs:
+          Array.isArray(formValues?.SubjectIDs) && formValues.SubjectIDs.length
+            ? formValues.SubjectIDs
+            : subjectIdToUse !== undefined && subjectIdToUse !== null
+            ? [subjectIdToUse]
+            : undefined,
       };
 
       const created = await createCourse(payload);

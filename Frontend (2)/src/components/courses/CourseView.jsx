@@ -1187,10 +1187,24 @@ const CourseView = () => {
               }
 
               const { subjects, ...courseValues } = values;
+
+              // Build SubjectIDs to send to backend (after ensuring any new subjects were created above)
+              const subjectIds = (subjects || [])
+                .map((s) =>
+                  s && typeof s === "object"
+                    ? s?.id ?? s?.SubjectID ?? s?.subjectId ?? s?.draft?.id ?? null
+                    : null
+                )
+                .filter((v) => v !== null && v !== undefined)
+                .map((v) => (typeof v === "string" ? Number(v) : v));
+
               if (primarySubjectId !== null && primarySubjectId !== undefined) {
                 courseValues.subjectId = primarySubjectId;
                 courseValues.SubjectID = primarySubjectId;
+                if (!subjectIds.length) subjectIds.push(primarySubjectId);
               }
+
+              courseValues.SubjectIDs = subjectIds;
 
               const updated = await updateCourse(id, courseValues);
               setCourse(updated);

@@ -308,6 +308,12 @@ const CourseForm = ({
           ? firstSub.id ?? data.subjectId ?? data.SubjectID ?? null
           : data.subjectId ?? data.SubjectID ?? null;
 
+        // Build SubjectIDs array (only IDs that are available)
+        const subjectIds = (selectedSubjects || [])
+          .map((s) => s?.id ?? s?.SubjectID ?? s?.subjectId ?? null)
+          .filter((v) => v !== null && v !== undefined)
+          .map((v) => (typeof v === "string" ? Number(v) : v));
+
         const payload = {
           ...data,
           subjects: selectedSubjects,
@@ -316,6 +322,8 @@ const CourseForm = ({
           teacherId: teacherId,
           SubjectID: subjId,
           subjectId: subjId,
+          // new API expects SubjectIDs array
+          SubjectIDs: subjectIds,
         };
 
         onSubmit(payload);
