@@ -135,6 +135,8 @@ const AdminUsers = () => {
     useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState("success");
+  // view for members list: 'active' or 'inactive'
+  const [membersTab, setMembersTab] = useState("active");
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -577,6 +579,50 @@ const AdminUsers = () => {
     }
   };
 
+  const handleActivateUser = async (userID) => {
+    try {
+      setFormError("");
+      // call API to set IsActive = true
+      const updated = await updateUser(userID, { IsActive: true });
+      setUsers((prev) =>
+        prev.map((u) => {
+          const id = u.UserID || u.id || u.userID || u.userId || null;
+          const updatedId = updated.UserID || updated.id || updated.userID || updated.userId;
+          return String(id) === String(updatedId) ? updated : u;
+        })
+      );
+      setToastMessage("User activated.");
+      setToastType("success");
+    } catch (err) {
+      console.error("Failed to activate user", err);
+      setFormError(err?.message || "Failed to activate user");
+      setToastMessage("Failed to activate user.");
+      setToastType("error");
+    }
+  };
+
+  const handleDeactivateUser = async (userID) => {
+    try {
+      setFormError("");
+      // call API to set IsActive = false
+      const updated = await updateUser(userID, { IsActive: false });
+      setUsers((prev) =>
+        prev.map((u) => {
+          const id = u.UserID || u.id || u.userID || u.userId || null;
+          const updatedId = updated.UserID || updated.id || updated.userID || updated.userId;
+          return String(id) === String(updatedId) ? updated : u;
+        })
+      );
+      setToastMessage("User deactivated.");
+      setToastType("success");
+    } catch (err) {
+      console.error("Failed to deactivate user", err);
+      setFormError(err?.message || "Failed to deactivate user");
+      setToastMessage("Failed to deactivate user.");
+      setToastType("error");
+    }
+  };
+
   const handleEditUser = async (userID) => {
     try {
       setEditLoading(true);
@@ -732,11 +778,72 @@ const AdminUsers = () => {
               )}
             </div>
 
-            <UserList
-              users={displayUsers}
-              onEdit={handleEditUser}
-              onDelete={handleDeleteUser}
-            />
+            {/* Members tab (Active / Inactive) */}
+            {(() => {
+              const isActiveFlag = (u) =>
+                Boolean(u?.IsActive ?? u?.isActive ?? true);
+
+              const activeUsers = (displayUsers || []).filter(isActiveFlag);
+              const inactiveUsers = (displayUsers || []).filter(
+                (u) => !isActiveFlag(u)
+              );
+
+              return (
+                <>
+                  <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setMembersTab("active")}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                          membersTab === "active"
+                            ? "bg-indigo-600 text-white"
+                            : "bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        }`}
+                        title={`Active (${activeUsers.length})`}
+                      >
+                        Active{" "}
+                        <span className="ml-2 text-xs">
+                          ({activeUsers.length})
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => setMembersTab("inactive")}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                          membersTab === "inactive"
+                            ? "bg-indigo-600 text-white"
+                            : "bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        }`}
+                        title={`Inactive (${inactiveUsers.length})`}
+                      >
+                        Inactive{" "}
+                        <span className="ml-2 text-xs">
+                          ({inactiveUsers.length})
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    {membersTab === "active" ? (
+                      <UserList
+                        users={activeUsers}
+                        onEdit={handleEditUser}
+                        onActivate={handleActivateUser}
+                        onDeactivate={handleDeactivateUser}
+                      />
+                    ) : (
+                      <UserList
+                        users={inactiveUsers}
+                        onEdit={handleEditUser}
+                        onActivate={handleActivateUser}
+                        onDeactivate={handleDeactivateUser}
+                      />
+                    )}
+                  </div>
+                </>
+              );
+            })()}
 
             <CoursePickerModal
               isOpen={showCoursePicker}

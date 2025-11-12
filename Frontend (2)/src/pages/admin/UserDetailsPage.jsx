@@ -758,7 +758,9 @@ const UserDetailsPage = ({
             onSubmit={handleSave}
             // pass a merged initialData so teacher-specific fields (like JoiningDate)
             // from `teacherDetails` appear in the form when editing a teacher.
-            initialData={teacherDetails ? { ...(user || {}), ...teacherDetails } : user}
+            initialData={
+              teacherDetails ? { ...(user || {}), ...teacherDetails } : user
+            }
             userTypes={[
               { id: 1, name: "Admin" },
               { id: 2, name: "Teacher" },

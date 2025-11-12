@@ -7,7 +7,8 @@ const UserList = ({
   users,
   onAddStudent,
   onEdit,
-  onDelete,
+  onActivate,
+  onDeactivate,
   allowManage = true,
   getDetailsPath,
 }) => {
@@ -115,14 +116,24 @@ const UserList = ({
                         >
                           Edit
                         </button>
-                        <button
-                          onClick={() =>
-                            onDelete && actionId && onDelete(actionId)
-                          }
-                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-red-600 hover:text-red-700"
-                        >
-                          Delete
-                        </button>
+                        {/* Show Activate for inactive users */}
+                        {!Boolean(user.IsActive ?? user.isActive ?? true) && onActivate && (
+                          <button
+                            onClick={() => onActivate && actionId && onActivate(actionId)}
+                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-green-600 hover:text-green-800"
+                          >
+                            Active
+                          </button>
+                        )}
+                        {/* Show Deactivate for active users */}
+                        {Boolean(user.IsActive ?? user.isActive ?? true) && onDeactivate && (
+                          <button
+                            onClick={() => onDeactivate && actionId && onDeactivate(actionId)}
+                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-orange-600 hover:text-orange-800"
+                          >
+                            Remove
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
