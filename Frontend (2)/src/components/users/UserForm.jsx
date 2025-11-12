@@ -455,13 +455,21 @@ const UserForm = ({
       }`.trim(),
       EnrollmentDate: (() => {
         // Convert known date shapes into YYYY-MM-DD so <input type="date"> shows the value
+        // Use local date parts instead of toISOString() to avoid timezone shifts
         const raw =
           u?.EnrollmentDate || u?.enrollmentDate || u?.enrollment_date || "";
         if (!raw) return "";
         try {
+          // If already in YYYY-MM-DD, return as-is
+          if (typeof raw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+            return raw;
+          }
           const d = new Date(raw);
           if (isNaN(d.getTime())) return String(raw);
-          return d.toISOString().slice(0, 10);
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          return `${yyyy}-${mm}-${dd}`;
         } catch (e) {
           return String(raw);
         }
@@ -483,12 +491,19 @@ const UserForm = ({
       Qualification: u?.Qualification || u?.qualification || "",
       JoiningDate: (() => {
         // Convert known date shapes into YYYY-MM-DD so <input type="date"> shows the value
+        // Use local date parts instead of toISOString() to avoid timezone shifts
         const raw = u?.JoiningDate || u?.joiningDate || "";
         if (!raw) return "";
         try {
+          if (typeof raw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+            return raw;
+          }
           const d = new Date(raw);
           if (isNaN(d.getTime())) return String(raw);
-          return d.toISOString().slice(0, 10);
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          return `${yyyy}-${mm}-${dd}`;
         } catch (e) {
           return String(raw);
         }

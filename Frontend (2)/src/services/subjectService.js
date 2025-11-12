@@ -29,9 +29,7 @@ const normalizeIdArray = (values) => {
 const normalizeNameArray = (value) => {
   if (!value) return [];
   if (Array.isArray(value)) {
-    return value
-      .map((entry) => String(entry || "").trim())
-      .filter(Boolean);
+    return value.map((entry) => String(entry || "").trim()).filter(Boolean);
   }
   const str = String(value).trim();
   if (!str) return [];
@@ -199,12 +197,8 @@ const extractCourseMetadata = (raw) => {
 const mapSubject = (raw) => {
   if (!raw) return null;
 
-  const {
-    courseIds,
-    courseNames,
-    courseCodes,
-    courses,
-  } = extractCourseMetadata(raw);
+  const { courseIds, courseNames, courseCodes, courses } =
+    extractCourseMetadata(raw);
 
   const primaryCourseIdCandidate =
     normalizeIdValue(
@@ -253,9 +247,10 @@ const mapSubject = (raw) => {
       raw.subjectCode ?? raw.SubjectCode ?? raw.code ?? raw.Code ?? "",
     courseId: primaryCourseIdCandidate,
     CourseID: primaryCourseIdCandidate,
-    courseName: Array.isArray(courseNames) && courseNames.length
-      ? courseNames.join(", ")
-      : primaryCourseName,
+    courseName:
+      Array.isArray(courseNames) && courseNames.length
+        ? courseNames.join(", ")
+        : primaryCourseName,
     CourseName: primaryCourseName,
     courseNames,
     CourseNames: courseNames,

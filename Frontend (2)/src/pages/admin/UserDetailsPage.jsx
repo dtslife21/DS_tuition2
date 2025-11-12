@@ -13,7 +13,10 @@ import {
   deleteEnrollment,
 } from "../../services/enrollmentService";
 import { getStudentById } from "../../services/studentService";
-import { getTeacherById } from "../../services/teacherService";
+import {
+  getTeacherById,
+  updateTeacher as updateTeacherService,
+} from "../../services/teacherService";
 import UserForm from "../../components/users/UserForm";
 import Card from "../../components/common/Card";
 import Avatar from "../../components/common/Avatar";
@@ -598,6 +601,56 @@ const UserDetailsPage = ({
     try {
       const updatedUser = await updateUser(id, userData);
       setUser(updatedUser);
+      // If the updated user is a teacher, also persist teacher-specific fields
+      try {
+        const isTeacherType =
+          String(
+            updatedUser?.UserTypeID ?? updatedUser?.userTypeID ?? ""
+          ).trim() === "2" ||
+          String(updatedUser?.userType || "").toLowerCase() === "teacher";
+
+        if (isTeacherType) {
+          const teacherId =
+            updatedUser?.TeacherID ??
+            updatedUser?.teacherID ??
+            updatedUser?.teacherId ??
+            updatedUser?.UserID ??
+            updatedUser?.id ??
+            resolvedTeacherId ??
+            null;
+
+          if (teacherId) {
+            const teacherPayload = {
+              EmployeeID: userData.EmployeeID ?? userData.employeeID,
+              Department: userData.Department ?? userData.department,
+              Qualification: userData.Qualification ?? userData.qualification,
+              JoiningDate: userData.JoiningDate ?? userData.joiningDate,
+              Bio: userData.Bio ?? userData.bio,
+            };
+
+            // Only call update when there's at least one teacher field present
+            const hasTeacherFields = Object.values(teacherPayload).some(
+              (v) => v !== undefined && v !== null && String(v).trim() !== ""
+            );
+
+            if (hasTeacherFields) {
+              try {
+                await updateTeacherService(teacherId, teacherPayload);
+                // merge into local teacherDetails for immediate UI update
+                setTeacherDetails((prev) => ({
+                  ...(prev || {}),
+                  ...teacherPayload,
+                }));
+              } catch (e) {
+                console.warn("Failed to update teacher record", e);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Teacher sync check failed", e);
+      }
+
       setIsEditing(false);
     } catch (err) {
       setError("Failed to update user");
@@ -703,7 +756,9 @@ const UserDetailsPage = ({
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
           <UserForm
             onSubmit={handleSave}
-            user={user}
+            // pass a merged initialData so teacher-specific fields (like JoiningDate)
+            // from `teacherDetails` appear in the form when editing a teacher.
+            initialData={teacherDetails ? { ...(user || {}), ...teacherDetails } : user}
             userTypes={[
               { id: 1, name: "Admin" },
               { id: 2, name: "Teacher" },

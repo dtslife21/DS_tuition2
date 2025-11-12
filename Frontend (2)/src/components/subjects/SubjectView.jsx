@@ -171,16 +171,19 @@ const SubjectView = () => {
       subject.subjectCode || subject.code || ""
     ).toLowerCase();
     const courseIdSet = new Set(
-      (
-        Array.isArray(subject.courseIds)
-          ? subject.courseIds
-          : Array.isArray(subject.CourseIDs)
-          ? subject.CourseIDs
-          : Array.isArray(subject.CourseIds)
-          ? subject.CourseIds
-          : []
+      (Array.isArray(subject.courseIds)
+        ? subject.courseIds
+        : Array.isArray(subject.CourseIDs)
+        ? subject.CourseIDs
+        : Array.isArray(subject.CourseIds)
+        ? subject.CourseIds
+        : []
       )
-        .map((id) => String(id || "").trim().toLowerCase())
+        .map((id) =>
+          String(id || "")
+            .trim()
+            .toLowerCase()
+        )
         .filter(Boolean)
     );
     return (courses || []).filter((c) => {
@@ -441,7 +444,9 @@ const SubjectView = () => {
               </p>
               <p className="mt-1 text-sm opacity-90">
                 {subjectCourseNames.length
-                  ? `${subjectCourseNames.length > 1 ? "Courses" : "Course"}: ${subjectCourseNames.join(", ")}`
+                  ? `${
+                      subjectCourseNames.length > 1 ? "Courses" : "Course"
+                    }: ${subjectCourseNames.join(", ")}`
                   : "No linked courses"}
               </p>
             </div>

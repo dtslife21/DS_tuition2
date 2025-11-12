@@ -74,10 +74,8 @@ const deriveCourseMeta = (course, fallbackId) => {
 
   if (!idKey) return null;
 
-  const name =
-    course.name ?? course.courseName ?? course.CourseName ?? "";
-  const code =
-    course.code ?? course.courseCode ?? course.CourseCode ?? "";
+  const name = course.name ?? course.courseName ?? course.CourseName ?? "";
+  const code = course.code ?? course.courseCode ?? course.CourseCode ?? "";
 
   const subjectIds = normalizeIdArray(
     Array.isArray(course.SubjectIDs)
@@ -164,7 +162,7 @@ const AdminSubjects = () => {
 
       setSubjectDraftData(payloadWithIds);
       setSubjectInProgress(created);
-  setIsDraftNewSubject(true);
+      setIsDraftNewSubject(true);
       setSelectedCourseIds([]);
       setCourseStepError("");
       setShowAdd(false);
@@ -202,9 +200,7 @@ const AdminSubjects = () => {
 
     const sanitizedSelectionKeys = Array.from(
       new Set(
-        normalizedSelection
-          .map((value) => toIdKey(value))
-          .filter(Boolean)
+        normalizedSelection.map((value) => toIdKey(value)).filter(Boolean)
       )
     );
 
@@ -226,9 +222,7 @@ const AdminSubjects = () => {
     );
 
     if (!subjectIdKey) {
-      setCourseStepError(
-        "Subject identifier is missing. Please try again."
-      );
+      setCourseStepError("Subject identifier is missing. Please try again.");
       return;
     }
 
@@ -290,12 +284,15 @@ const AdminSubjects = () => {
         )
       );
 
-      const primaryCourseId =
-        courseIdsForSubject.length ? courseIdsForSubject[0] : null;
-      const primaryCourseName =
-        courseNamesList.length ? courseNamesList[0] : "";
-      const primaryCourseCode =
-        courseCodesList.length ? courseCodesList[0] : "";
+      const primaryCourseId = courseIdsForSubject.length
+        ? courseIdsForSubject[0]
+        : null;
+      const primaryCourseName = courseNamesList.length
+        ? courseNamesList[0]
+        : "";
+      const primaryCourseCode = courseCodesList.length
+        ? courseCodesList[0]
+        : "";
 
       const subjectPayload = {
         ...(subjectDraftData || {}),
@@ -379,9 +376,7 @@ const AdminSubjects = () => {
       const courseOperations = [];
 
       courseMetas.forEach((meta) => {
-        const existingSet = new Set(
-          meta.subjectIds.map((id) => toIdKey(id))
-        );
+        const existingSet = new Set(meta.subjectIds.map((id) => toIdKey(id)));
         const shouldAdd = subjectIdKey && !existingSet.has(subjectIdKey);
         const needsPrimary =
           (!meta.subjectId || !toIdKey(meta.subjectId)) &&
@@ -404,9 +399,7 @@ const AdminSubjects = () => {
       });
 
       removalMetas.forEach((meta) => {
-        const existingSet = new Set(
-          meta.subjectIds.map((id) => toIdKey(id))
-        );
+        const existingSet = new Set(meta.subjectIds.map((id) => toIdKey(id)));
         if (!existingSet.has(subjectIdKey)) return;
 
         const remainingIds = meta.subjectIds.filter(
@@ -502,7 +495,7 @@ const AdminSubjects = () => {
       setSelectedCourseIds(sanitizedSelectionKeys);
       setSubjectInProgress(null);
       setSubjectDraftData(null);
-  setIsDraftNewSubject(false);
+      setIsDraftNewSubject(false);
       setShowCoursePicker(false);
       setCourseStepError("");
     } catch (err) {
@@ -600,7 +593,7 @@ const AdminSubjects = () => {
       setSubjectDraftData({ ...updated });
       setSubjectInProgress({ ...updated });
       setSelectedCourseIds(preselectedCourses);
-  setIsDraftNewSubject(false);
+      setIsDraftNewSubject(false);
       // Close the edit modal then open the course picker so the user can change the linked course if desired
       setEditSubject(null);
       setCourseStepError("");
@@ -705,7 +698,9 @@ const AdminSubjects = () => {
                   .filter(Boolean);
             const hasCourses = courseNames.length > 0;
             const courseLabel = hasCourses
-              ? `${courseNames.length > 1 ? "Courses" : "Course"}: ${courseNames.join(", ")}`
+              ? `${
+                  courseNames.length > 1 ? "Courses" : "Course"
+                }: ${courseNames.join(", ")}`
               : "";
 
             return (
@@ -713,7 +708,8 @@ const AdminSubjects = () => {
                 key={s.id}
                 className="p-4 cursor-pointer hover:shadow-lg"
                 onClick={() => {
-                  const ident = s?.id ?? s?.SubjectID ?? s?.subjectId ?? s?.name;
+                  const ident =
+                    s?.id ?? s?.SubjectID ?? s?.subjectId ?? s?.name;
                   const target = ident ? encodeURIComponent(ident) : "";
                   if (target) {
                     // navigate to the shared subject view route
@@ -793,38 +789,39 @@ const AdminSubjects = () => {
         onClose={() => setViewSubject(null)}
         title={viewSubject?.name || "Subject Details"}
       >
-        {viewSubject ? (
-          (() => {
-            const courseNames = Array.isArray(viewSubject.courseNames)
-              ? viewSubject.courseNames
-              : String(viewSubject.courseName || "")
-                  .split(",")
-                  .map((name) => name.trim())
-                  .filter(Boolean);
-            return (
-              <div className="space-y-2">
-                <div>
-                  <strong>ID:</strong> {viewSubject.id ?? "-"}
+        {viewSubject
+          ? (() => {
+              const courseNames = Array.isArray(viewSubject.courseNames)
+                ? viewSubject.courseNames
+                : String(viewSubject.courseName || "")
+                    .split(",")
+                    .map((name) => name.trim())
+                    .filter(Boolean);
+              return (
+                <div className="space-y-2">
+                  <div>
+                    <strong>ID:</strong> {viewSubject.id ?? "-"}
+                  </div>
+                  <div>
+                    <strong>Code:</strong> {viewSubject.subjectCode ?? "-"}
+                  </div>
+                  <div>
+                    <strong>Name:</strong> {viewSubject.name}
+                  </div>
+                  <div>
+                    <strong>
+                      {courseNames.length > 1 ? "Courses" : "Course"}:
+                    </strong>{" "}
+                    {courseNames.length ? courseNames.join(", ") : "-"}
+                  </div>
+                  <div>
+                    <strong>Description:</strong>{" "}
+                    {viewSubject.description ?? "-"}
+                  </div>
                 </div>
-                <div>
-                  <strong>Code:</strong> {viewSubject.subjectCode ?? "-"}
-                </div>
-                <div>
-                  <strong>Name:</strong> {viewSubject.name}
-                </div>
-                <div>
-                  <strong>{courseNames.length > 1 ? "Courses" : "Course"}:</strong>{" "}
-                  {courseNames.length ? courseNames.join(", ") : "-"}
-                </div>
-                <div>
-                  <strong>Description:</strong> {viewSubject.description ?? "-"}
-                </div>
-              </div>
-            );
-          })()
-        ) : (
-          viewLoading && <Loader size="sm" className="py-2" />
-        )}
+              );
+            })()
+          : viewLoading && <Loader size="sm" className="py-2" />}
       </Modal>
 
       <Modal
