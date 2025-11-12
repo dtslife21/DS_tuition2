@@ -2,6 +2,31 @@ import axios from "axios";
 import mapStudent, { getAllStudents } from "./studentService";
 import { getStudentAttendance } from "./attendanceService";
 
+const normalizeIdValue = (value) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number" && !Number.isNaN(value)) return value;
+  const str = String(value).trim();
+  if (!str) return null;
+  if (/^-?\d+$/.test(str) && !/^0\d+/.test(str)) {
+    const parsed = Number(str);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  return str;
+};
+
+const normalizeIdArray = (values) => {
+  if (!Array.isArray(values)) return [];
+  const map = new Map();
+  for (const item of values) {
+    const normalized = normalizeIdValue(item);
+    if (normalized === null) continue;
+    const key =
+      typeof normalized === "number" ? String(normalized) : normalized;
+    if (!map.has(key)) map.set(key, normalized);
+  }
+  return Array.from(map.values());
+};
+
 const formatSubjectEntry = (entry) => {
   if (!entry) return null;
 
@@ -84,6 +109,87 @@ const collectSubjects = (course) => {
   return unique;
 };
 
+const collectSubjectIds = (course) => {
+  if (!course || typeof course !== "object") {
+    return [];
+  }
+
+  const ids = new Map();
+
+  const pushId = (value) => {
+    const normalized = normalizeIdValue(value);
+    if (normalized === null) return;
+    const key =
+      typeof normalized === "number" ? String(normalized) : normalized;
+    if (!ids.has(key)) ids.set(key, normalized);
+  };
+
+  const directSources = [
+    course.SubjectIDs,
+    course.subjectIDs,
+    course.SubjectIds,
+    course.subjectIds,
+  ];
+
+  directSources.forEach((source) => {
+    if (Array.isArray(source)) {
+      source.forEach(pushId);
+    }
+  });
+
+  const primaryCandidates = [
+    course.SubjectID,
+    course.subjectID,
+    course.SubjectId,
+    course.subjectId,
+    course?.subject?.id,
+    course?.subject?.Id,
+    course?.Subject?.id,
+    course?.Subject?.Id,
+    course?.subject?.SubjectID,
+    course?.subject?.subjectId,
+  ];
+
+  primaryCandidates.forEach(pushId);
+
+  const nestedSources = [
+    course.courseSubjects,
+    course.CourseSubjects,
+    course.subjects,
+    course.Subjects,
+    course.subjectList,
+    course.SubjectList,
+  ];
+
+  const handleNestedEntry = (entry) => {
+    if (!entry) return;
+    if (Array.isArray(entry)) {
+      entry.forEach(handleNestedEntry);
+      return;
+    }
+
+    if (typeof entry === "object") {
+      pushId(
+        entry.SubjectID ??
+          entry.subjectID ??
+          entry.SubjectId ??
+          entry.subjectId ??
+          entry.subject?.id ??
+          entry.subject?.SubjectID ??
+          entry.id ??
+          entry.Id
+      );
+      return;
+    }
+
+    // ignore primitive strings from nested sources; they typically represent names
+  };
+
+  nestedSources.forEach(handleNestedEntry);
+
+  return Array.from(ids.values());
+};
+
 const formatCourse = (course) => {
   if (!course || typeof course !== "object") {
     return course;
@@ -128,6 +234,7 @@ const formatCourse = (course) => {
     null;
 
   const subjects = collectSubjects(course);
+  const subjectIds = collectSubjectIds(course);
 
   const teacherDetails =
     teacher && typeof teacher === "object"
@@ -240,6 +347,8 @@ const formatCourse = (course) => {
       : subjectName
       ? [subjectName].filter(Boolean)
       : [],
+    subjectIds,
+    SubjectIDs: subjectIds,
   };
 };
 

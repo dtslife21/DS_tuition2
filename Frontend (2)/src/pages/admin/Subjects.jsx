@@ -14,7 +14,96 @@ import Card from "../../components/common/Card";
 import SubjectForm from "../../components/admin/SubjectForm";
 import Loader from "../../components/common/Loader";
 import CoursePickerModal from "../../components/courses/CoursePickerModal";
-import { getCourseDetails } from "../../services/courseService";
+import { getCourseDetails, updateCourse } from "../../services/courseService";
+
+const normalizeIdValue = (value) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number" && !Number.isNaN(value)) return value;
+  const str = String(value).trim();
+  if (!str) return null;
+  if (/^-?\d+$/.test(str) && !/^0\d+/.test(str)) {
+    const parsed = Number(str);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  return str;
+};
+
+const toIdKey = (value) => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number" && !Number.isNaN(value)) {
+    return String(value);
+  }
+  const str = String(value).trim();
+  if (!str) return "";
+  if (/^-?\d+$/.test(str) && !/^0\d+/.test(str)) {
+    const parsed = Number(str);
+    if (!Number.isNaN(parsed)) return String(parsed);
+  }
+  return str;
+};
+
+const normalizeIdArray = (values) => {
+  if (!Array.isArray(values)) return [];
+  const map = new Map();
+  values.forEach((value) => {
+    const normalized = normalizeIdValue(value);
+    if (normalized === null) return;
+    const key = toIdKey(normalized);
+    if (!key) return;
+    if (!map.has(key)) map.set(key, normalized);
+  });
+  return Array.from(map.values());
+};
+
+const deriveCourseMeta = (course, fallbackId) => {
+  if (!course) return null;
+
+  const normalizedId =
+    normalizeIdValue(
+      course.id ??
+        course.CourseID ??
+        course.courseID ??
+        course.CourseId ??
+        course.courseId ??
+        fallbackId
+    ) ?? null;
+  const idKey =
+    normalizedId !== null && normalizedId !== undefined
+      ? toIdKey(normalizedId)
+      : toIdKey(fallbackId);
+
+  if (!idKey) return null;
+
+  const name =
+    course.name ?? course.courseName ?? course.CourseName ?? "";
+  const code =
+    course.code ?? course.courseCode ?? course.CourseCode ?? "";
+
+  const subjectIds = normalizeIdArray(
+    Array.isArray(course.SubjectIDs)
+      ? course.SubjectIDs
+      : Array.isArray(course.subjectIds)
+      ? course.subjectIds
+      : []
+  );
+
+  const primarySubjectId =
+    normalizeIdValue(
+      course.subjectId ??
+        course.SubjectID ??
+        (subjectIds.length ? subjectIds[0] : null)
+    ) ?? null;
+
+  return {
+    id: normalizedId ?? normalizeIdValue(idKey),
+    idKey,
+    name,
+    code,
+    subjectIds,
+    subjectId: primarySubjectId,
+    course,
+  };
+};
 
 const AdminSubjects = () => {
   const [subjects, setSubjects] = useState([]);
@@ -25,6 +114,7 @@ const AdminSubjects = () => {
   const [viewLoading, setViewLoading] = useState(false);
   const [subjectDraftData, setSubjectDraftData] = useState(null);
   const [subjectInProgress, setSubjectInProgress] = useState(null);
+  const [isDraftNewSubject, setIsDraftNewSubject] = useState(false);
   const [showCoursePicker, setShowCoursePicker] = useState(false);
   const [selectedCourseIds, setSelectedCourseIds] = useState([]);
   const [creatingSubject, setCreatingSubject] = useState(false);
@@ -74,6 +164,7 @@ const AdminSubjects = () => {
 
       setSubjectDraftData(payloadWithIds);
       setSubjectInProgress(created);
+  setIsDraftNewSubject(true);
       setSelectedCourseIds([]);
       setCourseStepError("");
       setShowAdd(false);
@@ -101,61 +192,112 @@ const AdminSubjects = () => {
       return;
     }
 
-    const stringifiedSelection = Array.isArray(selectedIds)
-      ? selectedIds.map((value) => String(value))
-      : [String(selectedIds || "")];
+    const previousSelectionKeys = Array.isArray(selectedCourseIds)
+      ? selectedCourseIds.map((value) => toIdKey(value)).filter(Boolean)
+      : [];
 
-    const chosenId = stringifiedSelection.find((value) => value.trim().length);
-    if (!chosenId) {
-      setSelectedCourseIds([]);
-      setCourseStepError("Select a course or add a new one to continue.");
+    const normalizedSelection = Array.isArray(selectedIds)
+      ? selectedIds
+      : [selectedIds];
+
+    const sanitizedSelectionKeys = Array.from(
+      new Set(
+        normalizedSelection
+          .map((value) => toIdKey(value))
+          .filter(Boolean)
+      )
+    );
+
+    if (!sanitizedSelectionKeys.length) {
+      setCourseStepError("Select at least one course to continue.");
       return;
     }
 
-    setSelectedCourseIds(stringifiedSelection);
+    const subjectIdValue =
+      subjectInProgress?.id ??
+      subjectDraftData?.id ??
+      subjectDraftData?.SubjectID ??
+      subjectDraftData?.subjectId ??
+      null;
+
+    const normalizedSubjectId = normalizeIdValue(subjectIdValue);
+    const subjectIdKey = toIdKey(
+      normalizedSubjectId !== null ? normalizedSubjectId : subjectIdValue
+    );
+
+    if (!subjectIdKey) {
+      setCourseStepError(
+        "Subject identifier is missing. Please try again."
+      );
+      return;
+    }
+
     setCourseStepError("");
     setLinkingCourse(true);
 
     try {
-      let courseDetails = null;
-      try {
-        courseDetails = await getCourseDetails(chosenId);
-      } catch (courseErr) {
-        console.warn("AdminSubjects.linkCourse:getCourseDetails", courseErr);
-      }
+      const fetchCourse = async (idKey) => {
+        try {
+          const details = await getCourseDetails(idKey);
+          return { idKey, details };
+        } catch (err) {
+          console.error("AdminSubjects.linkCourse:getCourseDetails", err);
+          return { idKey, details: null, error: err };
+        }
+      };
 
-      const courseIdValue =
-        courseDetails?.id ??
-        courseDetails?.CourseID ??
-        courseDetails?.courseId ??
-        chosenId;
-      const courseNameValue =
-        courseDetails?.name ??
-        courseDetails?.courseName ??
-        courseDetails?.CourseName ??
-        "";
-      const courseCodeValue =
-        courseDetails?.code ??
-        courseDetails?.courseCode ??
-        courseDetails?.CourseCode ??
-        "";
+      const courseResults = await Promise.all(
+        sanitizedSelectionKeys.map((idKey) => fetchCourse(idKey))
+      );
 
-      const subjectIdValue =
-        subjectInProgress?.id ??
-        subjectDraftData?.id ??
-        subjectDraftData?.SubjectID ??
-        subjectDraftData?.subjectId ??
-        null;
-
-      if (subjectIdValue === null || subjectIdValue === undefined) {
-        setLinkingCourse(false);
+      const unresolvedSelection = courseResults.filter(
+        (entry) => !entry.details
+      );
+      if (unresolvedSelection.length) {
         setCourseStepError(
-          "Subject could not be saved. Please try adding it again."
+          "Some selected courses could not be loaded. Please try again."
         );
         return;
       }
 
-      const updatePayload = {
+      const courseMetas = courseResults
+        .map(({ idKey, details }) => deriveCourseMeta(details, idKey))
+        .filter(Boolean);
+
+      if (!courseMetas.length) {
+        setCourseStepError(
+          "No valid courses were found for the current selection."
+        );
+        return;
+      }
+
+      const courseIdsForSubject = normalizeIdArray(
+        courseMetas.map((meta) => meta.id ?? meta.idKey)
+      );
+
+      const courseNamesList = Array.from(
+        new Set(
+          courseMetas
+            .map((meta) => String(meta.name || "").trim())
+            .filter(Boolean)
+        )
+      );
+      const courseCodesList = Array.from(
+        new Set(
+          courseMetas
+            .map((meta) => String(meta.code || "").trim())
+            .filter(Boolean)
+        )
+      );
+
+      const primaryCourseId =
+        courseIdsForSubject.length ? courseIdsForSubject[0] : null;
+      const primaryCourseName =
+        courseNamesList.length ? courseNamesList[0] : "";
+      const primaryCourseCode =
+        courseCodesList.length ? courseCodesList[0] : "";
+
+      const subjectPayload = {
         ...(subjectDraftData || {}),
         id: subjectIdValue,
         SubjectID: subjectIdValue,
@@ -196,40 +338,178 @@ const AdminSubjects = () => {
           subjectDraftData?.description ??
           subjectInProgress?.description ??
           "",
-        courseId: courseIdValue,
-        CourseID: courseIdValue,
-        CourseId: courseIdValue,
-        courseID: courseIdValue,
-        courseName: courseNameValue,
-        CourseName: courseNameValue,
-        courseCode: courseCodeValue,
-        CourseCode: courseCodeValue,
+        courseId: primaryCourseId,
+        CourseID: primaryCourseId,
+        CourseId: primaryCourseId,
+        courseIds: courseIdsForSubject,
+        CourseIDs: courseIdsForSubject,
+        CourseIds: courseIdsForSubject,
+        courseName: primaryCourseName,
+        CourseName: primaryCourseName,
+        courseNames: courseNamesList,
+        CourseNames: courseNamesList,
+        courseCode: primaryCourseCode,
+        CourseCode: primaryCourseCode,
+        courseCodes: courseCodesList,
+        CourseCodes: courseCodesList,
       };
 
-      const updated = await updateSubject(subjectIdValue, updatePayload);
+      const updated = await updateSubject(subjectIdValue, subjectPayload);
+
+      const prevSelectionSet = new Set(previousSelectionKeys);
+      const newSelectionSet = new Set(sanitizedSelectionKeys);
+      const removedKeys = [...prevSelectionSet].filter(
+        (key) => !newSelectionSet.has(key)
+      );
+
+      let removalMetas = [];
+      if (removedKeys.length) {
+        const removalResults = await Promise.all(
+          removedKeys.map((idKey) => fetchCourse(idKey))
+        );
+        removalMetas = removalResults
+          .filter((entry) => entry.details)
+          .map(({ idKey, details }) => deriveCourseMeta(details, idKey))
+          .filter(Boolean);
+      }
+
+      const subjectIdForArray =
+        normalizedSubjectId !== null ? normalizedSubjectId : subjectIdKey;
+
+      const courseOperations = [];
+
+      courseMetas.forEach((meta) => {
+        const existingSet = new Set(
+          meta.subjectIds.map((id) => toIdKey(id))
+        );
+        const shouldAdd = subjectIdKey && !existingSet.has(subjectIdKey);
+        const needsPrimary =
+          (!meta.subjectId || !toIdKey(meta.subjectId)) &&
+          subjectIdKey &&
+          subjectIdForArray !== null;
+        if (!shouldAdd && !needsPrimary) return;
+
+        const nextIds = normalizeIdArray([
+          ...meta.subjectIds,
+          subjectIdForArray,
+        ]);
+        const updatePayload = { SubjectIDs: nextIds };
+        const currentPrimaryKey = toIdKey(meta.subjectId);
+        if (!currentPrimaryKey || currentPrimaryKey === subjectIdKey) {
+          if (nextIds.length) updatePayload.SubjectID = nextIds[0];
+        }
+        courseOperations.push(
+          updateCourse(meta.id ?? meta.idKey, updatePayload)
+        );
+      });
+
+      removalMetas.forEach((meta) => {
+        const existingSet = new Set(
+          meta.subjectIds.map((id) => toIdKey(id))
+        );
+        if (!existingSet.has(subjectIdKey)) return;
+
+        const remainingIds = meta.subjectIds.filter(
+          (id) => toIdKey(id) !== subjectIdKey
+        );
+        const nextIds = normalizeIdArray(remainingIds);
+        const updatePayload = { SubjectIDs: nextIds };
+        const currentPrimaryKey = toIdKey(meta.subjectId);
+        if (currentPrimaryKey === subjectIdKey) {
+          updatePayload.SubjectID = nextIds.length ? nextIds[0] : null;
+        }
+        courseOperations.push(
+          updateCourse(meta.id ?? meta.idKey, updatePayload)
+        );
+      });
+
+      if (courseOperations.length) {
+        const results = await Promise.allSettled(courseOperations);
+        const rejected = results.find((res) => res.status === "rejected");
+        if (rejected) {
+          throw (
+            rejected.reason ||
+            new Error("Failed to update one or more course assignments.")
+          );
+        }
+      }
+
       const subjectEntry = {
         ...updated,
-        courseName: updated?.courseName ?? courseNameValue,
       };
+
+      if (
+        !Array.isArray(subjectEntry.courseIds) ||
+        !subjectEntry.courseIds.length
+      ) {
+        subjectEntry.courseIds = courseIdsForSubject;
+        subjectEntry.CourseIDs = courseIdsForSubject;
+      }
+
+      if (
+        !Array.isArray(subjectEntry.courseNames) ||
+        !subjectEntry.courseNames.length
+      ) {
+        subjectEntry.courseNames = courseNamesList;
+        subjectEntry.CourseNames = courseNamesList;
+      }
+
+      if (!subjectEntry.courseName && courseNamesList.length) {
+        subjectEntry.courseName = courseNamesList.join(", ");
+      }
+
+      if (!subjectEntry.CourseName && primaryCourseName) {
+        subjectEntry.CourseName = primaryCourseName;
+      }
+
+      if (
+        !Array.isArray(subjectEntry.courseCodes) ||
+        !subjectEntry.courseCodes.length
+      ) {
+        subjectEntry.courseCodes = courseCodesList;
+        subjectEntry.CourseCodes = courseCodesList;
+      }
+
+      if (!subjectEntry.courseCode && primaryCourseCode) {
+        subjectEntry.courseCode = primaryCourseCode;
+      }
+      if (!subjectEntry.CourseCode && primaryCourseCode) {
+        subjectEntry.CourseCode = primaryCourseCode;
+      }
+
+      if (
+        subjectEntry.courseId === null ||
+        subjectEntry.courseId === undefined
+      ) {
+        subjectEntry.courseId = primaryCourseId ?? null;
+      }
+      if (
+        subjectEntry.CourseID === null ||
+        subjectEntry.CourseID === undefined
+      ) {
+        subjectEntry.CourseID = primaryCourseId ?? null;
+      }
 
       setSubjects((list) => {
         const filtered = (list || []).filter(
           (s) =>
             String(s.id ?? s.SubjectID ?? s.subjectId ?? "") !==
-            String(subjectIdValue ?? "")
+            String(subjectEntry.id ?? subjectIdValue ?? "")
         );
         return [subjectEntry, ...filtered];
       });
 
-      setShowCoursePicker(false);
+      setSelectedCourseIds(sanitizedSelectionKeys);
       setSubjectInProgress(null);
       setSubjectDraftData(null);
-      setSelectedCourseIds([]);
+  setIsDraftNewSubject(false);
+      setShowCoursePicker(false);
       setCourseStepError("");
     } catch (err) {
       console.error("AdminSubjects.linkCourse:", err);
       setCourseStepError(
-        "Unable to link the subject to the course. Please try again."
+        err?.message ||
+          "Unable to link the subject to the selected courses. Please try again."
       );
     } finally {
       setLinkingCourse(false);
@@ -239,7 +519,7 @@ const AdminSubjects = () => {
   const handleCoursePickerClose = async () => {
     if (linkingCourse) return;
     setShowCoursePicker(false);
-    if (subjectInProgress?.id) {
+    if (isDraftNewSubject && subjectInProgress?.id) {
       try {
         await deleteSubject(subjectInProgress.id);
       } catch (err) {
@@ -250,6 +530,7 @@ const AdminSubjects = () => {
     setSubjectDraftData(null);
     setSelectedCourseIds([]);
     setCourseStepError("");
+    setIsDraftNewSubject(false);
   };
 
   // Open edit modal. Accept either the subject object or an id.
@@ -286,19 +567,40 @@ const AdminSubjects = () => {
         )
       );
 
-      // After updating core subject fields, allow changing linked course.
-      // Prepare draft state and open the course picker preselected to current course.
-      const currentCourseId =
+      // After updating core subject fields, allow changing linked courses.
+      // Prepare draft state and open the course picker preselected to current courses.
+      const updatedCourseIds = Array.isArray(updated?.courseIds)
+        ? updated.courseIds
+        : Array.isArray(updated?.CourseIDs)
+        ? updated.CourseIDs
+        : Array.isArray(updated?.CourseIds)
+        ? updated.CourseIds
+        : [];
+
+      const preselectedCourses = Array.from(
+        new Set(
+          (updatedCourseIds || [])
+            .map((value) => toIdKey(value))
+            .filter(Boolean)
+        )
+      );
+
+      const fallbackCourseId =
         updated?.courseId ??
         updated?.CourseID ??
         updated?.CourseId ??
         updated?.courseID ??
-        updated?.courseId ??
         null;
+
+      if (!preselectedCourses.length && fallbackCourseId !== null) {
+        const key = toIdKey(fallbackCourseId);
+        if (key) preselectedCourses.push(key);
+      }
 
       setSubjectDraftData({ ...updated });
       setSubjectInProgress({ ...updated });
-      setSelectedCourseIds(currentCourseId ? [String(currentCourseId)] : []);
+      setSelectedCourseIds(preselectedCourses);
+  setIsDraftNewSubject(false);
       // Close the edit modal then open the course picker so the user can change the linked course if desired
       setEditSubject(null);
       setCourseStepError("");
@@ -358,6 +660,7 @@ const AdminSubjects = () => {
             onClick={() => {
               setSubjectDraftData(null);
               setSubjectInProgress(null);
+              setIsDraftNewSubject(false);
               setSelectedCourseIds([]);
               setCourseStepError("");
               setShowCoursePicker(false);
@@ -380,6 +683,7 @@ const AdminSubjects = () => {
               onClick={() => {
                 setSubjectDraftData(null);
                 setSubjectInProgress(null);
+                setIsDraftNewSubject(false);
                 setSelectedCourseIds([]);
                 setCourseStepError("");
                 setShowCoursePicker(false);
@@ -392,63 +696,74 @@ const AdminSubjects = () => {
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {subjects.map((s) => (
-            <Card
-              key={s.id}
-              className="p-4 cursor-pointer hover:shadow-lg"
-              onClick={() => {
-                const ident = s?.id ?? s?.SubjectID ?? s?.subjectId ?? s?.name;
-                const target = ident ? encodeURIComponent(ident) : "";
-                if (target) {
-                  // navigate to the shared subject view route
-                  navigate(`/subjects/${target}`);
-                } else {
-                  // fallback to opening the modal when no identifier exists
-                  openView(s);
-                }
-              }}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold text-lg text-indigo-700 dark:text-white">
-                    {s.name}
-                  </h3>
-                  {s.courseName && (
-                    <div className="text-sm text-gray-500">
-                      Course: {s.courseName}
-                    </div>
-                  )}
-                  {s.description && (
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                      {s.description}
-                    </p>
-                  )}
-                </div>
+          {subjects.map((s) => {
+            const courseNames = Array.isArray(s.courseNames)
+              ? s.courseNames
+              : String(s.courseName || "")
+                  .split(",")
+                  .map((name) => name.trim())
+                  .filter(Boolean);
+            const hasCourses = courseNames.length > 0;
+            const courseLabel = hasCourses
+              ? `${courseNames.length > 1 ? "Courses" : "Course"}: ${courseNames.join(", ")}`
+              : "";
 
-                <div className="flex flex-col items-end gap-2">
-                  <Button
-                    variant="primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEdit(s);
-                    }}
-                  >
-                    Edit
-                  </Button>
+            return (
+              <Card
+                key={s.id}
+                className="p-4 cursor-pointer hover:shadow-lg"
+                onClick={() => {
+                  const ident = s?.id ?? s?.SubjectID ?? s?.subjectId ?? s?.name;
+                  const target = ident ? encodeURIComponent(ident) : "";
+                  if (target) {
+                    // navigate to the shared subject view route
+                    navigate(`/subjects/${target}`);
+                  } else {
+                    // fallback to opening the modal when no identifier exists
+                    openView(s);
+                  }
+                }}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-lg text-indigo-700 dark:text-white">
+                      {s.name}
+                    </h3>
+                    {hasCourses ? (
+                      <div className="text-sm text-gray-500">{courseLabel}</div>
+                    ) : null}
+                    {s.description && (
+                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                        {s.description}
+                      </p>
+                    )}
+                  </div>
 
-                  <Button
-                    variant="secondary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(s.id);
-                    }}
-                  >
-                    Delete
-                  </Button>
+                  <div className="flex flex-col items-end gap-2">
+                    <Button
+                      variant="primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEdit(s);
+                      }}
+                    >
+                      Edit
+                    </Button>
+
+                    <Button
+                      variant="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(s.id);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -479,23 +794,34 @@ const AdminSubjects = () => {
         title={viewSubject?.name || "Subject Details"}
       >
         {viewSubject ? (
-          <div className="space-y-2">
-            <div>
-              <strong>ID:</strong> {viewSubject.id ?? "-"}
-            </div>
-            <div>
-              <strong>Code:</strong> {viewSubject.subjectCode ?? "-"}
-            </div>
-            <div>
-              <strong>Name:</strong> {viewSubject.name}
-            </div>
-            <div>
-              <strong>Course:</strong> {viewSubject.courseName ?? "-"}
-            </div>
-            <div>
-              <strong>Description:</strong> {viewSubject.description ?? "-"}
-            </div>
-          </div>
+          (() => {
+            const courseNames = Array.isArray(viewSubject.courseNames)
+              ? viewSubject.courseNames
+              : String(viewSubject.courseName || "")
+                  .split(",")
+                  .map((name) => name.trim())
+                  .filter(Boolean);
+            return (
+              <div className="space-y-2">
+                <div>
+                  <strong>ID:</strong> {viewSubject.id ?? "-"}
+                </div>
+                <div>
+                  <strong>Code:</strong> {viewSubject.subjectCode ?? "-"}
+                </div>
+                <div>
+                  <strong>Name:</strong> {viewSubject.name}
+                </div>
+                <div>
+                  <strong>{courseNames.length > 1 ? "Courses" : "Course"}:</strong>{" "}
+                  {courseNames.length ? courseNames.join(", ") : "-"}
+                </div>
+                <div>
+                  <strong>Description:</strong> {viewSubject.description ?? "-"}
+                </div>
+              </div>
+            );
+          })()
         ) : (
           viewLoading && <Loader size="sm" className="py-2" />
         )}
@@ -522,11 +848,11 @@ const AdminSubjects = () => {
         onClose={handleCoursePickerClose}
         initialSelected={selectedCourseIds}
         onProceed={handleLinkCourse}
-        title="Step 2 of 2 — Assign Course"
-        description="Select an existing course to link with this subject or add a new one."
-        multiSelect={false}
+        title="Step 2 of 2 — Assign Courses"
+        description="Select one or more courses to link with this subject or add a new one."
+        multiSelect
         saving={linkingCourse}
-        proceedLabel="Link Course"
+        proceedLabel="Assign Courses"
         errorMessage={courseStepError}
         courseFormDefaults={
           courseFormSubjectId

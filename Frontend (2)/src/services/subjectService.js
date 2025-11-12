@@ -1,8 +1,238 @@
 import axios from "axios";
 import { getAllCourses } from "./courseService";
 
+const normalizeIdValue = (value) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number" && !Number.isNaN(value)) return value;
+  const str = String(value).trim();
+  if (!str) return null;
+  if (/^-?\d+$/.test(str) && !/^0\d+/.test(str)) {
+    const parsed = Number(str);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  return str;
+};
+
+const normalizeIdArray = (values) => {
+  if (!Array.isArray(values)) return [];
+  const map = new Map();
+  for (const item of values) {
+    const normalized = normalizeIdValue(item);
+    if (normalized === null) continue;
+    const key =
+      typeof normalized === "number" ? String(normalized) : normalized;
+    if (!map.has(key)) map.set(key, normalized);
+  }
+  return Array.from(map.values());
+};
+
+const normalizeNameArray = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => String(entry || "").trim())
+      .filter(Boolean);
+  }
+  const str = String(value).trim();
+  if (!str) return [];
+  return str
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+};
+
+const extractCourseMetadata = (raw) => {
+  if (!raw || typeof raw !== "object") {
+    return { courseIds: [], courseNames: [], courseCodes: [], courses: [] };
+  }
+
+  const idMap = new Map();
+  const nameSet = new Set();
+  const codeSet = new Set();
+  const courses = [];
+
+  const pushId = (value) => {
+    const normalized = normalizeIdValue(value);
+    if (normalized === null) return;
+    const key =
+      typeof normalized === "number" ? String(normalized) : normalized;
+    if (!idMap.has(key)) idMap.set(key, normalized);
+  };
+
+  const pushName = (value) => {
+    const names = normalizeNameArray(value);
+    names.forEach((name) => nameSet.add(name));
+  };
+
+  const pushCode = (value) => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value
+        .map((entry) => String(entry || "").trim())
+        .filter(Boolean)
+        .forEach((entry) => codeSet.add(entry));
+      return;
+    }
+    const str = String(value).trim();
+    if (!str) return;
+    str
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .forEach((entry) => codeSet.add(entry));
+  };
+
+  const pushCourse = (course) => {
+    if (!course || typeof course !== "object") return;
+    const idCandidate =
+      course.CourseID ??
+      course.courseID ??
+      course.courseId ??
+      course.CourseId ??
+      course.id ??
+      course.Id ??
+      course.course?.id ??
+      course.Course?.id ??
+      null;
+    const normalizedId = normalizeIdValue(idCandidate);
+    pushId(normalizedId ?? idCandidate);
+
+    const nameCandidate =
+      course.CourseName ??
+      course.courseName ??
+      course.name ??
+      course.Title ??
+      course.title ??
+      "";
+    const codeCandidate =
+      course.CourseCode ??
+      course.courseCode ??
+      course.code ??
+      course.Code ??
+      "";
+
+    pushName(nameCandidate);
+    pushCode(codeCandidate);
+
+    courses.push({
+      id: normalizedId,
+      name: String(nameCandidate || "").trim(),
+      code: String(codeCandidate || "").trim(),
+    });
+  };
+
+  [raw.CourseID, raw.courseID, raw.CourseId, raw.courseId].forEach(pushId);
+  pushName(raw.courseName);
+  pushName(raw.CourseName);
+  pushCode(raw.courseCode);
+  pushCode(raw.CourseCode);
+
+  const directIdArrays = [
+    raw.CourseIDs,
+    raw.courseIDs,
+    raw.CourseIds,
+    raw.courseIds,
+  ];
+  directIdArrays.forEach((source) => {
+    if (Array.isArray(source)) source.forEach(pushId);
+  });
+
+  [raw.courseNames, raw.CourseNames].forEach(pushName);
+  [raw.courseCodes, raw.CourseCodes].forEach(pushCode);
+
+  const courseCollections = [
+    raw.Courses,
+    raw.courses,
+    raw.courseList,
+    raw.CourseList,
+    raw.CourseAssignments,
+    raw.courseAssignments,
+    raw.CourseSubjects,
+    raw.courseSubjects,
+    raw.LinkedCourses,
+    raw.linkedCourses,
+  ];
+
+  courseCollections.forEach((collection) => {
+    if (!collection) return;
+    if (Array.isArray(collection)) {
+      collection.forEach((entry) => {
+        if (entry && typeof entry === "object") {
+          pushCourse(entry);
+        } else {
+          pushName(entry);
+        }
+      });
+    } else if (typeof collection === "object") {
+      Object.values(collection).forEach((entry) => {
+        if (entry && typeof entry === "object") {
+          pushCourse(entry);
+        } else {
+          pushName(entry);
+        }
+      });
+    }
+  });
+
+  pushCourse(raw.Course);
+  pushCourse(raw.course);
+
+  const courseIds = Array.from(idMap.values());
+  const courseNames = Array.from(nameSet.values());
+  const courseCodes = Array.from(codeSet.values());
+
+  const dedupedCourses = [];
+  const seenKeys = new Set();
+  courses.forEach((course) => {
+    const key =
+      course.id !== null && course.id !== undefined
+        ? `id:${String(course.id)}`
+        : `name:${course.name}|code:${course.code}`;
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    dedupedCourses.push(course);
+  });
+
+  return { courseIds, courseNames, courseCodes, courses: dedupedCourses };
+};
+
 const mapSubject = (raw) => {
   if (!raw) return null;
+
+  const {
+    courseIds,
+    courseNames,
+    courseCodes,
+    courses,
+  } = extractCourseMetadata(raw);
+
+  const primaryCourseIdCandidate =
+    normalizeIdValue(
+      raw.CourseID ??
+        raw.courseID ??
+        raw.CourseId ??
+        raw.courseId ??
+        courseIds[0]
+    ) ?? null;
+
+  const primaryCourseName =
+    (Array.isArray(courseNames) && courseNames.length
+      ? courseNames[0]
+      : null) ??
+    raw.courseName ??
+    raw.CourseName ??
+    raw.course ??
+    raw.courseTitle ??
+    "";
+
+  const primaryCourseCode =
+    (Array.isArray(courseCodes) && courseCodes.length
+      ? courseCodes[0]
+      : null) ??
+    raw.courseCode ??
+    raw.CourseCode ??
+    "";
+
   return {
     id:
       raw.id ??
@@ -19,11 +249,21 @@ const mapSubject = (raw) => {
       raw.title ??
       raw.Title ??
       "",
-    // keep both common shapes for code to support edit forms and duplicate checks
     subjectCode:
       raw.subjectCode ?? raw.SubjectCode ?? raw.code ?? raw.Code ?? "",
-    courseName:
-      raw.courseName ?? raw.CourseName ?? raw.course ?? raw.courseTitle ?? "",
+    courseId: primaryCourseIdCandidate,
+    CourseID: primaryCourseIdCandidate,
+    courseName: Array.isArray(courseNames) && courseNames.length
+      ? courseNames.join(", ")
+      : primaryCourseName,
+    CourseName: primaryCourseName,
+    courseNames,
+    CourseNames: courseNames,
+    courseCodes,
+    CourseCodes: courseCodes,
+    courseIds,
+    CourseIDs: courseIds,
+    courses,
     description: raw.description ?? raw.Description ?? raw.details ?? "",
   };
 };
@@ -44,6 +284,12 @@ export const getAllSubjects = async () => {
     const courses = await getAllCourses();
     const fromCourses = [];
     for (const c of courses || []) {
+      const courseId =
+        c.id ?? c.CourseID ?? c.courseId ?? c.courseID ?? c.CourseId ?? null;
+      const courseName =
+        c.name ?? c.CourseName ?? c.courseName ?? c.title ?? c.Title ?? "";
+      const courseCode = c.code ?? c.CourseCode ?? c.courseCode ?? "";
+
       const subjects =
         c.subjects ||
         c.Subjects ||
@@ -56,7 +302,18 @@ export const getAllSubjects = async () => {
         fromCourses.push({
           id: `${c.id}-primary-${sname}`,
           name: sname,
-          courseName: c.name || c.CourseName || "",
+          courseName,
+          courseNames: courseName ? [courseName] : [],
+          courseIds: courseId !== null ? [courseId] : [],
+          CourseIDs: courseId !== null ? [courseId] : [],
+          courseCodes: courseCode ? [courseCode] : [],
+          courses: [
+            {
+              id: courseId,
+              name: courseName,
+              code: courseCode,
+            },
+          ],
         });
       }
       if (Array.isArray(subjects) && subjects.length) {
@@ -69,7 +326,18 @@ export const getAllSubjects = async () => {
             fromCourses.push({
               id: `${c.id}-${name}`,
               name,
-              courseName: c.name || c.CourseName || "",
+              courseName,
+              courseNames: courseName ? [courseName] : [],
+              courseIds: courseId !== null ? [courseId] : [],
+              CourseIDs: courseId !== null ? [courseId] : [],
+              courseCodes: courseCode ? [courseCode] : [],
+              courses: [
+                {
+                  id: courseId,
+                  name: courseName,
+                  code: courseCode,
+                },
+              ],
             });
           }
         }
@@ -123,6 +391,64 @@ export const getSubjectById = async (subjectId) => {
 // Update an existing subject
 export const updateSubject = async (subjectId, data) => {
   try {
+    const courseIdInputs = [];
+    if (Array.isArray(data?.CourseIDs)) courseIdInputs.push(...data.CourseIDs);
+    if (Array.isArray(data?.courseIDs)) courseIdInputs.push(...data.courseIDs);
+    if (Array.isArray(data?.CourseIds)) courseIdInputs.push(...data.CourseIds);
+    if (Array.isArray(data?.courseIds)) courseIdInputs.push(...data.courseIds);
+
+    const normalizedCourseIds = normalizeIdArray(courseIdInputs);
+    const primaryCourseId =
+      normalizeIdValue(
+        data?.CourseID ??
+          data?.courseID ??
+          data?.CourseId ??
+          data?.courseId ??
+          (normalizedCourseIds.length ? normalizedCourseIds[0] : null)
+      ) ?? undefined;
+
+    const courseNameSet = new Set();
+    normalizeNameArray(data?.courseNames).forEach((name) =>
+      courseNameSet.add(name)
+    );
+    normalizeNameArray(data?.CourseNames).forEach((name) =>
+      courseNameSet.add(name)
+    );
+    if (data?.courseName) {
+      const single = String(data.courseName).trim();
+      if (single) courseNameSet.add(single);
+    }
+    if (data?.CourseName) {
+      const single = String(data.CourseName).trim();
+      if (single) courseNameSet.add(single);
+    }
+    const normalizedCourseNames = Array.from(courseNameSet);
+    const primaryCourseName =
+      normalizedCourseNames.length > 0
+        ? normalizedCourseNames[0]
+        : data?.courseName ?? data?.CourseName ?? "";
+
+    const courseCodeSet = new Set();
+    normalizeNameArray(data?.courseCodes).forEach((code) =>
+      courseCodeSet.add(code)
+    );
+    normalizeNameArray(data?.CourseCodes).forEach((code) =>
+      courseCodeSet.add(code)
+    );
+    if (data?.courseCode) {
+      const single = String(data.courseCode).trim();
+      if (single) courseCodeSet.add(single);
+    }
+    if (data?.CourseCode) {
+      const single = String(data.CourseCode).trim();
+      if (single) courseCodeSet.add(single);
+    }
+    const normalizedCourseCodes = Array.from(courseCodeSet);
+    const primaryCourseCode =
+      normalizedCourseCodes.length > 0
+        ? normalizedCourseCodes[0]
+        : data?.courseCode ?? data?.CourseCode ?? "";
+
     const payload = {
       subjectId: subjectId,
       SubjectID: subjectId,
@@ -136,11 +462,32 @@ export const updateSubject = async (subjectId, data) => {
       Code: data.subjectCode ?? data.SubjectCode ?? data.code,
       description: data.description ?? data.Description,
       Description: data.description ?? data.Description,
-      courseName: data.courseName ?? data.CourseName,
-      CourseName: data.courseName ?? data.CourseName,
+      courseId: primaryCourseId,
+      CourseID: primaryCourseId,
+      CourseId: primaryCourseId,
+      courseIds: normalizedCourseIds,
+      CourseIDs: normalizedCourseIds,
+      CourseIds: normalizedCourseIds,
+      courseName: primaryCourseName,
+      CourseName: primaryCourseName,
+      courseNames: normalizedCourseNames,
+      CourseNames: normalizedCourseNames,
+      courseCode: primaryCourseCode,
+      CourseCode: primaryCourseCode,
+      courseCodes: normalizedCourseCodes,
+      CourseCodes: normalizedCourseCodes,
     };
-    const resp = await axios.put(`/Subjects/${subjectId}`, payload);
-    return mapSubject(resp.data || payload);
+    const cleanedPayload = Object.fromEntries(
+      Object.entries(payload).filter(([key, value]) => {
+        if (key === "CourseIDs" || key === "CourseIds" || key === "courseIds") {
+          return value !== undefined;
+        }
+        return value !== undefined && value !== null;
+      })
+    );
+
+    const resp = await axios.put(`/Subjects/${subjectId}`, cleanedPayload);
+    return mapSubject(resp.data || cleanedPayload);
   } catch (err) {
     console.error("Failed to update subject via API", err);
     throw err;
