@@ -8,12 +8,13 @@ using System.Web.Http.Cors;
 
 namespace ClassSystemAPI.Controllers
 {
+    [EnableCors(origins: "http://localhost:3000", headers: "*", methods: "*")]
     public class UsersController : ApiController
     {
         private ClassSystemContext db = new ClassSystemContext();
 
 
-        [EnableCors(origins: "http://localhost:3000", headers: "*", methods: "*")]
+        
         // Helper method to add logs
         private void AddLog(int? userId, string action, string details = null)
         {
@@ -48,7 +49,7 @@ namespace ClassSystemAPI.Controllers
             return request.ServerVariables["REMOTE_ADDR"];
         }
 
-        //login
+        // login
         [HttpPost]
         [Route("api/Users/Login")]
         public IHttpActionResult Login(LoginRequest request)
@@ -61,13 +62,31 @@ namespace ClassSystemAPI.Controllers
 
             var user = db.Users
                          .Include(u => u.UserType)
-                         .FirstOrDefault(u => u.Username == request.Username && u.PasswordHash == request.Password); 
+                         .FirstOrDefault(u => u.Username == request.Username && u.PasswordHash == request.Password);
 
             if (user == null)
             {
                 AddLog(null, "LoginFailed", $"Invalid credentials for username: {request.Username}");
-                return Unauthorized();  
+                return Unauthorized();
             }
+
+            // Prevent login if user is inactive — return structured JSON + 403
+            if (!user.IsActive)
+            {
+                AddLog(user.UserID, "LoginBlockedInactive", $"Attempt to login by inactive user: {request.Username}");
+
+                var responseObj = new
+                {
+                    error = "AccountInactive",
+                    message = "Your account is inactive. Please contact the administrator to reactivate your account."
+                };
+
+                return Content(HttpStatusCode.Forbidden, responseObj);
+            }
+
+            // Update last login time
+            user.LastLogin = DateTime.Now;
+            db.SaveChanges();
 
             AddLog(user.UserID, "LoginSuccess", $"User '{request.Username}' logged in successfully");
 
