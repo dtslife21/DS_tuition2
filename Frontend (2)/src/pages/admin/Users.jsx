@@ -587,7 +587,8 @@ const AdminUsers = () => {
       setUsers((prev) =>
         prev.map((u) => {
           const id = u.UserID || u.id || u.userID || u.userId || null;
-          const updatedId = updated.UserID || updated.id || updated.userID || updated.userId;
+          const updatedId =
+            updated.UserID || updated.id || updated.userID || updated.userId;
           return String(id) === String(updatedId) ? updated : u;
         })
       );
@@ -609,7 +610,8 @@ const AdminUsers = () => {
       setUsers((prev) =>
         prev.map((u) => {
           const id = u.UserID || u.id || u.userID || u.userId || null;
-          const updatedId = updated.UserID || updated.id || updated.userID || updated.userId;
+          const updatedId =
+            updated.UserID || updated.id || updated.userID || updated.userId;
           return String(id) === String(updatedId) ? updated : u;
         })
       );

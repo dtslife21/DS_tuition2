@@ -44,9 +44,8 @@ const Login = () => {
       const result = await login(values.username, values.password);
 
       if (result.success) {
-        // Use the user data from the result, not localStorage
         const userType = result.user?.userType;
-        
+
         console.log('Login successful. userType:', userType);
 
         switch (userType) {
@@ -63,11 +62,11 @@ const Login = () => {
             navigate('/dashboard');
         }
       } else {
-        setError(result.error || 'Login failed');
+        setError(result.error || 'Invalid username or password');
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('Failed to login');
+      setError('Network error – please check your connection');
     } finally {
       setLoading(false);
     }
@@ -82,13 +81,26 @@ const Login = () => {
           </h2>
         </div>
 
+        {/*  Improved Error Message Section */}
         {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="flex">
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">{error}</h3>
-              </div>
-            </div>
+          <div className="flex items-center justify-center rounded-lg border border-red-400 bg-red-100 dark:bg-red-900/30 px-4 py-3 shadow-md transition-all duration-300">
+            <svg
+              className="h-5 w-5 text-red-600 dark:text-red-400 mr-2"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 9v2m0 4h.01M12 4.5c4.142 0 7.5 3.358 7.5 7.5s-3.358 7.5-7.5 7.5S4.5 16.142 4.5 12 7.858 4.5 12 4.5z"
+              />
+            </svg>
+            <p className="text-sm font-semibold text-red-700 dark:text-red-300 text-center">
+              {error}
+            </p>
           </div>
         )}
 
