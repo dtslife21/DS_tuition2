@@ -5,6 +5,8 @@ using System.Web;
 using System.Web.Http;
 using ClassSystemAPI.Models;
 using System.Data.Entity; // added
+using System.Net;
+using System.Data.Entity.Infrastructure;
 
 namespace ClassSystemAPI.Controllers
 {
@@ -39,6 +41,42 @@ namespace ClassSystemAPI.Controllers
             db.Teachers.Add(teacher);
             db.SaveChanges();
             return Ok(teacher);
+        }
+
+        // PUT: api/Teachers/5
+        [HttpPut]
+        public IHttpActionResult PutTeacher(int id, Teacher teacher)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (id != teacher.TeacherID)
+                return BadRequest("ID mismatch");
+
+            var existing = db.Teachers.Find(id);
+            if (existing == null) return NotFound();
+
+            // Update only teacher-specific fields (do not overwrite navigation User here)
+            existing.EmployeeID = teacher.EmployeeID;
+            existing.Department = teacher.Department;
+            existing.Qualification = teacher.Qualification;
+            existing.JoiningDate = teacher.JoiningDate;
+            existing.Bio = teacher.Bio;
+
+            db.Entry(existing).State = EntityState.Modified;
+
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!TeacherExists(id))
+                    return NotFound();
+                throw;
+            }
+
+            return StatusCode(HttpStatusCode.NoContent);
         }
 
         // GET: api/Teachers/{teacherId}/Courses/Students
@@ -125,6 +163,11 @@ namespace ClassSystemAPI.Controllers
                 course.AcademicYear,
                 Students = students
             });
+        }
+
+        private bool TeacherExists(int id)
+        {
+            return db.Teachers.Count(e => e.TeacherID == id) > 0;
         }
     }
 }
