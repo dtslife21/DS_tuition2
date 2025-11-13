@@ -70,11 +70,11 @@ const AdminDashboard = () => {
   return (
     <div className="space-y-8">
       {/* Stats header */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-3">
         <StatsCard icon="🎓" title="Total Students" value={students.length} />
         <StatsCard icon="�" title="Total Courses" value={courses.length} />
         <StatsCard icon="🧑‍🏫" title="Total Teachers" value={teachers.length} />
-        <StatsCard icon="💵" title="Fees Collection" value={`Rs.${0}`} />
+        {/* <StatsCard icon="💵" title="Fees Collection" value={`Rs.${0}`} /> */}
       </div>
 
       {/* Notices & Announcements panel */}
