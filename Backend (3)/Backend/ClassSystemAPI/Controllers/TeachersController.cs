@@ -79,6 +79,21 @@ namespace ClassSystemAPI.Controllers
             return StatusCode(HttpStatusCode.NoContent);
         }
 
+        // DELETE: api/Teachers/5
+        [HttpDelete]
+        public IHttpActionResult DeleteTeacher(int id)
+        {
+            var teacher = db.Teachers.Find(id);
+            if (teacher == null)
+                return NotFound();
+
+            // Note: This endpoint deletes only the teacher record (not the associated User).
+            db.Teachers.Remove(teacher);
+            db.SaveChanges();
+
+            return Ok(new { Message = "Teacher record deleted successfully" });
+        }
+
         // GET: api/Teachers/{teacherId}/Courses/Students
         // Returns all courses for the teacher, each with enrolled students
         [HttpGet]
@@ -168,6 +183,15 @@ namespace ClassSystemAPI.Controllers
         private bool TeacherExists(int id)
         {
             return db.Teachers.Count(e => e.TeacherID == id) > 0;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                db.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }
