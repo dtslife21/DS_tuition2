@@ -6,7 +6,7 @@ import {
   updateCourse,
   getTeacherCourseStudents,
   getTeacherStudents,
-  deleteCourse,
+  deactivateCourse,
 } from "../../services/courseService";
 import { getCourseMaterials } from "../../services/materialService";
 import { getCourseAttendance } from "../../services/attendanceService";
@@ -62,8 +62,29 @@ const CourseView = () => {
   const [showStudentMenu, setShowStudentMenu] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("success");
+
   // Ref for student menu wrapper to detect outside clicks
   const studentMenuRef = useRef(null);
+
+  const normalizedStatus = course
+    ? typeof course.status === "string"
+      ? course.status.trim().toLowerCase()
+      : typeof course.Status === "string"
+      ? course.Status.trim().toLowerCase()
+      : null
+    : null;
+
+  const isCourseActive = course
+    ? course.isActive ??
+      course.IsActive ??
+      (normalizedStatus === null ? true : normalizedStatus !== "inactive")
+    : true;
+
+  const statusBadgeLabel = isCourseActive ? "Active" : "Inactive";
+
+  const statusBadgeClassName = isCourseActive
+    ? "px-3 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60 dark:bg-emerald-900/40 dark:text-emerald-300 dark:ring-emerald-800"
+    : "px-3 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-700 ring-1 ring-gray-300/60 dark:bg-gray-800/60 dark:text-gray-300 dark:ring-gray-700";
 
   // Close student menu when clicking outside of it
   useEffect(() => {
@@ -594,36 +615,38 @@ const CourseView = () => {
                 Edit
               </button>
             )}
-            {isAdmin && (
+            {isAdmin && isCourseActive && (
               <button
                 onClick={async () => {
                   const candidateId =
                     course?.id ?? course?.CourseID ?? course?.courseId ?? id;
                   if (!candidateId) return;
                   const confirmed = confirm(
-                    `Delete course "${
+                    `Deactivate course "${
                       course?.name || candidateId
-                    }"? This action cannot be undone.`
+                    }"? Students will no longer see this course.`
                   );
                   if (!confirmed) return;
                   setDeleting(true);
                   try {
-                    const ok = await deleteCourse(candidateId);
-                    if (ok) {
-                      setToastType("success");
-                      setToastMessage("Course deleted");
-                      const redirectPath = isAdmin
-                        ? "/admin/courses"
-                        : "/teacher/courses";
-                      navigate(redirectPath);
+                    const updatedCourse = await deactivateCourse(candidateId);
+                    if (updatedCourse) {
+                      setCourse(updatedCourse);
+                    }
+                    setToastType("success");
+                    setToastMessage("Course deactivated");
+                    const redirectPath = isAdmin
+                      ? "/admin/courses"
+                      : "/teacher/courses";
+                    if (isAdmin) {
+                      navigate(redirectPath, { state: { tab: "inactive" } });
                     } else {
-                      setToastType("error");
-                      setToastMessage("Failed to delete course");
+                      navigate(redirectPath);
                     }
                   } catch (err) {
-                    console.error("Failed to delete course:", err);
+                    console.error("Failed to deactivate course:", err);
                     setToastType("error");
-                    setToastMessage("Failed to delete course");
+                    setToastMessage("Failed to deactivate course");
                   } finally {
                     setDeleting(false);
                   }
@@ -631,12 +654,10 @@ const CourseView = () => {
                 disabled={deleting}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
-                {deleting ? "Deleting..." : "Delete"}
+                {deleting ? "Removing..." : "Remove"}
               </button>
             )}
-            <span className="px-3 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60 dark:bg-emerald-900/40 dark:text-emerald-300 dark:ring-emerald-800">
-              Active
-            </span>
+            <span className={statusBadgeClassName}>{statusBadgeLabel}</span>
           </div>
         </div>
         <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">

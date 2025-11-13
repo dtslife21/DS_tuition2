@@ -236,6 +236,36 @@ const formatCourse = (course) => {
   const subjects = collectSubjects(course);
   const subjectIds = collectSubjectIds(course);
 
+  const rawStatus =
+    course.status ??
+    course.Status ??
+    course.courseStatus ??
+    course.CourseStatus ??
+    null;
+
+  const normalizedStatus =
+    typeof rawStatus === "string" ? rawStatus.trim().toLowerCase() : null;
+
+  const rawIsActive =
+    course.isActive ??
+    course.IsActive ??
+    course.is_active ??
+    course.Is_active ??
+    course.active ??
+    course.Active ??
+    (normalizedStatus === "active"
+      ? true
+      : normalizedStatus === "inactive"
+      ? false
+      : undefined);
+
+  const resolvedIsActive =
+    rawIsActive === undefined || rawIsActive === null
+      ? normalizedStatus === null
+        ? true
+        : normalizedStatus !== "inactive"
+      : Boolean(rawIsActive);
+
   const teacherDetails =
     teacher && typeof teacher === "object"
       ? {
@@ -349,6 +379,9 @@ const formatCourse = (course) => {
       : [],
     subjectIds,
     SubjectIDs: subjectIds,
+    isActive: resolvedIsActive,
+    IsActive: resolvedIsActive,
+    status: normalizedStatus ?? (resolvedIsActive ? "active" : "inactive"),
   };
 };
 
@@ -1372,6 +1405,30 @@ export const updateCourse = async (courseId, updates = {}) => {
     console.error("Failed to update course via API", error);
     // Fallback to merged state so caller at least has local update
     return { ...merged, subjectId };
+  }
+};
+
+// Soft-delete a course by marking it inactive. Returns updated course payload.
+export const deactivateCourse = async (courseId) => {
+  const idStr = String(
+    courseId ??
+      (courseId && courseId.id) ??
+      (courseId && courseId.CourseID) ??
+      (courseId && courseId.courseId) ??
+      (courseId && courseId.courseID) ??
+      ""
+  ).trim();
+
+  if (!idStr) {
+    throw new Error("deactivateCourse requires a valid courseId");
+  }
+
+  try {
+    const updated = await updateCourse(idStr, { IsActive: false });
+    return updated;
+  } catch (error) {
+    console.error(`Failed to deactivate course ${idStr}`, error);
+    throw error;
   }
 };
 

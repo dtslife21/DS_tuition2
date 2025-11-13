@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { getAllCourses, createCourse } from "../../services/courseService";
 import SubjectForm from "../../components/admin/SubjectForm";
 import { createSubject } from "../../services/subjectService";
@@ -7,8 +8,10 @@ import Modal from "../../components/common/Modal";
 import CourseForm from "../../components/courses/CourseForm";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
+import EmptyState from "../../components/common/EmptyState";
 
 const AdminCourses = () => {
+  const location = useLocation();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false); // Course form modal
@@ -19,6 +22,65 @@ const AdminCourses = () => {
   const [tempSubjectPayload, setTempSubjectPayload] = useState(null);
   const [savingCourse, setSavingCourse] = useState(false);
   const [savingSubject, setSavingSubject] = useState(false);
+  const [activeTab, setActiveTab] = useState(() =>
+    location.state?.tab === "inactive" ? "inactive" : "active"
+  );
+
+  const locationTab = location.state?.tab;
+
+  useEffect(() => {
+    if (!locationTab) return;
+    const normalized = locationTab === "inactive" ? "inactive" : "active";
+    setActiveTab(normalized);
+  }, [location.key, locationTab]);
+
+  const { activeCourses, inactiveCourses } = useMemo(() => {
+    const activeList = [];
+    const inactiveList = [];
+
+    courses.forEach((course) => {
+      if (!course) return;
+
+      const normalizedStatus =
+        typeof course.status === "string"
+          ? course.status.trim().toLowerCase()
+          : typeof course.Status === "string"
+          ? course.Status.trim().toLowerCase()
+          : null;
+
+      const rawActive =
+        course.isActive ??
+        course.IsActive ??
+        course.is_active ??
+        course.Is_active ??
+        (normalizedStatus === null
+          ? undefined
+          : normalizedStatus !== "inactive");
+
+      const isActive =
+        rawActive === undefined || rawActive === null
+          ? normalizedStatus === null
+            ? true
+            : normalizedStatus !== "inactive"
+          : Boolean(rawActive);
+
+      if (isActive) {
+        activeList.push(course);
+      } else {
+        inactiveList.push(course);
+      }
+    });
+
+    return { activeCourses: activeList, inactiveCourses: inactiveList };
+  }, [courses]);
+
+  const displayedCourses =
+    activeTab === "inactive" ? inactiveCourses : activeCourses;
+
+  const tabs = [
+    { id: "active", name: "Active", count: activeCourses.length },
+    { id: "inactive", name: "Inactive", count: inactiveCourses.length },
+  ];
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -125,7 +187,55 @@ const AdminCourses = () => {
         </Button>
       </div>
 
-      <CourseList courses={courses} basePath="/admin/courses" />
+      <div className="space-y-4">
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav
+            className="-mb-px flex space-x-6"
+            aria-label="Course status filters"
+          >
+            {tabs.map((tab) => {
+              const isCurrent = activeTab === tab.id;
+              const tabClassName = isCurrent
+                ? "border-indigo-500 text-indigo-600 dark:text-indigo-300"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200";
+              const badgeClassName = isCurrent
+                ? "inline-flex min-w-[1.75rem] justify-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+                : "inline-flex min-w-[1.75rem] justify-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600 dark:bg-gray-800/60 dark:text-gray-300";
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 border-b-2 px-1 pb-3 text-sm font-medium focus:outline-none transition-colors ${tabClassName}`}
+                >
+                  <span>{tab.name}</span>
+                  <span className={badgeClassName}>{tab.count}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        <CourseList
+          courses={displayedCourses}
+          basePath="/admin/courses"
+          emptyState={
+            <EmptyState
+              title={
+                activeTab === "active"
+                  ? "No active courses"
+                  : "No inactive courses"
+              }
+              description={
+                activeTab === "active"
+                  ? "Create a course to make it available to students."
+                  : "Deactivated courses will be listed here."
+              }
+            />
+          }
+        />
+      </div>
 
       {/* Course form modal (single-step) */}
       <Modal
