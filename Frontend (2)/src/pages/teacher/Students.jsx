@@ -8,6 +8,7 @@ import {
 } from "../../services/courseService";
 import UserList from "../../components/users/UserList";
 import UserForm from "../../components/users/UserForm";
+import Toast from "../../components/common/Toast";
 import {
   createUser,
   updateUser,
@@ -61,6 +62,8 @@ const TeacherStudents = () => {
   const [forceUserType, setForceUserType] = useState(null);
   const [formError, setFormError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [toastType, setToastType] = useState("success");
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [createStep, setCreateStep] = useState(1);
   const [pendingCoreData, setPendingCoreData] = useState(null);
@@ -110,6 +113,78 @@ const TeacherStudents = () => {
       }
     } catch (error) {
       console.error("Error refreshing students:", error);
+    }
+  };
+
+  const [membersTab, setMembersTab] = useState("active");
+
+  const openEdit = async (userId) => {
+    setEditLoading(true);
+    setFormError("");
+    setEditStep(1);
+    setForceUserType(3);
+    try {
+      const [userData, studentData] = await Promise.all([
+        getUserById(userId),
+        getStudentById(userId),
+      ]);
+      setEditUser(studentData ? { ...userData, ...studentData } : userData);
+    } catch (err) {
+      console.error("Error loading user for edit:", err);
+      const fallback = students.find((s) => (s.UserID || s.id) === userId);
+      setEditUser(fallback || null);
+    } finally {
+      setEditLoading(false);
+      setEditOpen(true);
+    }
+  };
+
+  const handleActivateUser = async (userID) => {
+    try {
+      setFormError("");
+      const updated = await updateUser(userID, { IsActive: true });
+      setStudents((prev) =>
+        prev.map((u) => {
+          const id = u.UserID || u.id || u.userID || u.userId || null;
+          const updatedId =
+            updated.UserID || updated.id || updated.userID || updated.userId;
+          return String(id) === String(updatedId) ? updated : u;
+        })
+      );
+      setToastMessage("User activated.");
+      setToastType("success");
+    } catch (err) {
+      console.error("Failed to activate user", err);
+      setFormError(err?.message || "Failed to activate user");
+      setToastMessage("Failed to activate user.");
+      setToastType("error");
+    }
+  };
+
+  const handleDeactivateUser = async (userID) => {
+    try {
+      setFormError("");
+      // confirm removal
+      const ok = window.confirm(
+        "Do You Want To Remove This Student?"
+      );
+      if (!ok) return;
+      const updated = await updateUser(userID, { IsActive: false });
+      setStudents((prev) =>
+        prev.map((u) => {
+          const id = u.UserID || u.id || u.userID || u.userId || null;
+          const updatedId =
+            updated.UserID || updated.id || updated.userID || updated.userId;
+          return String(id) === String(updatedId) ? updated : u;
+        })
+      );
+      setToastMessage("User deactivated.");
+      setToastType("success");
+    } catch (err) {
+      console.error("Failed to deactivate user", err);
+      setFormError(err?.message || "Failed to deactivate user");
+      setToastMessage("Failed to deactivate user.");
+      setToastType("error");
     }
   };
 
@@ -556,64 +631,104 @@ const TeacherStudents = () => {
       </AnimatePresence>
 
       <div className="bg-gradient-to-br from-white to-indigo-50/70 dark:from-gray-900/70 dark:to-indigo-950/20 backdrop-blur shadow-lg ring-1 ring-indigo-100 dark:ring-indigo-800 rounded-2xl p-4 sm:p-6">
-        <UserList
-          users={students}
-          getDetailsPath={(student) => {
-            const identifier =
-              student.UserID ||
-              student.userID ||
-              student.userId ||
-              student.id ||
-              student.StudentID ||
-              student.studentID ||
-              student.studentId;
-            return identifier ? `/teacher/students/${identifier}` : null;
-          }}
-          onEdit={async (userId) => {
-            setEditLoading(true);
-            setFormError("");
-            setEditStep(1);
-            setForceUserType(3);
-            try {
-              const [userData, studentData] = await Promise.all([
-                getUserById(userId),
-                getStudentById(userId),
-              ]);
-              setEditUser(
-                studentData ? { ...userData, ...studentData } : userData
-              );
-            } catch (err) {
-              console.error("Error loading user for edit:", err);
-              const fallback = students.find(
-                (s) => (s.UserID || s.id) === userId
-              );
-              setEditUser(fallback || null);
-            } finally {
-              setEditLoading(false);
-              setEditOpen(true);
-            }
-          }}
-          onDelete={async (userId) => {
-            const confirmed = window.confirm("Delete this student?");
-            if (!confirmed) return;
-            try {
-              await deleteStudentRecord(userId);
-            } catch (studentError) {
-              console.warn("Failed to delete student record:", studentError);
-            }
+        {(() => {
+          const isActiveFlag = (u) =>
+            Boolean(u?.IsActive ?? u?.isActive ?? true);
+          const activeStudents = (students || []).filter(isActiveFlag);
+          const inactiveStudents = (students || []).filter(
+            (u) => !isActiveFlag(u)
+          );
 
-            try {
-              await deleteUser(userId);
-            } catch (userError) {
-              console.warn("Failed to delete user record:", userError);
-            }
+          return (
+            <>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setMembersTab("active")}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      membersTab === "active"
+                        ? "bg-indigo-600 text-white"
+                        : "bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    }`}
+                    title={`Active (${activeStudents.length})`}
+                  >
+                    Active{" "}
+                    <span className="ml-2 text-xs">
+                      ({activeStudents.length})
+                    </span>
+                  </button>
 
-            await refreshStudents();
-            setStudents((prev) =>
-              prev.filter((s) => (s.UserID || s.id) !== userId)
-            );
-          }}
-        />
+                  <button
+                    onClick={() => setMembersTab("inactive")}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      membersTab === "inactive"
+                        ? "bg-indigo-600 text-white"
+                        : "bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    }`}
+                    title={`Inactive (${inactiveStudents.length})`}
+                  >
+                    Inactive{" "}
+                    <span className="ml-2 text-xs">
+                      ({inactiveStudents.length})
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                {membersTab === "active" ? (
+                  <UserList
+                    users={activeStudents}
+                    onEdit={openEdit}
+                    onActivate={handleActivateUser}
+                    onDeactivate={handleDeactivateUser}
+                    getDetailsPath={(student) => {
+                      const identifier =
+                        student.UserID ||
+                        student.userID ||
+                        student.userId ||
+                        student.id ||
+                        student.StudentID ||
+                        student.studentID ||
+                        student.studentId;
+                      return identifier
+                        ? `/teacher/students/${identifier}`
+                        : null;
+                    }}
+                  />
+                ) : (
+                  <UserList
+                    users={inactiveStudents}
+                    onEdit={openEdit}
+                    onActivate={handleActivateUser}
+                    onDeactivate={handleDeactivateUser}
+                    getDetailsPath={(student) => {
+                      const identifier =
+                        student.UserID ||
+                        student.userID ||
+                        student.userId ||
+                        student.id ||
+                        student.StudentID ||
+                        student.studentID ||
+                        student.studentId;
+                      return identifier
+                        ? `/teacher/students/${identifier}`
+                        : null;
+                    }}
+                  />
+                )}
+              </div>
+
+              {toastMessage && (
+                <Toast
+                  message={toastMessage}
+                  type={toastType}
+                  onClose={() => setToastMessage(null)}
+                />
+              )}
+            </>
+          );
+        })()}
       </div>
 
       <CoursePickerModal
