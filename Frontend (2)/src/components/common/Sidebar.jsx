@@ -12,7 +12,13 @@ const Sidebar = () => {
   const adminNavigation = [
     { name: "Dashboard", href: "/admin", icon: "home" },
     { name: "Courses", href: "/admin/courses", icon: "book" },
-    { name: "Subjects", href: "/admin/subjects", icon: "document-text", matchPaths: ["/admin/subjects", "/subjects"], },
+    {
+      name: "Subjects",
+      href: "/admin/subjects",
+      icon: "document-text",
+      matchPaths: ["/admin/subjects", "/subjects"],
+    },
+    { name: "Class Schedule", href: "/admin/class-schedule", icon: "calendar" },
     { name: "Users", href: "/admin/users", icon: "users" },
     { name: "Settings", href: "/admin/settings", icon: "cog" },
   ];
@@ -20,7 +26,8 @@ const Sidebar = () => {
   const teacherNavigation = [
     { name: "Dashboard", href: "/teacher", icon: "home" },
     { name: "Courses", href: "/teacher/courses", icon: "book" },
-    { name: "Subjects",
+    {
+      name: "Subjects",
       href: "/teacher/subjects",
       icon: "document-text",
       // also match the shared subject view so that when user opens /subjects/:id
@@ -180,6 +187,22 @@ const Sidebar = () => {
               strokeLinejoin="round"
               strokeWidth={2}
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+        );
+      case "calendar":
+        return (
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
             />
           </svg>
         );

@@ -12,6 +12,7 @@ import AdminCourseDetails from "./pages/admin/CourseDetails";
 import AdminUsers from "./pages/admin/Users";
 import AdminSubjects from "./pages/admin/Subjects";
 import AdminSettings from "./pages/admin/Settings";
+import AdminClassSchedule from "./pages/admin/ClassSchedule";
 import TeacherDashboard from "./pages/teacher/Dashboard";
 import TeacherCourses from "./pages/teacher/Courses";
 import TeacherSubjects from "./pages/teacher/Subjects";
@@ -71,6 +72,7 @@ const RoutesConfig = () => {
           <Route path="courses" element={<AdminCourses />} />
           <Route path="courses/:id" element={<AdminCourseDetails />} />
           <Route path="subjects" element={<AdminSubjects />} />
+          <Route path="class-schedule" element={<AdminClassSchedule />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="users/:id" element={<UserDetailsPage />} />
           <Route path="settings" element={<AdminSettings />} />
