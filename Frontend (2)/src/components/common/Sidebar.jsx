@@ -34,7 +34,11 @@ const Sidebar = () => {
       // the teacher "Subjects" tab is highlighted
       matchPaths: ["/teacher/subjects", "/subjects"],
     },
-    { name: "Class Schedule", href: "/teacher/class-schedule", icon: "calendar" },
+    {
+      name: "Class Schedule",
+      href: "/teacher/class-schedule",
+      icon: "calendar",
+    },
     { name: "Attendance", href: "/teacher/attendance", icon: "check-circle" },
     { name: "Materials", href: "/teacher/materials", icon: "document-text" },
     { name: "Students", href: "/teacher/students", icon: "users" },
@@ -48,7 +52,11 @@ const Sidebar = () => {
     { name: "Attendance", href: "/student/attendance", icon: "check-circle" },
     { name: "Materials", href: "/student/materials", icon: "document-text" },
     { name: "Complaints", href: "/student/complaints", icon: "chat" },
-    { name: "Class Schedule", href: "/student/class-schedule", icon: "calendar" },
+    {
+      name: "Class Schedule",
+      href: "/student/class-schedule",
+      icon: "calendar",
+    },
   ];
 
   const navigation =

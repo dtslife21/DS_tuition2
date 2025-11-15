@@ -2,39 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import Loader from "../../components/common/Loader";
 import EmptyState from "../../components/common/EmptyState";
+import Modal from "../../components/common/Modal";
 import Card from "../../components/common/Card";
 import { getStudentCourses } from "../../services/courseService";
-
-// Placeholder schedules - replace with actual schedule API
-const fetchSchedules = async () => {
-  await new Promise((r) => setTimeout(r, 300));
-  return [
-    {
-      id: 1,
-      courseId: 6,
-      subjectId: 3,
-      dayOfWeek: 1,
-      startTime: "09:00:00",
-      endTime: "10:30:00",
-      roomNumber: "A-101",
-      isRecurring: true,
-      courseName: "Mathematics",
-      subjectName: "Algebra I",
-    },
-    {
-      id: 2,
-      courseId: 7,
-      subjectId: 5,
-      dayOfWeek: 2,
-      startTime: "11:00:00",
-      endTime: "12:00:00",
-      roomNumber: "B-201",
-      isRecurring: true,
-      courseName: "Physics",
-      subjectName: "Mechanics",
-    },
-  ];
-};
+import { getAllClassSchedules } from "../../services/classScheduleService";
 
 const dayNames = [
   "Sunday",
@@ -79,27 +50,58 @@ const StudentClassSchedule = () => {
   const [loading, setLoading] = useState(true);
   const [schedules, setSchedules] = useState([]);
   const [view, setView] = useState("week");
+  const [showDetails, setShowDetails] = useState(false);
+  const [detailSchedule, setDetailSchedule] = useState(null);
   const [courses, setCourses] = useState([]);
   const [filters, setFilters] = useState({ course: "", subject: "", room: "" });
+  const [loadError, setLoadError] = useState(null);
+
+  const sortSchedules = (items) => {
+    if (!Array.isArray(items)) return [];
+    const clone = [...items];
+    clone.sort((a, b) => {
+      const dayA = Number.isFinite(a?.dayOfWeek) ? a.dayOfWeek : 0;
+      const dayB = Number.isFinite(b?.dayOfWeek) ? b.dayOfWeek : 0;
+      if (dayA !== dayB) return dayA - dayB;
+      const startA = a?.startTime ?? "";
+      const startB = b?.startTime ?? "";
+      return String(startA).localeCompare(String(startB));
+    });
+    return clone;
+  };
 
   useEffect(() => {
     let mounted = true;
+    setLoading(true);
+    setLoadError(null);
     (async () => {
       try {
+        const studentId =
+          user?.StudentID ??
+          user?.studentID ??
+          user?.studentId ??
+          user?.userID ??
+          user?.userId ??
+          user?.id;
         const [scheds, studentCourses] = await Promise.all([
-          fetchSchedules(),
-          getStudentCourses(user?.userID ?? user?.userId ?? user?.id),
+          getAllClassSchedules(),
+          getStudentCourses(studentId),
         ]);
         if (!mounted) return;
-        setSchedules(Array.isArray(scheds) ? scheds : []);
+        setSchedules(sortSchedules(Array.isArray(scheds) ? scheds : []));
         setCourses(Array.isArray(studentCourses) ? studentCourses : []);
       } catch (err) {
-        console.error(err);
+        if (!mounted) return;
+        console.error("Failed to load student schedules", err);
+        setLoadError("Unable to load schedules. Please try again.");
+        setSchedules([]);
       } finally {
         if (mounted) setLoading(false);
       }
     })();
-    return () => (mounted = false);
+    return () => {
+      mounted = false;
+    };
   }, [user]);
 
   const studentCourseIds = useMemo(() => {
@@ -113,10 +115,32 @@ const StudentClassSchedule = () => {
 
   const filtered = useMemo(() => {
     return (schedules || []).filter((s) => {
-      if (studentCourseIds.length && !studentCourseIds.includes(String(s.courseId))) return false;
-      if (filters.course && !String(s.courseName || s.courseId).toLowerCase().includes(filters.course.toLowerCase())) return false;
-      if (filters.subject && !String(s.subjectName || s.subjectId).toLowerCase().includes(filters.subject.toLowerCase())) return false;
-      if (filters.room && !String(s.roomNumber || "").toLowerCase().includes(filters.room.toLowerCase())) return false;
+      if (
+        studentCourseIds.length &&
+        !studentCourseIds.includes(String(s.courseId))
+      )
+        return false;
+      if (
+        filters.course &&
+        !String(s.courseName || s.courseId)
+          .toLowerCase()
+          .includes(filters.course.toLowerCase())
+      )
+        return false;
+      if (
+        filters.subject &&
+        !String(s.subjectName || s.subjectId)
+          .toLowerCase()
+          .includes(filters.subject.toLowerCase())
+      )
+        return false;
+      if (
+        filters.room &&
+        !String(s.roomNumber || "")
+          .toLowerCase()
+          .includes(filters.room.toLowerCase())
+      )
+        return false;
       return true;
     });
   }, [schedules, studentCourseIds, filters]);
@@ -128,7 +152,8 @@ const StudentClassSchedule = () => {
       if (!map.has(day)) map.set(day, []);
       map.get(day).push(item);
     }
-    for (const arr of map.values()) arr.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    for (const arr of map.values())
+      arr.sort((a, b) => a.startTime.localeCompare(b.startTime));
     return map;
   }, [filtered]);
 
@@ -136,8 +161,12 @@ const StudentClassSchedule = () => {
     <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">My Class Schedule</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">View your weekly class schedule.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            My Class Schedule
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            View your weekly class schedule.
+          </p>
         </div>
         <div className="flex gap-2">
           <button
@@ -152,7 +181,9 @@ const StudentClassSchedule = () => {
       {/* Filters */}
       <div className="grid sm:grid-cols-3 gap-4">
         <div className="flex flex-col">
-          <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">Course</label>
+          <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
+            Course
+          </label>
           <input
             name="course"
             value={filters.course}
@@ -162,7 +193,9 @@ const StudentClassSchedule = () => {
           />
         </div>
         <div className="flex flex-col">
-          <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">Subject</label>
+          <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
+            Subject
+          </label>
           <input
             name="subject"
             value={filters.subject}
@@ -172,7 +205,9 @@ const StudentClassSchedule = () => {
           />
         </div>
         <div className="flex flex-col">
-          <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">Room</label>
+          <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
+            Room
+          </label>
           <input
             name="room"
             value={filters.room}
@@ -183,25 +218,58 @@ const StudentClassSchedule = () => {
         </div>
       </div>
 
+      {!loading && loadError && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {loadError}
+        </div>
+      )}
+
       {loading ? (
         <Loader label="Loading schedules" />
       ) : !filtered.length ? (
-        <EmptyState title="No schedules" description="No classes found for your courses." />
+        <EmptyState
+          title="No schedules"
+          description="No classes found for your courses."
+        />
       ) : view === "list" ? (
         <div className="space-y-4">
           {filtered.map((s) => {
             const color = pickColorForCourse(s.courseId);
             return (
-              <Card key={s.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4">
+              <Card
+                key={s.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4"
+              >
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`inline-block w-2 h-2 rounded-full bg-${color}-500`} />
-                    <h2 className="font-medium text-gray-900 dark:text-gray-100 text-sm">{s.courseName || `Course ${s.courseId}`} / {s.subjectName || `Subject ${s.subjectId}`}</h2>
+                    <span
+                      className={`inline-block w-2 h-2 rounded-full bg-${color}-500`}
+                    />
+                    <h2 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+                      {s.courseName || `Course ${s.courseId}`} /{" "}
+                      {s.subjectName || `Subject ${s.subjectId}`}
+                    </h2>
                   </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">{dayNames[s.dayOfWeek]} • {formatTime(s.startTime)} – {formatTime(s.endTime)} • Room {s.roomNumber} {s.isRecurring && <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase tracking-wide">Recurring</span>}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    {dayNames[s.dayOfWeek]} • {formatTime(s.startTime)} –{" "}
+                    {formatTime(s.endTime)} • Room {s.roomNumber}{" "}
+                    {s.isRecurring && (
+                      <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+                        Recurring
+                      </span>
+                    )}
+                  </p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="px-3 py-1.5 rounded-md text-xs font-medium bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition">Details</button>
+                  <button
+                    onClick={() => {
+                      setDetailSchedule(s);
+                      setShowDetails(true);
+                    }}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition"
+                  >
+                    Details
+                  </button>
                 </div>
               </Card>
             );
@@ -220,7 +288,13 @@ const StudentClassSchedule = () => {
                 return (
                   <div className="relative">
                     {hours.map((h) => (
-                      <div key={h} className="h-12 text-xs text-gray-500 dark:text-gray-400 flex items-center" style={{ height: `${60}px` }}>{h % 12 === 0 ? 12 : h % 12}:00</div>
+                      <div
+                        key={h}
+                        className="h-12 text-xs text-gray-500 dark:text-gray-400 flex items-center"
+                        style={{ height: `${60}px` }}
+                      >
+                        {h % 12 === 0 ? 12 : h % 12}:00
+                      </div>
                     ))}
                   </div>
                 );
@@ -229,7 +303,7 @@ const StudentClassSchedule = () => {
 
             <div className="flex-1 min-w-[1050px]">
               <div className="grid grid-cols-7 gap-4">
-                {[1,2,3,4,5,6,0].map((dayIndex) => {
+                {[1, 2, 3, 4, 5, 6, 0].map((dayIndex) => {
                   const dayName = dayNames[dayIndex];
                   const dayItems = groupedByDay.get(dayIndex) || [];
 
@@ -295,34 +369,85 @@ const StudentClassSchedule = () => {
 
                   return (
                     <div key={dayName} className="flex flex-col">
-                      <div className="mb-2 font-medium text-sm text-gray-700 dark:text-gray-200">{dayName}</div>
-                      <div className="relative rounded-lg border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800" style={{ height: containerHeight }}>
-                        {Array.from({ length: endHour - startHour }).map((_, i) => (
-                          <div key={i} className="absolute left-0 right-0 border-t border-gray-100 dark:border-gray-700" style={{ top: `${i * 60 * minuteHeight}px` }} />
-                        ))}
+                      <div className="mb-2 font-medium text-sm text-gray-700 dark:text-gray-200">
+                        {dayName}
+                      </div>
+                      <div
+                        className="relative rounded-lg border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800"
+                        style={{ height: containerHeight }}
+                      >
+                        {Array.from({ length: endHour - startHour }).map(
+                          (_, i) => (
+                            <div
+                              key={i}
+                              className="absolute left-0 right-0 border-t border-gray-100 dark:border-gray-700"
+                              style={{ top: `${i * 60 * minuteHeight}px` }}
+                            />
+                          )
+                        )}
 
                         {placed.map((s) => {
-                          const top = Math.max(0, (s.startMin - startHour * 60) * minuteHeight);
-                          const height = Math.max(28, Math.max(15, s.endMin - s.startMin) * minuteHeight);
+                          const top = Math.max(
+                            0,
+                            (s.startMin - startHour * 60) * minuteHeight
+                          );
+                          const height = Math.max(
+                            28,
+                            Math.max(15, s.endMin - s.startMin) * minuteHeight
+                          );
                           const widthPercent = 100 / colCount;
                           const leftPercent = s.col * widthPercent;
                           const primary = getColor(s.courseId);
                           const gradient = `linear-gradient(135deg, ${primary}20, ${primary}10)`;
                           return (
-                            <div key={s.id} className="absolute rounded-lg p-2 shadow-md cursor-pointer overflow-hidden" style={{ top: `${top}px`, height: `${height}px`, left: `${leftPercent}%`, width: `calc(${widthPercent}% - 6px)`, marginLeft: "3px", marginRight: "3px", background: gradient, borderLeft: `4px solid ${primary}` }} title={`${s.courseName} • ${s.subjectName} • ${formatTime(s.startTime)} - ${formatTime(s.endTime)}`}>
+                            <div
+                              key={s.id}
+                              className="absolute rounded-lg p-2 shadow-md cursor-pointer overflow-hidden"
+                              onClick={() => {
+                                setDetailSchedule(s);
+                                setShowDetails(true);
+                              }}
+                              style={{
+                                top: `${top}px`,
+                                height: `${height}px`,
+                                left: `${leftPercent}%`,
+                                width: `calc(${widthPercent}% - 6px)`,
+                                marginLeft: "3px",
+                                marginRight: "3px",
+                                background: gradient,
+                                borderLeft: `4px solid ${primary}`,
+                              }}
+                              title={`${s.courseName} • ${
+                                s.subjectName
+                              } • ${formatTime(s.startTime)} - ${formatTime(
+                                s.endTime
+                              )}`}
+                            >
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <div className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{s.courseName || `Course ${s.courseId}`}</div>
-                                  <div className="text-[11px] text-gray-600 dark:text-gray-300 truncate">{s.subjectName || `Subject ${s.subjectId}`}</div>
+                                  <div className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                    {s.courseName || `Course ${s.courseId}`}
+                                  </div>
+                                  <div className="text-[11px] text-gray-600 dark:text-gray-300 truncate">
+                                    {s.subjectName || `Subject ${s.subjectId}`}
+                                  </div>
                                 </div>
-                                <div className="text-[11px] text-gray-700 dark:text-gray-200 ml-2">{formatTime(s.startTime)}</div>
+                                <div className="text-[11px] text-gray-700 dark:text-gray-200 ml-2">
+                                  {formatTime(s.startTime)}
+                                </div>
                               </div>
-                              <div className="mt-1 text-[11px] text-gray-600 dark:text-gray-300">Room {s.roomNumber}</div>
+                              <div className="mt-1 text-[11px] text-gray-600 dark:text-gray-300">
+                                Room {s.roomNumber}
+                              </div>
                             </div>
                           );
                         })}
 
-                        {placed.length === 0 && <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-400">No classes</div>}
+                        {placed.length === 0 && (
+                          <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-400">
+                            No classes
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -332,6 +457,57 @@ const StudentClassSchedule = () => {
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={showDetails}
+        onClose={() => setShowDetails(false)}
+        title="Schedule Details"
+      >
+        <div className="space-y-3">
+          {detailSchedule ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs text-gray-500">Course</div>
+                <div className="font-medium">{detailSchedule.courseName}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Subject</div>
+                <div className="font-medium">{detailSchedule.subjectName}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Day</div>
+                <div className="font-medium">
+                  {dayNames[detailSchedule.dayOfWeek]}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Room</div>
+                <div className="font-medium">{detailSchedule.roomNumber}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Start</div>
+                <div className="font-medium">
+                  {formatTime(detailSchedule.startTime)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">End</div>
+                <div className="font-medium">
+                  {formatTime(detailSchedule.endTime)}
+                </div>
+              </div>
+              <div className="col-span-2">
+                <div className="text-xs text-gray-500">Recurring</div>
+                <div className="font-medium">
+                  {detailSchedule.isRecurring ? "Yes" : "No"}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div>No details available</div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

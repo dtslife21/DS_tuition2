@@ -5,37 +5,12 @@ import Modal from "../../components/common/Modal";
 import Card from "../../components/common/Card";
 import { getAllCourses } from "../../services/courseService";
 import { getAllSubjects } from "../../services/subjectService";
-
-// Placeholder fetch; replace with real API integration
-const fetchSchedules = async () => {
-  await new Promise((r) => setTimeout(r, 400));
-  return [
-    {
-      id: 1,
-      courseId: 6,
-      subjectId: 3,
-      dayOfWeek: 1,
-      startTime: "09:00:00",
-      endTime: "10:30:00",
-      roomNumber: "A-101",
-      isRecurring: true,
-      courseName: "Mathematics",
-      subjectName: "Algebra I",
-    },
-    {
-      id: 2,
-      courseId: 6,
-      subjectId: 3,
-      dayOfWeek: 2,
-      startTime: "09:00:00",
-      endTime: "10:30:00",
-      roomNumber: "A-102",
-      isRecurring: true,
-      courseName: "Mathematics",
-      subjectName: "Algebra I",
-    },
-  ];
-};
+import {
+  createClassSchedule,
+  deleteClassSchedule,
+  getAllClassSchedules,
+  updateClassSchedule,
+} from "../../services/classScheduleService";
 
 const dayNames = [
   "Sunday",
@@ -85,37 +60,127 @@ const AdminClassSchedule = () => {
   const [subjectsList, setSubjectsList] = useState([]);
   const [formCourseId, setFormCourseId] = useState("");
   const [formSubjectId, setFormSubjectId] = useState("");
-  const [formDayOfWeek, setFormDayOfWeek] = useState(1);
+  const [formDayOfWeek, setFormDayOfWeek] = useState(0);
   const [formStartTime, setFormStartTime] = useState("09:00");
   const [formEndTime, setFormEndTime] = useState("10:00");
   const [formRoomNumber, setFormRoomNumber] = useState("");
   const [formIsRecurring, setFormIsRecurring] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [isFormValid, setIsFormValid] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const [formSubmitError, setFormSubmitError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [detailSchedule, setDetailSchedule] = useState(null);
+
+  const padTime = (value) => {
+    const num = Number(value);
+    const finite = Number.isFinite(num) ? Math.max(0, Math.trunc(num)) : 0;
+    return String(finite).padStart(2, "0");
+  };
+
+  const toTimeInputValue = (value, fallback = "09:00") => {
+    if (!value && value !== 0) return fallback;
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return fallback;
+      if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(trimmed)) {
+        const [h, m] = trimmed.split(":");
+        return `${padTime(h)}:${padTime(m)}`;
+      }
+      const parsed = Date.parse(trimmed);
+      if (!Number.isNaN(parsed)) {
+        const date = new Date(parsed);
+        return `${padTime(date.getHours())}:${padTime(date.getMinutes())}`;
+      }
+    }
+    if (typeof value === "number" && Number.isFinite(value)) {
+      const totalMinutes = Math.max(0, Math.trunc(value));
+      const hours = Math.floor(totalMinutes / 60) % 24;
+      const minutes = totalMinutes % 60;
+      return `${padTime(hours)}:${padTime(minutes)}`;
+    }
+    return fallback;
+  };
+
+  const sortSchedules = (items) => {
+    if (!Array.isArray(items)) return [];
+    const cloned = [...items];
+    cloned.sort((a, b) => {
+      const dayA = Number.isFinite(a?.dayOfWeek) ? a.dayOfWeek : 0;
+      const dayB = Number.isFinite(b?.dayOfWeek) ? b.dayOfWeek : 0;
+      if (dayA !== dayB) return dayA - dayB;
+      const startA = a?.startTime ?? "";
+      const startB = b?.startTime ?? "";
+      return String(startA).localeCompare(String(startB));
+    });
+    return cloned;
+  };
+
+  const upsertScheduleRecord = (record) => {
+    if (!record || typeof record !== "object") return;
+    const idValue =
+      record.id ?? record.scheduleId ?? record.ScheduleID ?? record.ScheduleId;
+    const idString = idValue != null ? String(idValue) : null;
+    setSchedules((list) => {
+      if (!idString) {
+        return sortSchedules([...list, record]);
+      }
+      const exists = list.some(
+        (item) => String(item.id ?? item.scheduleId ?? "") === idString
+      );
+      if (exists) {
+        const updated = list.map((item) =>
+          String(item.id ?? item.scheduleId ?? "") === idString ? record : item
+        );
+        return sortSchedules(updated);
+      }
+      return sortSchedules([...list, record]);
+    });
+  };
+
+  const removeScheduleById = (identifier) => {
+    const idString = identifier != null ? String(identifier) : null;
+    if (!idString) return;
+    setSchedules((list) =>
+      sortSchedules(
+        list.filter(
+          (item) => String(item.id ?? item.scheduleId ?? "") !== idString
+        )
+      )
+    );
+  };
 
   useEffect(() => {
     let mounted = true;
-    fetchSchedules().then((data) => {
-      if (mounted) {
-        setSchedules(Array.isArray(data) ? data : []);
-        setLoading(false);
-      }
-    });
-    // load courses & subjects for the create modal
+    setLoading(true);
+    setLoadError(null);
     (async () => {
       try {
-        const [courses, subjects] = await Promise.all([
+        const [scheduleData, courses, subjects] = await Promise.all([
+          getAllClassSchedules(),
           getAllCourses(),
           getAllSubjects(),
         ]);
         if (!mounted) return;
+        setSchedules(
+          sortSchedules(Array.isArray(scheduleData) ? scheduleData : [])
+        );
         setCoursesList(courses || []);
         setSubjectsList(subjects || []);
       } catch (err) {
-        console.error("Failed to load courses or subjects", err);
+        if (!mounted) return;
+        console.error("Failed to load schedules, courses, or subjects", err);
+        setLoadError("Unable to load schedules. Please try again.");
+      } finally {
+        if (mounted) setLoading(false);
       }
     })();
-    return () => (mounted = false);
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // validate live and set validity flag
@@ -171,15 +236,38 @@ const AdminClassSchedule = () => {
   useEffect(() => {
     // reset form fields when opening modal
     if (!showCreate) return;
+    if (editingSchedule) {
+      setFormCourseId(
+        editingSchedule.courseId != null ? String(editingSchedule.courseId) : ""
+      );
+      setFormSubjectId(
+        editingSchedule.subjectId != null
+          ? String(editingSchedule.subjectId)
+          : ""
+      );
+      setFormDayOfWeek(
+        Number.isFinite(editingSchedule.dayOfWeek)
+          ? editingSchedule.dayOfWeek
+          : 0
+      );
+      setFormStartTime(toTimeInputValue(editingSchedule.startTime));
+      setFormEndTime(toTimeInputValue(editingSchedule.endTime, "10:00"));
+      setFormRoomNumber(editingSchedule.roomNumber || "");
+      setFormIsRecurring(Boolean(editingSchedule.isRecurring));
+      setFormErrors({});
+      setFormSubmitError(null);
+      return;
+    }
     setFormCourseId("");
     setFormSubjectId("");
-    setFormDayOfWeek(1);
+    setFormDayOfWeek(0);
     setFormStartTime("09:00");
     setFormEndTime("10:00");
     setFormRoomNumber("");
     setFormIsRecurring(false);
     setFormErrors({});
-  }, [showCreate]);
+    setFormSubmitError(null);
+  }, [showCreate, editingSchedule]);
 
   const validateForm = () => {
     const errors = {};
@@ -211,8 +299,111 @@ const AdminClassSchedule = () => {
       );
       return ids.length ? ids.includes(cid) : true;
     });
-    if (filtered.length === 1) setFormSubjectId(String(filtered[0].id));
-  }, [formCourseId, subjectsList]);
+    if (filtered.length === 1 && !formSubjectId) {
+      setFormSubjectId(String(filtered[0].id));
+    }
+  }, [formCourseId, subjectsList, formSubjectId]);
+
+  const resolveScheduleId = (schedule) => {
+    if (!schedule) return null;
+    if (typeof schedule === "number" || typeof schedule === "string") {
+      return schedule;
+    }
+    return (
+      schedule.scheduleId ??
+      schedule.ScheduleID ??
+      schedule.ScheduleId ??
+      schedule.id ??
+      schedule.Id ??
+      null
+    );
+  };
+
+  const handleOpenCreate = () => {
+    setEditingSchedule(null);
+    setFormSubmitError(null);
+    setShowCreate(true);
+  };
+
+  const handleModalClose = () => {
+    setShowCreate(false);
+    setEditingSchedule(null);
+    setFormSubmitError(null);
+  };
+
+  const handleEditSchedule = (schedule) => {
+    if (!schedule) return;
+    setEditingSchedule(schedule);
+    setFormSubmitError(null);
+    setShowCreate(true);
+  };
+
+  const openDetails = (schedule) => {
+    setDetailSchedule(schedule);
+    setShowDetails(true);
+  };
+
+  const handleDeleteSchedule = async (schedule) => {
+    const identifier = resolveScheduleId(schedule);
+    if (identifier === null || identifier === undefined) return;
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm(
+        "Are you sure you want to delete this schedule?"
+      );
+      if (!confirmed) return;
+    }
+    const idString = String(identifier);
+    try {
+      setDeletingId(idString);
+      await deleteClassSchedule(identifier);
+      removeScheduleById(identifier);
+    } catch (err) {
+      console.error("Failed to delete class schedule", err);
+      if (typeof window !== "undefined") {
+        window.alert("Failed to delete the schedule. Please try again.");
+      }
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!validateForm()) return;
+
+    const payload = {
+      courseId: formCourseId ? Number(formCourseId) : null,
+      subjectId: formSubjectId ? Number(formSubjectId) : null,
+      dayOfWeek: Number.isFinite(formDayOfWeek) ? formDayOfWeek : 0,
+      startTime: formStartTime,
+      endTime: formEndTime,
+      roomNumber: formRoomNumber,
+      isRecurring: formIsRecurring,
+    };
+
+    setSaving(true);
+    setFormSubmitError(null);
+
+    try {
+      if (editingSchedule) {
+        const identifier = resolveScheduleId(editingSchedule);
+        if (identifier === null || identifier === undefined) {
+          throw new Error("Missing schedule identifier");
+        }
+        const updated = await updateClassSchedule(identifier, payload);
+        upsertScheduleRecord(updated ?? { ...payload, id: identifier });
+      } else {
+        const created = await createClassSchedule(payload);
+        upsertScheduleRecord(created ?? payload);
+      }
+      handleModalClose();
+    } catch (err) {
+      console.error("Failed to save class schedule", err);
+      setFormSubmitError("Failed to save schedule. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -233,7 +424,7 @@ const AdminClassSchedule = () => {
             {view === "week" ? "List View" : "Week View"}
           </button>
           <button
-            onClick={() => setShowCreate(true)}
+            onClick={handleOpenCreate}
             className="px-4 py-2 rounded-md text-sm font-medium bg-emerald-600 hover:bg-emerald-500 text-white shadow transition-colors"
           >
             Add Schedule
@@ -281,6 +472,12 @@ const AdminClassSchedule = () => {
         </div>
       </div>
 
+      {!loading && loadError && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {loadError}
+        </div>
+      )}
+
       {loading ? (
         <Loader label="Loading schedules" />
       ) : !filtered.length ? (
@@ -318,11 +515,27 @@ const AdminClassSchedule = () => {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="px-3 py-1.5 rounded-md text-xs font-medium bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditSchedule(s);
+                    }}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={Boolean(deletingId)}
+                  >
                     Edit
                   </button>
-                  <button className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-200 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-800 transition">
-                    Delete
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSchedule(s);
+                    }}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-200 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-800 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={deletingId === String(s.id ?? s.scheduleId ?? "")}
+                  >
+                    {deletingId === String(s.id ?? s.scheduleId ?? "")
+                      ? "Deleting..."
+                      : "Delete"}
                   </button>
                 </div>
               </Card>
@@ -478,6 +691,7 @@ const AdminClassSchedule = () => {
                               } • ${formatTime(s.startTime)} - ${formatTime(
                                 s.endTime
                               )}`}
+                              onClick={() => openDetails(s)}
                             >
                               <div className="flex items-center justify-between">
                                 <div>
@@ -516,51 +730,10 @@ const AdminClassSchedule = () => {
 
       <Modal
         isOpen={showCreate}
-        onClose={() => setShowCreate(false)}
-        title="Add Schedule"
+        onClose={handleModalClose}
+        title={editingSchedule ? "Edit Schedule" : "Add Schedule"}
       >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            // validate before proceeding
-            if (!validateForm()) return;
-            const form = new FormData(e.currentTarget);
-            const payload = Object.fromEntries(form.entries());
-
-            const selectedCourse = (coursesList || []).find(
-              (c) =>
-                String(c.id ?? c.CourseID ?? c.CourseId ?? c.courseId) ===
-                String(payload.courseId)
-            );
-            const selectedSubject = (subjectsList || []).find(
-              (s) => String(s.id) === String(payload.subjectId)
-            );
-
-            const newItem = {
-              id: Date.now(),
-              courseId: payload.courseId
-                ? Number(payload.courseId)
-                : payload.courseId || null,
-              subjectId: payload.subjectId || null,
-              courseName:
-                selectedCourse?.name ||
-                payload.courseName ||
-                String(payload.courseId || ""),
-              subjectName:
-                selectedSubject?.name ||
-                payload.subjectName ||
-                String(payload.subjectId || ""),
-              dayOfWeek: Number(payload.dayOfWeek) || 1,
-              startTime: payload.startTime || "09:00:00",
-              endTime: payload.endTime || "10:00:00",
-              roomNumber: payload.roomNumber || "TBD",
-              isRecurring: !!payload.isRecurring,
-            };
-            setSchedules((list) => [...list, newItem]);
-            setShowCreate(false);
-          }}
-          className="space-y-4"
-        >
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="flex flex-col">
               <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
@@ -708,27 +881,83 @@ const AdminClassSchedule = () => {
               </label>
             </div>
           </div>
+          {formSubmitError && (
+            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {formSubmitError}
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
-              onClick={() => setShowCreate(false)}
+              onClick={handleModalClose}
               className="px-4 py-2 rounded-md text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={!isFormValid}
+              disabled={!isFormValid || saving}
               className={`px-4 py-2 rounded-md text-sm font-medium text-white shadow transition ${
-                isFormValid
+                isFormValid && !saving
                   ? "bg-indigo-600 hover:bg-indigo-500"
                   : "bg-indigo-300 cursor-not-allowed"
               }`}
             >
-              Save
+              {saving ? "Saving..." : "Save"}
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={showDetails}
+        onClose={() => setShowDetails(false)}
+        title="Schedule Details"
+      >
+        <div className="space-y-3">
+          {detailSchedule ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs text-gray-500">Course</div>
+                <div className="font-medium">{detailSchedule.courseName}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Subject</div>
+                <div className="font-medium">{detailSchedule.subjectName}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Day</div>
+                <div className="font-medium">
+                  {dayNames[detailSchedule.dayOfWeek]}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Room</div>
+                <div className="font-medium">{detailSchedule.roomNumber}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Start</div>
+                <div className="font-medium">
+                  {formatTime(detailSchedule.startTime)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">End</div>
+                <div className="font-medium">
+                  {formatTime(detailSchedule.endTime)}
+                </div>
+              </div>
+              <div className="col-span-2">
+                <div className="text-xs text-gray-500">Recurring</div>
+                <div className="font-medium">
+                  {detailSchedule.isRecurring ? "Yes" : "No"}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div>No details available</div>
+          )}
+        </div>
       </Modal>
     </div>
   );
