@@ -3,6 +3,8 @@ import Loader from "../../components/common/Loader";
 import EmptyState from "../../components/common/EmptyState";
 import Modal from "../../components/common/Modal";
 import Card from "../../components/common/Card";
+import { getAllCourses } from "../../services/courseService";
+import { getAllSubjects } from "../../services/subjectService";
 
 // Placeholder fetch; replace with real API integration
 const fetchSchedules = async () => {
@@ -79,6 +81,17 @@ const AdminClassSchedule = () => {
   const [view, setView] = useState("week");
   const [showCreate, setShowCreate] = useState(false);
   const [filters, setFilters] = useState({ course: "", subject: "", room: "" });
+  const [coursesList, setCoursesList] = useState([]);
+  const [subjectsList, setSubjectsList] = useState([]);
+  const [formCourseId, setFormCourseId] = useState("");
+  const [formSubjectId, setFormSubjectId] = useState("");
+  const [formDayOfWeek, setFormDayOfWeek] = useState(1);
+  const [formStartTime, setFormStartTime] = useState("09:00");
+  const [formEndTime, setFormEndTime] = useState("10:00");
+  const [formRoomNumber, setFormRoomNumber] = useState("");
+  const [formIsRecurring, setFormIsRecurring] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -88,8 +101,29 @@ const AdminClassSchedule = () => {
         setLoading(false);
       }
     });
+    // load courses & subjects for the create modal
+    (async () => {
+      try {
+        const [courses, subjects] = await Promise.all([
+          getAllCourses(),
+          getAllSubjects(),
+        ]);
+        if (!mounted) return;
+        setCoursesList(courses || []);
+        setSubjectsList(subjects || []);
+      } catch (err) {
+        console.error("Failed to load courses or subjects", err);
+      }
+    })();
     return () => (mounted = false);
   }, []);
+
+  // validate live and set validity flag
+  useEffect(() => {
+    const ok = validateForm();
+    setIsFormValid(ok);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formCourseId, formSubjectId, formStartTime, formEndTime, formRoomNumber]);
 
   const filtered = useMemo(() => {
     return schedules.filter((s) => {
@@ -134,6 +168,52 @@ const AdminClassSchedule = () => {
     setFilters((f) => ({ ...f, [name]: value }));
   };
 
+  useEffect(() => {
+    // reset form fields when opening modal
+    if (!showCreate) return;
+    setFormCourseId("");
+    setFormSubjectId("");
+    setFormDayOfWeek(1);
+    setFormStartTime("09:00");
+    setFormEndTime("10:00");
+    setFormRoomNumber("");
+    setFormIsRecurring(false);
+    setFormErrors({});
+  }, [showCreate]);
+
+  const validateForm = () => {
+    const errors = {};
+    if (!formCourseId) errors.courseId = "Please select a course.";
+    if (!formSubjectId) errors.subjectId = "Please select a subject.";
+    if (!formStartTime) errors.startTime = "Start time is required.";
+    if (!formEndTime) errors.endTime = "End time is required.";
+    if (formStartTime && formEndTime) {
+      const [sh, sm] = String(formStartTime).split(":").map(Number);
+      const [eh, em] = String(formEndTime).split(":").map(Number);
+      const startMin = sh * 60 + (sm || 0);
+      const endMin = eh * 60 + (em || 0);
+      if (endMin <= startMin)
+        errors.timeOrder = "End time must be after start time.";
+    }
+    if (!formRoomNumber || !String(formRoomNumber).trim())
+      errors.roomNumber = "Room is required.";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  useEffect(() => {
+    // when course changes, if there's exactly one matching subject, preselect it
+    if (!formCourseId) return;
+    const cid = String(formCourseId);
+    const filtered = (subjectsList || []).filter((s) => {
+      const ids = (s.courseIds || s.CourseIDs || s.courseIds || []).map((x) =>
+        String(x)
+      );
+      return ids.length ? ids.includes(cid) : true;
+    });
+    if (filtered.length === 1) setFormSubjectId(String(filtered[0].id));
+  }, [formCourseId, subjectsList]);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -161,6 +241,7 @@ const AdminClassSchedule = () => {
         </div>
       </div>
 
+      {/* Filters */}
       <div className="grid sm:grid-cols-3 gap-4">
         <div className="flex flex-col">
           <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
@@ -441,16 +522,34 @@ const AdminClassSchedule = () => {
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            // validate before proceeding
+            if (!validateForm()) return;
             const form = new FormData(e.currentTarget);
             const payload = Object.fromEntries(form.entries());
+
+            const selectedCourse = (coursesList || []).find(
+              (c) =>
+                String(c.id ?? c.CourseID ?? c.CourseId ?? c.courseId) ===
+                String(payload.courseId)
+            );
+            const selectedSubject = (subjectsList || []).find(
+              (s) => String(s.id) === String(payload.subjectId)
+            );
+
             const newItem = {
               id: Date.now(),
-              courseId: Number(payload.courseId) || null,
-              subjectId: Number(payload.subjectId) || null,
+              courseId: payload.courseId
+                ? Number(payload.courseId)
+                : payload.courseId || null,
+              subjectId: payload.subjectId || null,
               courseName:
-                payload.courseName || payload.courseId || "New Course",
+                selectedCourse?.name ||
+                payload.courseName ||
+                String(payload.courseId || ""),
               subjectName:
-                payload.subjectName || payload.subjectId || "New Subject",
+                selectedSubject?.name ||
+                payload.subjectName ||
+                String(payload.subjectId || ""),
               dayOfWeek: Number(payload.dayOfWeek) || 1,
               startTime: payload.startTime || "09:00:00",
               endTime: payload.endTime || "10:00:00",
@@ -465,39 +564,60 @@ const AdminClassSchedule = () => {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="flex flex-col">
               <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
-                Course ID
+                Course
               </label>
-              <input
+              <select
                 name="courseId"
+                value={formCourseId}
+                onChange={(e) => {
+                  setFormCourseId(e.target.value);
+                  setFormSubjectId("");
+                }}
                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
-              />
+              >
+                <option value="">-- Select course --</option>
+                {coursesList.map((c) => (
+                  <option
+                    key={String(c.id || c.CourseID || c.CourseId || c.courseId)}
+                    value={String(
+                      c.id ?? c.CourseID ?? c.CourseId ?? c.courseId
+                    )}
+                  >
+                    {c.name || c.CourseName || c.title || c.courseName}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex flex-col">
               <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
-                Course Name
+                Subject
               </label>
-              <input
-                name="courseName"
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
-                Subject ID
-              </label>
-              <input
+              <select
                 name="subjectId"
+                value={formSubjectId}
+                onChange={(e) => setFormSubjectId(e.target.value)}
                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
-                Subject Name
-              </label>
-              <input
-                name="subjectName"
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
-              />
+              >
+                <option value="">-- Select subject --</option>
+                {(subjectsList || [])
+                  .filter((s) => {
+                    if (!formCourseId) return true;
+                    const cid = String(formCourseId);
+                    const ids = (
+                      s.courseIds ||
+                      s.CourseIDs ||
+                      s.courseIds ||
+                      []
+                    ).map((x) => String(x));
+                    // allow subjects that list the selected course or those that have no course restriction
+                    return ids.length ? ids.includes(cid) : true;
+                  })
+                  .map((s) => (
+                    <option key={String(s.id)} value={String(s.id)}>
+                      {s.name}
+                    </option>
+                  ))}
+              </select>
             </div>
             <div className="flex flex-col">
               <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
@@ -505,6 +625,8 @@ const AdminClassSchedule = () => {
               </label>
               <select
                 name="dayOfWeek"
+                value={formDayOfWeek}
+                onChange={(e) => setFormDayOfWeek(Number(e.target.value))}
                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
               >
                 {dayNames.map((d, i) => (
@@ -520,8 +642,15 @@ const AdminClassSchedule = () => {
               </label>
               <input
                 name="roomNumber"
+                value={formRoomNumber}
+                onChange={(e) => setFormRoomNumber(e.target.value)}
                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
               />
+              {formErrors.roomNumber && (
+                <div className="text-xs text-red-500 mt-1">
+                  {formErrors.roomNumber}
+                </div>
+              )}
             </div>
             <div className="flex flex-col">
               <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
@@ -530,8 +659,15 @@ const AdminClassSchedule = () => {
               <input
                 type="time"
                 name="startTime"
+                value={formStartTime}
+                onChange={(e) => setFormStartTime(e.target.value)}
                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
               />
+              {formErrors.startTime && (
+                <div className="text-xs text-red-500 mt-1">
+                  {formErrors.startTime}
+                </div>
+              )}
             </div>
             <div className="flex flex-col">
               <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
@@ -540,14 +676,28 @@ const AdminClassSchedule = () => {
               <input
                 type="time"
                 name="endTime"
+                value={formEndTime}
+                onChange={(e) => setFormEndTime(e.target.value)}
                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
               />
+              {formErrors.endTime && (
+                <div className="text-xs text-red-500 mt-1">
+                  {formErrors.endTime}
+                </div>
+              )}
+              {formErrors.timeOrder && (
+                <div className="text-xs text-red-500 mt-1">
+                  {formErrors.timeOrder}
+                </div>
+              )}
             </div>
             <div className="flex flex-row items-center gap-2">
               <input
                 type="checkbox"
                 id="isRecurring"
                 name="isRecurring"
+                checked={formIsRecurring}
+                onChange={(e) => setFormIsRecurring(!!e.target.checked)}
                 className="h-4 w-4"
               />
               <label
@@ -568,7 +718,12 @@ const AdminClassSchedule = () => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-md text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow transition"
+              disabled={!isFormValid}
+              className={`px-4 py-2 rounded-md text-sm font-medium text-white shadow transition ${
+                isFormValid
+                  ? "bg-indigo-600 hover:bg-indigo-500"
+                  : "bg-indigo-300 cursor-not-allowed"
+              }`}
             >
               Save
             </button>
