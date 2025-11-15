@@ -21,8 +21,10 @@ import TeacherMaterials from "./pages/teacher/Materials";
 import TeacherStudents from "./pages/teacher/Students";
 import TeacherComplaints from "./pages/teacher/Complaints";
 import TeacherNotices from "./pages/teacher/Notices";
+import TeacherClassSchedule from "./pages/teacher/ClassSchedule";
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentCourses from "./pages/student/Courses";
+import StudentClassSchedule from "./pages/student/ClassSchedule";
 import CourseView from "./components/courses/CourseView";
 import SubjectView from "./components/subjects/SubjectView";
 import StudentAttendance from "./pages/student/Attendance";
@@ -92,6 +94,7 @@ const RoutesConfig = () => {
           <Route path="courses/:id" element={<TeacherCourses />} />
           <Route path="subjects" element={<TeacherSubjects />} />
           <Route path="subjects/:id" element={<TeacherSubjects />} />
+          <Route path="class-schedule" element={<TeacherClassSchedule />} />
           <Route path="attendance" element={<TeacherAttendance />} />
           <Route path="attendance/:id" element={<TeacherAttendance />} />
           <Route path="materials" element={<TeacherMaterials />} />
@@ -125,6 +128,7 @@ const RoutesConfig = () => {
         >
           <Route index element={<StudentDashboard />} />
           <Route path="courses" element={<StudentCourses />} />
+          <Route path="class-schedule" element={<StudentClassSchedule />} />
           <Route path="courses/:id" element={<CourseView />} />
           <Route path="attendance" element={<StudentAttendance />} />
           <Route path="materials" element={<StudentMaterials />} />
