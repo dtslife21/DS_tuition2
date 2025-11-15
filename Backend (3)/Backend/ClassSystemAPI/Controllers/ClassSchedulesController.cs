@@ -13,13 +13,21 @@ namespace ClassSystemAPI.Controllers
         // GET: api/ClassSchedules
         public IQueryable<ClassSchedule> GetClassSchedules()
         {
-            return db.ClassSchedules.Include(cs => cs.Course);
+            // Now include both Course and Subject
+            return db.ClassSchedules
+                     .Include(cs => cs.Course)
+                     .Include(cs => cs.Subject);
         }
 
         // GET: api/ClassSchedules/5
         public IHttpActionResult GetClassSchedule(int id)
         {
-            var schedule = db.ClassSchedules.Find(id);
+            // Use Include here as well so Subject & Course come in one shot
+            var schedule = db.ClassSchedules
+                             .Include(cs => cs.Course)
+                             .Include(cs => cs.Subject)
+                             .FirstOrDefault(cs => cs.ScheduleID == id);
+
             if (schedule == null)
                 return NotFound();
 
@@ -32,6 +40,7 @@ namespace ClassSystemAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            // classSchedule now can contain CourseID and SubjectID
             db.ClassSchedules.Add(classSchedule);
             db.SaveChanges();
 

@@ -11,6 +11,9 @@ namespace ClassSystemAPI.Models
 
         public int CourseID { get; set; }
 
+        // New FK column
+        public int? SubjectID { get; set; }   // nullable because the DB column is NULL
+
         public byte DayOfWeek { get; set; } // 1 = Sunday, 2 = Monday...
 
         public TimeSpan StartTime { get; set; }
@@ -22,8 +25,12 @@ namespace ClassSystemAPI.Models
 
         public bool IsRecurring { get; set; } = true;
 
-        // Navigation
+        // Navigation: Course
         [ForeignKey("CourseID")]
         public virtual Course Course { get; set; }
+
+        // Navigation: Subject (NEW)
+        [ForeignKey("SubjectID")]
+        public virtual Subject Subject { get; set; }
     }
 }
