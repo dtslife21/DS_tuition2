@@ -96,12 +96,13 @@ namespace ClassSystemAPI.Controllers
         [Route("{id}")]
         public IHttpActionResult GetMaterial(int id)
         {
+            // Return material details regardless of IsVisible flag.
             var material = db.StudyMaterials
                 .Include(m => m.Course)
                 .Include(m => m.Teacher)
                 .FirstOrDefault(m => m.MaterialID == id);
 
-            if (material == null || !material.IsVisible)
+            if (material == null)
             {
                 return NotFound();
             }
