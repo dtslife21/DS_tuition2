@@ -92,8 +92,9 @@ namespace ClassSystemAPI.Controllers
         }
 
         // GET: api/studymaterials/5
+        // Named route so CreatedAtRoute in POST can resolve
         [HttpGet]
-        [Route("{id}")]
+        [Route("{id}", Name = "GetStudyMaterialById")]
         public IHttpActionResult GetMaterial(int id)
         {
             // Return material details regardless of IsVisible flag.
@@ -147,9 +148,18 @@ namespace ClassSystemAPI.Controllers
 
             material.UploadDate = DateTime.Now;
             db.StudyMaterials.Add(material);
-            await db.SaveChangesAsync();
 
-            // return CreatedAtRoute("DefaultApi", new { id = material.MaterialID }, material);
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Return server error with message to help debugging (can be tightened later)
+                return InternalServerError(ex);
+            }
+
+            // Use the named GET route so caller receives a Location header that resolves.
             return CreatedAtRoute("GetStudyMaterialById", new { id = material.MaterialID }, material);
 
         }
@@ -195,17 +205,26 @@ namespace ClassSystemAPI.Controllers
         [Route("{id}")]
         public async Task<IHttpActionResult> DeleteStudyMaterial(int id)
         {
-            StudyMaterial material = await db.StudyMaterials.FindAsync(id);
+            var material = await db.StudyMaterials.FindAsync(id);
             if (material == null)
             {
                 return NotFound();
             }
 
-            // Soft delete by setting IsVisible to false
-            material.IsVisible = false;
-            await db.SaveChangesAsync();
+            // Perform permanent delete (hard delete)
+            db.StudyMaterials.Remove(material);
 
-            return Ok(material);
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // If DB constraint prevents delete, return a helpful error.
+                return InternalServerError(ex);
+            }
+
+            return Ok(new { Message = "Study material permanently deleted", materialId = id });
         }
 
         //protected override void Dispose(bool disposing)
