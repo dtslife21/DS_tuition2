@@ -367,8 +367,55 @@ export const getCourseMaterials = async (courseId) => {
   }
 };
 
+export const getCourseMaterialsAll = async (courseId) => {
+  const resolvedId = resolveIdentifier(courseId);
+
+  if (!resolvedId) return [];
+  // Try explicit "all" endpoint first (server should implement /course/{id}/all)
+  const candidateEndpoints = [
+    `${RESOURCE_BASE}/course/${resolvedId}/all`,
+    `${RESOURCE_BASE}/course/${resolvedId}`,
+  ];
+
+  for (const endpoint of candidateEndpoints) {
+    try {
+      const materials = await fetchMaterials(endpoint);
+      // return raw materials (including invisible when supported)
+      return materials.filter((m) => extractCourseId(m) === resolvedId);
+    } catch (error) {
+      if (isNotFound(error)) return [];
+      console.warn(
+        `Course materials (all) endpoint failed (${endpoint})`,
+        error
+      );
+    }
+  }
+
+  try {
+    const materials = await getAllMaterials();
+    return materials.filter((m) => extractCourseId(m) === resolvedId);
+  } catch (error) {
+    if (isNotFound(error)) return [];
+    console.error("Failed to load course materials (all) from API", error);
+    throw error;
+  }
+};
+
 export const getAllMaterials = async () => {
   try {
+    // Prefer explicit "all" endpoint if available on server
+    try {
+      const response = await axios.get(`${RESOURCE_BASE}/all`);
+      const list = extractMaterials(response.data);
+      return list;
+    } catch (err) {
+      if (!isNotFound(err))
+        console.warn(
+          "/studymaterials/all not available, falling back to visible-only",
+          err
+        );
+    }
+
     return await getAllVisibleMaterialsFromApi();
   } catch (error) {
     console.error("Failed to load study materials from API", error);
@@ -522,7 +569,15 @@ export const getMaterialById = async (materialId) => {
     return mapMaterial(response.data);
   } catch (error) {
     if (isNotFound(error)) {
-      return null;
+      // Try the non-filtered endpoint if the server exposes it (e.g. /studymaterials/{id}/all)
+      try {
+        const resp2 = await axios.get(`${RESOURCE_BASE}/${resolvedId}/all`);
+        return mapMaterial(resp2.data);
+      } catch (err2) {
+        if (isNotFound(err2)) return null;
+        console.warn(`Fallback fetch for material ${resolvedId} failed`, err2);
+        return null;
+      }
     }
     console.error("Failed to load study material from API", error);
     throw error;
