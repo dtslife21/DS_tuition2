@@ -48,7 +48,7 @@ const StudentCourses = () => {
     <div className="min-h-screen bg-white dark:bg-gray-800 flex flex-col items-center justify-start pt-10 px-4">
       <div className="w-full max-w-3xl flex flex-col items-center">
         {/* Tab Navigation */}
-        <div className="w-full flex justify-center mb-8">
+        {/* <div className="w-full flex justify-center mb-8">
           <nav className="bg-blue-600 rounded-lg shadow flex">
             <button
               className={`px-8 py-3 text-lg font-semibold focus:outline-none transition-colors duration-200 rounded-l-lg ${
@@ -81,7 +81,7 @@ const StudentCourses = () => {
               Marks Chart
             </button>
           </nav>
-        </div>
+        </div> */}
 
         {/* Tab Content */}
         {activeTab === "details" && (

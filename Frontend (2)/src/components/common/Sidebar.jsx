@@ -43,7 +43,7 @@ const Sidebar = () => {
     { name: "Materials", href: "/teacher/materials", icon: "document-text" },
     { name: "Students", href: "/teacher/students", icon: "users" },
     { name: "Notices", href: "/teacher/notices", icon: "document-text" },
-    { name: "Complaints", href: "/teacher/complaints", icon: "chat" },
+    // { name: "Complaints", href: "/teacher/complaints", icon: "chat" },
   ];
 
   const studentNavigation = [
@@ -51,7 +51,7 @@ const Sidebar = () => {
     { name: "Courses", href: "/student/courses", icon: "book" },
     { name: "Attendance", href: "/student/attendance", icon: "check-circle" },
     { name: "Materials", href: "/student/materials", icon: "document-text" },
-    { name: "Complaints", href: "/student/complaints", icon: "chat" },
+    // { name: "Complaints", href: "/student/complaints", icon: "chat" },
     {
       name: "Class Schedule",
       href: "/student/class-schedule",
