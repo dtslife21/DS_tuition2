@@ -95,7 +95,7 @@ const AdminCourses = () => {
     };
 
     fetchCourses();
-  }, []);
+  }, [location.key]);
 
   const handleCourseSubmit = async (formValues) => {
     // Persist the subject first (if we only have a temp payload), then create the course.

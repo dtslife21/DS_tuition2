@@ -27,6 +27,98 @@ const normalizeIdArray = (values) => {
   return Array.from(map.values());
 };
 
+const normalizeBooleanLike = (value) => {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return null;
+
+    const truthy = new Set([
+      "true",
+      "1",
+      "yes",
+      "y",
+      "active",
+      "enabled",
+      "on",
+    ]);
+    const falsy = new Set([
+      "false",
+      "0",
+      "no",
+      "n",
+      "inactive",
+      "disabled",
+      "off",
+    ]);
+
+    if (truthy.has(normalized)) return true;
+    if (falsy.has(normalized)) return false;
+  }
+
+  return null;
+};
+
+// Returns true when a course object should be considered active/visible
+const courseIsActive = (course) => {
+  if (!course || typeof course !== "object") return false;
+
+  const rawStatus =
+    course.status ??
+    course.Status ??
+    course.courseStatus ??
+    course.CourseStatus ??
+    null;
+  const normalizedStatus =
+    typeof rawStatus === "string" ? rawStatus.trim().toLowerCase() : null;
+
+  const rawIsActive =
+    course.isActive ??
+    course.IsActive ??
+    course.is_active ??
+    course.Is_active ??
+    course.active ??
+    course.Active ??
+    (normalizedStatus === "active"
+      ? true
+      : normalizedStatus === "inactive"
+      ? false
+      : undefined);
+
+  const normalizedActive = normalizeBooleanLike(rawIsActive);
+  if (normalizedActive !== null) return normalizedActive;
+  if (normalizedStatus !== null) return normalizedStatus !== "inactive";
+  return true; // default visible
+};
+
+// Given an array of formatted course objects, fetch authoritative details
+// for each course and return only those that are active. If fetching fails
+// for a course, fall back to the provided object.
+const verifyAndFilterActiveCourses = async (courses) => {
+  if (!Array.isArray(courses) || !courses.length) return [];
+
+  const checks = await Promise.all(
+    courses.map(async (c) => {
+      try {
+        const cid = c?.id ?? c?.CourseID ?? c?.courseId ?? c?.CourseId ?? null;
+        if (!cid) return c;
+        const fresh = await getCourseDetails(String(cid));
+        return fresh || c;
+      } catch (err) {
+        return c;
+      }
+    })
+  );
+
+  return (checks || [])
+    .map(formatCourse)
+    .filter(Boolean)
+    .filter(courseIsActive);
+};
+
 const formatSubjectEntry = (entry) => {
   if (!entry) return null;
 
@@ -259,12 +351,19 @@ const formatCourse = (course) => {
       ? false
       : undefined);
 
+  const normalizedActive = normalizeBooleanLike(rawIsActive);
+  const fallbackActive =
+    normalizedStatus === null ? null : normalizedStatus !== "inactive";
+
   const resolvedIsActive =
-    rawIsActive === undefined || rawIsActive === null
-      ? normalizedStatus === null
-        ? true
-        : normalizedStatus !== "inactive"
-      : Boolean(rawIsActive);
+    normalizedActive !== null
+      ? normalizedActive
+      : fallbackActive !== null
+      ? fallbackActive
+      : true;
+
+  const resolvedStatus =
+    normalizedStatus ?? (resolvedIsActive ? "active" : "inactive");
 
   const teacherDetails =
     teacher && typeof teacher === "object"
@@ -381,7 +480,8 @@ const formatCourse = (course) => {
     SubjectIDs: subjectIds,
     isActive: resolvedIsActive,
     IsActive: resolvedIsActive,
-    status: normalizedStatus ?? (resolvedIsActive ? "active" : "inactive"),
+    status: resolvedStatus,
+    Status: resolvedStatus,
   };
 };
 
@@ -778,8 +878,10 @@ export const getTeacherCourses = async (teacherId) => {
           (response.data ? [response.data] : []);
       const formattedCourses = raw.map(formatCourse).filter(Boolean);
 
-      if (formattedCourses.length) {
-        return formattedCourses;
+      // Filter out inactive courses for teacher visibility
+      const visible = formattedCourses.filter(courseIsActive);
+      if (visible.length) {
+        return visible;
       }
     } catch (error) {
       console.warn(
@@ -795,11 +897,14 @@ export const getTeacherCourses = async (teacherId) => {
       ? response.data.map(formatCourse).filter(Boolean)
       : [];
 
+    // Only return active/visible courses for non-admin consumers
+    const visibleCourses = courses.filter(courseIsActive);
+
     if (!hasTeacherId) {
-      return courses;
+      return visibleCourses;
     }
 
-    return courses.filter(
+    return visibleCourses.filter(
       (course) => String(course.teacherId) === String(teacherId)
     );
   } catch (error) {
@@ -907,53 +1012,52 @@ export const getTeacherCoursesWithStudents = async (teacherId) => {
         response.data?.data ||
         [];
 
-    return rawCourses.map((coursePayload) => {
-      const identifiers = resolveCourseIdentifiers(coursePayload);
-      const students = flattenCoursesStudentResponse([
-        {
-          ...coursePayload,
-          CourseID: identifiers.CourseID ?? coursePayload.CourseID,
-          CourseName: identifiers.CourseName ?? coursePayload.CourseName,
-          CourseCode: identifiers.CourseCode ?? coursePayload.CourseCode,
-        },
-      ]);
+    return rawCourses
+      .map((coursePayload) => ({
+        raw: coursePayload,
+        formatted: formatCourse(coursePayload),
+      }))
+      .filter(({ formatted }) => courseIsActive(formatted))
+      .map(({ raw: coursePayload, formatted: courseDetails }) => {
+        const identifiers = resolveCourseIdentifiers(coursePayload);
+        const students = flattenCoursesStudentResponse([
+          {
+            ...coursePayload,
+            CourseID: identifiers.CourseID ?? coursePayload.CourseID,
+            CourseName: identifiers.CourseName ?? coursePayload.CourseName,
+            CourseCode: identifiers.CourseCode ?? coursePayload.CourseCode,
+          },
+        ]);
 
-      const courseDetails = formatCourse({
-        ...coursePayload,
-        CourseID: identifiers.CourseID ?? coursePayload.CourseID,
-        CourseName: identifiers.CourseName ?? coursePayload.CourseName,
-        CourseCode: identifiers.CourseCode ?? coursePayload.CourseCode,
+        const courseInfo = courseDetails
+          ? {
+              ...courseDetails,
+              CourseID: identifiers.CourseID ?? courseDetails.CourseID ?? null,
+              CourseName:
+                identifiers.CourseName ??
+                courseDetails.CourseName ??
+                courseDetails.name ??
+                "",
+              CourseCode:
+                identifiers.CourseCode ??
+                courseDetails.CourseCode ??
+                courseDetails.code ??
+                "",
+            }
+          : {
+              id: identifiers.CourseID ?? null,
+              CourseID: identifiers.CourseID ?? null,
+              name: identifiers.CourseName ?? "",
+              CourseName: identifiers.CourseName ?? "",
+              code: identifiers.CourseCode ?? "",
+              CourseCode: identifiers.CourseCode ?? "",
+            };
+
+        return {
+          course: courseInfo,
+          students,
+        };
       });
-
-      const courseInfo = courseDetails
-        ? {
-            ...courseDetails,
-            CourseID: identifiers.CourseID ?? courseDetails.CourseID ?? null,
-            CourseName:
-              identifiers.CourseName ??
-              courseDetails.CourseName ??
-              courseDetails.name ??
-              "",
-            CourseCode:
-              identifiers.CourseCode ??
-              courseDetails.CourseCode ??
-              courseDetails.code ??
-              "",
-          }
-        : {
-            id: identifiers.CourseID ?? null,
-            CourseID: identifiers.CourseID ?? null,
-            name: identifiers.CourseName ?? "",
-            CourseName: identifiers.CourseName ?? "",
-            code: identifiers.CourseCode ?? "",
-            CourseCode: identifiers.CourseCode ?? "",
-          };
-
-      return {
-        course: courseInfo,
-        students,
-      };
-    });
   } catch (error) {
     console.error(
       "Failed to load teacher courses with students via teacher route",
@@ -1212,7 +1316,15 @@ export const getStudentCourses = async (studentId) => {
       .map(formatCourse)
       .filter(Boolean);
     if (courses.length) {
-      return courses;
+      // Verify authoritative status to avoid stale embedded Course objects
+      try {
+        const verified = await verifyAndFilterActiveCourses(courses);
+        if (verified.length) return verified;
+        // if verification removed everything, fall back to server-provided visible ones
+        return courses.filter(courseIsActive);
+      } catch (err) {
+        return courses.filter(courseIsActive);
+      }
     }
   } catch (_) {
     // continue to fallback candidates
@@ -1233,7 +1345,13 @@ export const getStudentCourses = async (studentId) => {
         : response.data?.courses || response.data?.Courses || [];
       const formattedCourses = raw.map(formatCourse).filter(Boolean);
       if (formattedCourses.length) {
-        return formattedCourses;
+        try {
+          const verified = await verifyAndFilterActiveCourses(formattedCourses);
+          if (verified.length) return verified;
+          return formattedCourses.filter(courseIsActive);
+        } catch (err) {
+          return formattedCourses.filter(courseIsActive);
+        }
       }
     } catch (_) {
       // try next endpoint
@@ -1256,7 +1374,13 @@ export const getStudentCourses = async (studentId) => {
 
     const scoped = allCourses.filter((c) => courseIdSet.has(String(c.id)));
     if (scoped.length) {
-      return scoped;
+      try {
+        const verified = await verifyAndFilterActiveCourses(scoped);
+        if (verified.length) return verified;
+        return scoped.filter(courseIsActive);
+      } catch (err) {
+        return scoped.filter(courseIsActive);
+      }
     }
   } catch (_) {
     // ignore and continue to last resort
@@ -1465,12 +1589,92 @@ export const deactivateCourse = async (courseId) => {
   if (!idStr) {
     throw new Error("deactivateCourse requires a valid courseId");
   }
-
   try {
-    const updated = await updateCourse(idStr, { IsActive: false });
-    return updated;
+    // Load current course details so we can provide a full PUT payload
+    const current = await getCourseDetails(idStr);
+
+    // Ensure we have values in the shape the backend expects. Use safe fallbacks.
+    const existingSubjectIds = collectSubjectIds(current || {});
+    const payload = {
+      CourseID: current?.id ?? current?.CourseID ?? current?.courseId ?? idStr,
+      CourseName: current?.name ?? current?.CourseName ?? "",
+      CourseCode: current?.code ?? current?.CourseCode ?? "",
+      TeacherID:
+        current?.teacherId ??
+        current?.TeacherID ??
+        current?.teacher?.teacherId ??
+        current?.teacher?.id ??
+        null,
+      AcademicYear: current?.academicYear ?? current?.AcademicYear ?? "",
+      Description: current?.description ?? current?.Description ?? "",
+      // Preserve existing subject associations so subjects aren't removed by backend
+      SubjectIDs:
+        current?.SubjectIDs ?? current?.subjectIds ?? current?.subjectIDs ??
+        (Array.isArray(existingSubjectIds) && existingSubjectIds.length ? existingSubjectIds : undefined),
+      SubjectID:
+        current?.SubjectID ?? current?.subjectId ?? current?.subjectID ??
+        (Array.isArray(existingSubjectIds) && existingSubjectIds.length ? existingSubjectIds[0] : null),
+      IsActive: false,
+    };
+
+    await axios.put(`/Courses/${idStr}`, payload);
+
+    // Return refreshed course details (formatted)
+    const refreshed = await getCourseDetails(idStr);
+    return refreshed;
   } catch (error) {
     console.error(`Failed to deactivate course ${idStr}`, error);
+    throw error;
+  }
+};
+
+// Reactivate a soft-deleted course by marking it active. Returns updated course payload.
+export const reactivateCourse = async (courseId) => {
+  const idStr = String(
+    courseId ??
+      (courseId && courseId.id) ??
+      (courseId && courseId.CourseID) ??
+      (courseId && courseId.courseId) ??
+      (courseId && courseId.courseID) ??
+      ""
+  ).trim();
+
+  if (!idStr) {
+    throw new Error("reactivateCourse requires a valid courseId");
+  }
+
+  try {
+    // Load current course details so we can provide a full PUT payload
+    const current = await getCourseDetails(idStr);
+
+    const existingSubjectIds = collectSubjectIds(current || {});
+    const payload = {
+      CourseID: current?.id ?? current?.CourseID ?? current?.courseId ?? idStr,
+      CourseName: current?.name ?? current?.CourseName ?? "",
+      CourseCode: current?.code ?? current?.CourseCode ?? "",
+      TeacherID:
+        current?.teacherId ??
+        current?.TeacherID ??
+        current?.teacher?.teacherId ??
+        current?.teacher?.id ??
+        null,
+      AcademicYear: current?.academicYear ?? current?.AcademicYear ?? "",
+      Description: current?.description ?? current?.Description ?? "",
+      SubjectIDs:
+        current?.SubjectIDs ?? current?.subjectIds ?? current?.subjectIDs ??
+        (Array.isArray(existingSubjectIds) && existingSubjectIds.length ? existingSubjectIds : undefined),
+      SubjectID:
+        current?.SubjectID ?? current?.subjectId ?? current?.subjectID ??
+        (Array.isArray(existingSubjectIds) && existingSubjectIds.length ? existingSubjectIds[0] : null),
+      IsActive: true,
+    };
+
+    await axios.put(`/Courses/${idStr}`, payload);
+
+    const refreshed = await getCourseDetails(idStr);
+    return refreshed;
+  } catch (error) {
+    console.error(`Failed to reactivate course ${idStr}`, error);
     throw error;
   }
 };

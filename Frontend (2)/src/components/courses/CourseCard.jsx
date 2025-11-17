@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
-import { formatDate } from '../../utils/helpers'
+import { Link } from "react-router-dom";
+import { formatDate } from "../../utils/helpers";
 
 const CourseCard = ({ course }) => {
   return (
@@ -46,7 +46,7 @@ const CourseCard = ({ course }) => {
         </Link>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default CourseCard
+export default CourseCard;

@@ -8,6 +8,7 @@ import {
   getTeacherStudents,
   deactivateCourse,
 } from "../../services/courseService";
+import { reactivateCourse } from "../../services/courseService";
 import { getCourseStudents } from "../../services/courseService";
 import { getCourseMaterials } from "../../services/materialService";
 import { getCourseAttendance } from "../../services/attendanceService";
@@ -50,6 +51,7 @@ const CourseView = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reactivating, setReactivating] = useState(false);
   const [teacher, setTeacher] = useState(null);
   const [teacherLoading, setTeacherLoading] = useState(false);
   const [teacherError, setTeacherError] = useState(null);
@@ -1005,6 +1007,48 @@ const CourseView = () => {
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
                 {deleting ? "Removing..." : "Remove"}
+              </button>
+            )}
+            {isAdmin && !isCourseActive && (
+              <button
+                onClick={async () => {
+                  const candidateId =
+                    course?.id ?? course?.CourseID ?? course?.courseId ?? id;
+                  if (!candidateId) return;
+                  const confirmed = confirm(
+                    `Reactivate course "${
+                      course?.name || candidateId
+                    }"? Students will be able to see this course again.`
+                  );
+                  if (!confirmed) return;
+                  setReactivating(true);
+                  try {
+                    const updatedCourse = await reactivateCourse(candidateId);
+                    if (updatedCourse) {
+                      setCourse(updatedCourse);
+                    }
+                    setToastType("success");
+                    setToastMessage("Course reactivated");
+                    const redirectPath = isAdmin
+                      ? "/admin/courses"
+                      : "/teacher/courses";
+                    if (isAdmin) {
+                      navigate(redirectPath, { state: { tab: "active" } });
+                    } else {
+                      navigate(redirectPath);
+                    }
+                  } catch (err) {
+                    console.error("Failed to reactivate course:", err);
+                    setToastType("error");
+                    setToastMessage("Failed to reactivate course");
+                  } finally {
+                    setReactivating(false);
+                  }
+                }}
+                disabled={reactivating}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-emerald-700 bg-emerald-100 hover:bg-emerald-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+              >
+                {reactivating ? "Activating..." : "Active"}
               </button>
             )}
             <span className={statusBadgeClassName}>{statusBadgeLabel}</span>

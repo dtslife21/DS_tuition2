@@ -143,7 +143,7 @@ const AdminUsers = () => {
   const courseFilterParam = (() => {
     try {
       const qs = new URLSearchParams(location.search || "");
-      return (qs.get("course") || location.state?.course || "") || "";
+      return qs.get("course") || location.state?.course || "" || "";
     } catch (e) {
       return "";
     }
@@ -665,10 +665,14 @@ const AdminUsers = () => {
       );
       if (!ok) return;
 
-      await setEnrollmentActiveStatus(enrollment.EnrollmentID ?? enrollment.id ?? enrollment.enrollmentID, false, {
-        StudentID: userID,
-        CourseID: courseId,
-      });
+      await setEnrollmentActiveStatus(
+        enrollment.EnrollmentID ?? enrollment.id ?? enrollment.enrollmentID,
+        false,
+        {
+          StudentID: userID,
+          CourseID: courseId,
+        }
+      );
 
       // Remove from the filtered set so it disappears from the course-specific view
       setFilteredStudentIds((prev) => {
@@ -707,10 +711,14 @@ const AdminUsers = () => {
         return;
       }
 
-      await setEnrollmentActiveStatus(enrollment.EnrollmentID ?? enrollment.id ?? enrollment.enrollmentID, true, {
-        StudentID: userID,
-        CourseID: courseId,
-      });
+      await setEnrollmentActiveStatus(
+        enrollment.EnrollmentID ?? enrollment.id ?? enrollment.enrollmentID,
+        true,
+        {
+          StudentID: userID,
+          CourseID: courseId,
+        }
+      );
 
       // Add back to filtered set so it shows in the course-specific view
       setFilteredStudentIds((prev) => {
