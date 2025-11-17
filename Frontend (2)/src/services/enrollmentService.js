@@ -83,9 +83,75 @@ export const deleteEnrollment = async (enrollmentId) => {
   }
 };
 
+export const updateEnrollment = async (enrollmentId, updates = {}) => {
+  if (enrollmentId === undefined || enrollmentId === null) return null;
+  const idStr = String(enrollmentId).trim();
+  if (!idStr) return null;
+
+  try {
+    const response = await axios.patch(`/Enrollments/${idStr}`, updates);
+    return response.data;
+  } catch (patchError) {
+    // Some backends may not support PATCH; fall back to PUT with the same payload.
+    try {
+      const response = await axios.put(`/Enrollments/${idStr}`, updates);
+      return response.data;
+    } catch (putError) {
+      console.error("Failed to update enrollment", putError);
+      throw putError;
+    }
+  }
+};
+
+export const setEnrollmentActiveStatus = async (
+  enrollmentId,
+  isActive,
+  context = {}
+) => {
+  const payload = { IsActive: Boolean(isActive) };
+  const numericId = Number(enrollmentId);
+  if (!Number.isNaN(numericId)) {
+    payload.EnrollmentID = numericId;
+  } else if (enrollmentId !== undefined && enrollmentId !== null) {
+    payload.EnrollmentID = enrollmentId;
+  }
+
+  const studentId =
+    context.StudentID ??
+    context.studentID ??
+    context.studentId ??
+    context.UserID ??
+    context.userID ??
+    context.userId ??
+    null;
+  if (studentId !== null && studentId !== undefined) {
+    payload.StudentID = studentId;
+  }
+
+  const courseId =
+    context.CourseID ??
+    context.courseID ??
+    context.courseId ??
+    context.CourseId ??
+    null;
+  if (courseId !== null && courseId !== undefined) {
+    payload.CourseID = courseId;
+  }
+
+  const enrollmentDate =
+    context.EnrollmentDate ?? context.enrollmentDate ?? null;
+  if (enrollmentDate) {
+    payload.EnrollmentDate = enrollmentDate;
+  }
+
+  return updateEnrollment(enrollmentId, payload);
+};
+
 export default {
   createEnrollment,
   createEnrollmentsForStudent,
   getEnrollmentsByStudent,
   deleteEnrollment,
+  updateEnrollment,
+  setEnrollmentActiveStatus,
 };

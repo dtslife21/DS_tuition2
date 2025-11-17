@@ -31,6 +31,7 @@ const mapStudent = (student) => {
       user.UserID ??
       user.userID ??
       resolvedStudentId,
+    UserTypeID: student.UserTypeID ?? user.UserTypeID ?? 3,
     RollNumber: student.RollNumber ?? student.rollNumber ?? "",
     EnrollmentDate:
       student.EnrollmentDate ??
@@ -86,6 +87,7 @@ const mapStudent = (student) => {
   studentRecord.currentGrade = studentRecord.CurrentGrade;
   studentRecord.parentName = studentRecord.ParentName;
   studentRecord.parentContact = studentRecord.ParentContact;
+  studentRecord.userTypeID = studentRecord.UserTypeID;
 
   return studentRecord;
 };

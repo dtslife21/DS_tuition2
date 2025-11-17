@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -8,6 +8,7 @@ import {
   getTeacherStudents,
   deactivateCourse,
 } from "../../services/courseService";
+import { getCourseStudents } from "../../services/courseService";
 import { getCourseMaterials } from "../../services/materialService";
 import { getCourseAttendance } from "../../services/attendanceService";
 import { getUserById } from "../../services/userService";
@@ -15,13 +16,13 @@ import MaterialList from "../materials/MaterialList";
 import AttendanceList from "../attendance/AttendanceList";
 import Modal from "../common/Modal";
 import StudentPickerModal from "../common/StudentPickerModal";
-import UserList from "../users/UserList";
 import CourseForm from "./CourseForm";
 import MaterialForm from "../materials/MaterialForm";
 import QRGenerator from "../attendance/QRGenerator";
 import Loader from "../common/Loader";
 import Button from "../common/Button";
 import UserForm from "../users/UserForm";
+import Avatar from "../common/Avatar";
 import {
   createSubject,
   updateSubject,
@@ -30,6 +31,7 @@ import {
 import {
   createEnrollment,
   createEnrollmentsForStudent,
+  setEnrollmentActiveStatus,
 } from "../../services/enrollmentService";
 import { createStudent } from "../../services/studentService";
 import { createUser } from "../../services/userService";
@@ -62,6 +64,8 @@ const CourseView = () => {
   const [showStudentMenu, setShowStudentMenu] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("success");
+  const [studentTab, setStudentTab] = useState("active");
+  const [enrollmentLoadingMap, setEnrollmentLoadingMap] = useState({});
 
   // Ref for student menu wrapper to detect outside clicks
   const studentMenuRef = useRef(null);
@@ -229,6 +233,45 @@ const CourseView = () => {
               })
             : [];
           setStudents(filteredStudents);
+
+          // Also try the course-specific students endpoint which may include
+          // inactive enrollments depending on the backend. Merge results so
+          // inactive enrollments are available in the tabs on reload.
+          try {
+            const courseScoped = await getCourseStudents(id);
+            if (!isActive) return;
+            if (Array.isArray(courseScoped) && courseScoped.length) {
+              // merge and dedupe by enrollment id (preferred) then student id
+              const map = new Map();
+              const pushEntry = (e) => {
+                const enrollId =
+                  e?.EnrollmentID ?? e?.enrollmentID ?? e?.enrollmentId ?? null;
+                const studentId =
+                  e?.StudentID ??
+                  e?.studentID ??
+                  e?.studentId ??
+                  e?.UserID ??
+                  e?.userID ??
+                  e?.userId ??
+                  null;
+                const key = enrollId
+                  ? `e:${String(enrollId)}`
+                  : `s:${String(studentId)}`;
+                if (!map.has(key)) {
+                  map.set(key, e);
+                }
+              };
+
+              // first add the already-fetched list so that courseScoped can overwrite
+              (filteredStudents || []).forEach(pushEntry);
+              courseScoped.forEach(pushEntry);
+
+              const merged = Array.from(map.values());
+              setStudents(merged);
+            }
+          } catch (mergeErr) {
+            // ignore merge errors; we already have filteredStudents
+          }
         } catch (err) {
           console.error("Failed to load course students:", err);
           if (!isActive) return;
@@ -323,6 +366,90 @@ const CourseView = () => {
     return "";
   };
 
+  const getStudentDetailsPath = (student) => {
+    const identifier = resolveStudentId(student);
+    if (!identifier) return null;
+    return user?.userType === "teacher"
+      ? `/teacher/students/${identifier}`
+      : `/admin/users/${identifier}`;
+  };
+
+  const resolveEnrollmentId = (candidate) => {
+    if (!candidate || typeof candidate !== "object") {
+      return "";
+    }
+
+    const fields = [
+      candidate.EnrollmentID,
+      candidate.enrollmentID,
+      candidate.enrollmentId,
+      candidate.EnrollmentId,
+    ];
+
+    for (const value of fields) {
+      if (value === undefined || value === null) continue;
+      const str = String(value).trim();
+      if (str) return str;
+    }
+
+    return "";
+  };
+
+  const resolveEnrollmentActive = (studentEntry) => {
+    const raw =
+      studentEntry?.EnrollmentIsActive ??
+      studentEntry?.enrollmentIsActive ??
+      studentEntry?.EnrollmentStatus ??
+      studentEntry?.enrollmentStatus ??
+      null;
+
+    if (typeof raw === "string") {
+      const normalized = raw.trim().toLowerCase();
+      if (normalized === "active") return true;
+      if (normalized === "inactive") return false;
+      if (normalized === "true" || normalized === "1") return true;
+      if (normalized === "false" || normalized === "0") return false;
+    } else if (raw !== null && raw !== undefined) {
+      return Boolean(raw);
+    }
+
+    const fallback = studentEntry?.IsActive ?? studentEntry?.isActive;
+    if (fallback !== undefined && fallback !== null) {
+      return Boolean(fallback);
+    }
+
+    return true;
+  };
+
+  const formatEnrollmentDate = (value) => {
+    if (!value) return "Not specified";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return date.toLocaleDateString();
+  };
+
+  const { activeStudents, inactiveStudents } = useMemo(() => {
+    const grouped = { active: [], inactive: [] };
+
+    if (Array.isArray(students)) {
+      for (const studentEntry of students) {
+        const isActive = resolveEnrollmentActive(studentEntry);
+        if (isActive) {
+          grouped.active.push(studentEntry);
+        } else {
+          grouped.inactive.push(studentEntry);
+        }
+      }
+    }
+
+    return {
+      activeStudents: grouped.active,
+      inactiveStudents: grouped.inactive,
+    };
+  }, [students]);
+
   const handleExistingStudentConfirm = async (selectedIds = []) => {
     if (!Array.isArray(selectedIds) || !selectedIds.length) {
       setStudentActionError("Select at least one student to enroll.");
@@ -405,6 +532,229 @@ const CourseView = () => {
     } finally {
       setAddingStudents(false);
     }
+  };
+
+  const handleEnrollmentStatusChange = async (studentEntry, makeActive) => {
+    const enrollmentId = resolveEnrollmentId(studentEntry);
+    if (!enrollmentId) {
+      setToastType("error");
+      setToastMessage("Unable to update enrollment. Missing identifier.");
+      return;
+    }
+
+    setEnrollmentLoadingMap((prev) => ({
+      ...prev,
+      [enrollmentId]: true,
+    }));
+
+    try {
+      await setEnrollmentActiveStatus(enrollmentId, makeActive, studentEntry);
+      const nextStatus = makeActive ? "active" : "inactive";
+
+      setStudents((prev) =>
+        prev.map((studentItem) => {
+          const currentId = resolveEnrollmentId(studentItem);
+          if (currentId && String(currentId) === String(enrollmentId)) {
+            return {
+              ...studentItem,
+              EnrollmentIsActive: makeActive,
+              enrollmentIsActive: makeActive,
+              EnrollmentStatus: nextStatus,
+              enrollmentStatus: nextStatus,
+            };
+          }
+          return studentItem;
+        })
+      );
+
+      setToastType("success");
+      setToastMessage(
+        makeActive
+          ? "Enrollment reactivated."
+          : "Enrollment removed from course."
+      );
+    } catch (error) {
+      console.error("Failed to update enrollment status:", error);
+      setToastType("error");
+      setToastMessage(
+        makeActive
+          ? "Unable to reactivate enrollment."
+          : "Unable to remove enrollment."
+      );
+    } finally {
+      setEnrollmentLoadingMap((prev) => {
+        const next = { ...prev };
+        delete next[enrollmentId];
+        return next;
+      });
+    }
+  };
+
+  const handleRemoveEnrollment = async (studentEntry) => {
+    const confirmed = window.confirm(
+      "Remove this student from the course? They will remain associated but marked inactive."
+    );
+    if (!confirmed) return;
+    await handleEnrollmentStatusChange(studentEntry, false);
+  };
+
+  const handleReactivateEnrollment = async (studentEntry) => {
+    await handleEnrollmentStatusChange(studentEntry, true);
+  };
+
+  const renderEnrollmentList = (
+    collection,
+    { showRemove = false, showReactivate = false } = {}
+  ) => {
+    if (!collection || !collection.length) {
+      return (
+        <div className="bg-white dark:bg-gray-800 shadow sm:rounded-md">
+          <div className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-300">
+            No students in this list.
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+        <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+          {collection.map((studentEntry, index) => {
+            const enrollmentId = resolveEnrollmentId(studentEntry);
+            const loading = enrollmentId
+              ? Boolean(enrollmentLoadingMap[enrollmentId])
+              : false;
+            const detailPath = getStudentDetailsPath(studentEntry);
+            const name =
+              `${studentEntry.FirstName || studentEntry.firstName || ""} ${
+                studentEntry.LastName || studentEntry.lastName || ""
+              }`
+                .replace(/\s+/g, " ")
+                .trim() || "Unnamed Student";
+            const email =
+              studentEntry.Email || studentEntry.email || "Email unavailable";
+            const isActive = resolveEnrollmentActive(studentEntry);
+            const statusClass = isActive
+              ? "px-2 inline-flex text-xs font-semibold leading-5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+              : "px-2 inline-flex text-xs font-semibold leading-5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800/60 dark:text-gray-300";
+            const statusLabel = isActive ? "Active" : "Inactive";
+            const enrollmentDate = formatEnrollmentDate(
+              studentEntry.EnrollmentDate ?? studentEntry.enrollmentDate
+            );
+            const key =
+              enrollmentId || resolveStudentId(studentEntry) || String(index);
+
+            return (
+              <li key={key} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div className="px-4 py-4 sm:px-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <Avatar
+                          name={`${
+                            studentEntry.FirstName ||
+                            studentEntry.firstName ||
+                            ""
+                          } ${
+                            studentEntry.LastName || studentEntry.lastName || ""
+                          }`}
+                          size="sm"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1 px-4 md:grid md:grid-cols-2 md:gap-4">
+                        {detailPath ? (
+                          <Link to={detailPath} className="min-w-0 block group">
+                            <p
+                              className="text-sm font-medium text-indigo-600 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300 truncate max-w-full"
+                              title={name}
+                            >
+                              {name}
+                            </p>
+                            <p className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                              <span
+                                className="truncate block max-w-full"
+                                title={email}
+                              >
+                                {email}
+                              </span>
+                            </p>
+                          </Link>
+                        ) : (
+                          <div className="min-w-0 block">
+                            <p
+                              className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-full"
+                              title={name}
+                            >
+                              {name}
+                            </p>
+                            <p className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                              <span
+                                className="truncate block max-w-full"
+                                title={email}
+                              >
+                                {email}
+                              </span>
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="hidden md:block">
+                          <div>
+                            <p className="text-sm text-gray-900 dark:text-white">
+                              Role: Student
+                            </p>
+                            {(studentEntry.RollNumber ||
+                              studentEntry.rollNumber) && (
+                              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                Roll No:{" "}
+                                {studentEntry.RollNumber ||
+                                  studentEntry.rollNumber}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3 flex-shrink-0">
+                      <span className={statusClass}>{statusLabel}</span>
+                      {showRemove && (
+                        <button
+                          onClick={() => handleRemoveEnrollment(studentEntry)}
+                          disabled={loading || !enrollmentId}
+                          className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-orange-600 hover:text-orange-800 ${
+                            loading || !enrollmentId
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
+                        >
+                          {loading ? "Removing..." : "Remove"}
+                        </button>
+                      )}
+                      {showReactivate && (
+                        <button
+                          onClick={() =>
+                            handleReactivateEnrollment(studentEntry)
+                          }
+                          disabled={loading || !enrollmentId}
+                          className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-green-600 hover:text-green-800 ${
+                            loading || !enrollmentId
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
+                        >
+                          {loading ? "Activating..." : "Activate"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
   };
 
   const handleStudentPickerClose = () => {
@@ -875,28 +1225,47 @@ const CourseView = () => {
             {studentsLoading ? (
               <Loader className="py-8" />
             ) : (
-              <UserList
-                users={students}
-                // In the course view we don't want inline edit/delete buttons;
-                // management should happen on the dedicated Students pages.
-                allowManage={false}
-                getDetailsPath={(student) => {
-                  const identifier =
-                    student.UserID ||
-                    student.userID ||
-                    student.userId ||
-                    student.id ||
-                    student.StudentID ||
-                    student.studentID ||
-                    student.studentId;
-                  if (!identifier) return null;
-                  return user?.userType === "teacher"
-                    ? `/teacher/students/${identifier}`
-                    : `/admin/users/${identifier}`;
-                }}
-                onEdit={null}
-                onDelete={null}
-              />
+              <>
+                <div className="border-b border-gray-200 dark:border-gray-700">
+                  <nav
+                    className="-mb-px flex space-x-6"
+                    aria-label="Enrollment Tabs"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setStudentTab("active")}
+                      className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium transition-colors ${
+                        studentTab === "active"
+                          ? "border-indigo-500 text-indigo-600 dark:text-indigo-300"
+                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200"
+                      }`}
+                    >
+                      Active Enrollments ({activeStudents.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStudentTab("inactive")}
+                      className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium transition-colors ${
+                        studentTab === "inactive"
+                          ? "border-indigo-500 text-indigo-600 dark:text-indigo-300"
+                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200"
+                      }`}
+                    >
+                      Inactive Enrollments ({inactiveStudents.length})
+                    </button>
+                  </nav>
+                </div>
+
+                <div className="mt-4">
+                  {studentTab === "active"
+                    ? renderEnrollmentList(activeStudents, {
+                        showRemove: canModifyStudents,
+                      })
+                    : renderEnrollmentList(inactiveStudents, {
+                        showReactivate: canModifyStudents,
+                      })}
+                </div>
+              </>
             )}
           </div>
         </>

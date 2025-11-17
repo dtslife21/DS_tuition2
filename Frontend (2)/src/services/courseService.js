@@ -471,6 +471,28 @@ const transformEnrollmentToStudent = (enrollment, course) => {
     null;
   studentDetails.EnrollmentDate = enrollmentDate;
 
+  const rawEnrollmentActive =
+    enrollment.IsActive ??
+    enrollment.isActive ??
+    enrollment.Active ??
+    enrollment.active ??
+    studentDetails.EnrollmentIsActive ??
+    studentDetails.enrollmentIsActive ??
+    null;
+
+  if (rawEnrollmentActive !== null && rawEnrollmentActive !== undefined) {
+    const resolved = Boolean(rawEnrollmentActive);
+    studentDetails.EnrollmentIsActive = resolved;
+    studentDetails.enrollmentIsActive = resolved;
+    studentDetails.EnrollmentStatus = resolved ? "active" : "inactive";
+    studentDetails.enrollmentStatus = studentDetails.EnrollmentStatus;
+  } else {
+    studentDetails.EnrollmentIsActive = true;
+    studentDetails.enrollmentIsActive = true;
+    studentDetails.EnrollmentStatus = "active";
+    studentDetails.enrollmentStatus = "active";
+  }
+
   const meta = resolveCourseIdentifiers(course, studentDetails.CourseID);
   if (meta.CourseID !== null && meta.CourseID !== undefined) {
     studentDetails.CourseID = meta.CourseID;
@@ -551,6 +573,22 @@ const flattenCoursesStudentResponse = (courses) => {
       }
       if (key) {
         seen.add(key);
+      }
+
+      if (
+        studentEntry.EnrollmentIsActive === undefined ||
+        studentEntry.EnrollmentIsActive === null
+      ) {
+        const defaultActive = Boolean(
+          studentEntry.enrollmentIsActive ??
+            studentEntry.IsActive ??
+            studentEntry.isActive ??
+            true
+        );
+        studentEntry.EnrollmentIsActive = defaultActive;
+        studentEntry.enrollmentIsActive = defaultActive;
+        studentEntry.EnrollmentStatus = defaultActive ? "active" : "inactive";
+        studentEntry.enrollmentStatus = studentEntry.EnrollmentStatus;
       }
 
       collected.push(studentEntry);
@@ -1134,6 +1172,11 @@ export const getCourseDetails = async (courseId) => {
     console.error("Failed to load course details from API", error);
     throw error;
   }
+};
+
+// Public wrapper to fetch students from the course-specific endpoint.
+export const getCourseStudents = async (courseId) => {
+  return await fetchCourseStudentsLegacy(courseId);
 };
 
 export const getAllCourses = async () => {

@@ -104,6 +104,7 @@ import {
   getEnrollmentsByStudent,
   deleteEnrollment,
 } from "../../services/enrollmentService";
+import { setEnrollmentActiveStatus } from "../../services/enrollmentService";
 import UserList from "../../components/users/UserList";
 import UserForm from "../../components/users/UserForm";
 import { motion, AnimatePresence } from "framer-motion";
@@ -137,6 +138,16 @@ const AdminUsers = () => {
   const [toastType, setToastType] = useState("success");
   // view for members list: 'active' or 'inactive'
   const [membersTab, setMembersTab] = useState("active");
+
+  // derived course filter (if admin navigated here with a course param)
+  const courseFilterParam = (() => {
+    try {
+      const qs = new URLSearchParams(location.search || "");
+      return (qs.get("course") || location.state?.course || "") || "";
+    } catch (e) {
+      return "";
+    }
+  })();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -621,6 +632,98 @@ const AdminUsers = () => {
       console.error("Failed to deactivate user", err);
       setFormError(err?.message || "Failed to deactivate user");
       setToastMessage("Failed to deactivate user.");
+      setToastType("error");
+    }
+  };
+
+  // When admin is viewing students filtered by a course, allow removing (deactivating)
+  // the enrollment rather than the user record itself.
+  const handleRemoveEnrollmentFromCourse = async (userID) => {
+    try {
+      setFormError("");
+      const courseId = courseFilterParam;
+      if (!courseId) {
+        setToastMessage("No course selected for removal.");
+        setToastType("error");
+        return;
+      }
+
+      // Find enrollment for this student in the course
+      const enrollments = await getEnrollmentsByStudent(userID);
+      const enrollment = (enrollments || []).find(
+        (e) => String(e.CourseID) === String(courseId)
+      );
+
+      if (!enrollment) {
+        setToastMessage("Enrollment record not found for this student.");
+        setToastType("error");
+        return;
+      }
+
+      const ok = window.confirm(
+        "Remove this student from the course? They will be marked inactive."
+      );
+      if (!ok) return;
+
+      await setEnrollmentActiveStatus(enrollment.EnrollmentID ?? enrollment.id ?? enrollment.enrollmentID, false, {
+        StudentID: userID,
+        CourseID: courseId,
+      });
+
+      // Remove from the filtered set so it disappears from the course-specific view
+      setFilteredStudentIds((prev) => {
+        const next = new Set(prev);
+        next.delete(String(userID));
+        return next;
+      });
+
+      setToastMessage("Enrollment removed from course.");
+      setToastType("success");
+    } catch (err) {
+      console.error("Failed to remove enrollment", err);
+      setToastMessage(err?.message || "Failed to remove enrollment.");
+      setToastType("error");
+    }
+  };
+
+  const handleReactivateEnrollmentFromCourse = async (userID) => {
+    try {
+      setFormError("");
+      const courseId = courseFilterParam;
+      if (!courseId) {
+        setToastMessage("No course selected for activation.");
+        setToastType("error");
+        return;
+      }
+
+      const enrollments = await getEnrollmentsByStudent(userID);
+      const enrollment = (enrollments || []).find(
+        (e) => String(e.CourseID) === String(courseId)
+      );
+
+      if (!enrollment) {
+        setToastMessage("Enrollment record not found for this student.");
+        setToastType("error");
+        return;
+      }
+
+      await setEnrollmentActiveStatus(enrollment.EnrollmentID ?? enrollment.id ?? enrollment.enrollmentID, true, {
+        StudentID: userID,
+        CourseID: courseId,
+      });
+
+      // Add back to filtered set so it shows in the course-specific view
+      setFilteredStudentIds((prev) => {
+        const next = new Set(prev);
+        next.add(String(userID));
+        return next;
+      });
+
+      setToastMessage("Enrollment reactivated for course.");
+      setToastType("success");
+    } catch (err) {
+      console.error("Failed to reactivate enrollment", err);
+      setToastMessage(err?.message || "Failed to reactivate enrollment.");
       setToastType("error");
     }
   };
