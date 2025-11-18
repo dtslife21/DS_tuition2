@@ -688,11 +688,9 @@ export const generateQRSession = async (sessionData = {}) => {
           new Date(startTime).getTime() + durationMinutes * 60000
         ).toISOString()
       : null);
+  // Ensure expiry equals session end time unless an explicit expiry was provided
   const expiryTime =
-    toIsoOrNull(source.ExpiryTime ?? source.expiryTime) ??
-    (endTime
-      ? new Date(new Date(endTime).getTime() + 5 * 60000).toISOString()
-      : null);
+    toIsoOrNull(source.ExpiryTime ?? source.expiryTime) ?? endTime ?? null;
 
   const body = sanitizeRecordPayload({
     CourseID: normalizedCourseId,
@@ -785,6 +783,27 @@ export const recordAttendance = async (arg1, arg2) => {
     payload.IPAddress ?? payload.ipAddress ?? payload.ip ?? null;
   const baseLocation = payload.Location ?? payload.location ?? null;
 
+  const resolvedSessionStart =
+    payload.sessionStartTime ??
+    payload.SessionStartTime ??
+    payload.sessionStart ??
+    payload.SessionStart ??
+    payload.startTime ??
+    payload.StartTime ??
+    null;
+
+  const resolvedSessionEnd =
+    payload.sessionEndTime ??
+    payload.SessionEndTime ??
+    payload.sessionEnd ??
+    payload.SessionEnd ??
+    payload.endTime ??
+    payload.EndTime ??
+    null;
+
+  const sessionStartIso = toIsoOrNull(resolvedSessionStart);
+  const sessionEndIso = toIsoOrNull(resolvedSessionEnd);
+
   const sessionBodyBase = {
     SessionID: sessionIdNumeric,
     StudentID: studentIdNumeric,
@@ -795,6 +814,10 @@ export const recordAttendance = async (arg1, arg2) => {
     ScanTime:
       toIsoOrNull(payload.ScanTime ?? payload.scanTime ?? payload.timestamp) ??
       new Date().toISOString(),
+    SessionStartTime: sessionStartIso,
+    SessionEndTime: sessionEndIso,
+    StartTime: sessionStartIso,
+    EndTime: sessionEndIso,
   };
 
   const qrRecordBodyBase = {
@@ -928,6 +951,24 @@ export const recordAttendance = async (arg1, arg2) => {
         responsePayload.ScanTime ??
         sessionBody.ScanTime ??
         new Date().toISOString(),
+      sessionStartTime:
+        responsePayload.sessionStartTime ??
+        responsePayload.SessionStartTime ??
+        responsePayload.sessionStart ??
+        responsePayload.SessionStart ??
+        responsePayload.startTime ??
+        responsePayload.StartTime ??
+        sessionBody.SessionStartTime ??
+        null,
+      sessionEndTime:
+        responsePayload.sessionEndTime ??
+        responsePayload.SessionEndTime ??
+        responsePayload.sessionEnd ??
+        responsePayload.SessionEnd ??
+        responsePayload.endTime ??
+        responsePayload.EndTime ??
+        sessionBody.SessionEndTime ??
+        null,
       status: mapAttendanceStatus(
         responsePayload.status ??
           responsePayload.Status ??

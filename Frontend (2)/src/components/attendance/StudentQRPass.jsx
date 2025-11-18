@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { useAuth } from "../../contexts/AuthContext";
+import { getStudentCourses } from "../../services/courseService";
+import { collectCourseIdsForStudent } from "../../utils/helpers";
 
 const StudentQRPass = ({ courseId }) => {
   const { user } = useAuth();
@@ -22,64 +24,68 @@ const StudentQRPass = ({ courseId }) => {
     );
   }, [user]);
 
-  const studentName = useMemo(() => {
-    const first =
-      user?.firstName ??
-      user?.FirstName ??
-      user?.givenName ??
-      user?.GivenName ??
-      "";
-    const last =
-      user?.lastName ??
-      user?.LastName ??
-      user?.familyName ??
-      user?.FamilyName ??
-      "";
-    const combined = `${first} ${last}`.trim();
-
-    if (combined.length) {
-      return combined;
-    }
-
-    return user?.username ?? user?.Username ?? user?.email ?? "";
-  }, [user]);
-
   useEffect(() => {
+    let cancelled = false;
+
     const generate = async () => {
       if (!studentId) {
-        setQrImage("");
-        setError("Missing student identifier. Contact support.");
+        if (!cancelled) {
+          setQrImage("");
+          setError("Missing student identifier. Contact support.");
+          setIsLoading(false);
+        }
         return;
       }
 
-      setIsLoading(true);
-      setError("");
+      if (!cancelled) {
+        setIsLoading(true);
+        setError("");
+      }
 
       try {
+        let courses = [];
+
+        try {
+          const fetched = await getStudentCourses(studentId);
+          courses = Array.isArray(fetched) ? fetched : [];
+        } catch (fetchError) {
+          console.error("Failed to load courses for student QR", fetchError);
+        }
+
+        const courseIds = collectCourseIdsForStudent(courses, courseId);
+
         const payload = {
-          type: "student-attendance",
           studentId: String(studentId),
-          courseId: courseId ? String(courseId) : null,
-          code: `STD-${studentId}-${courseId ?? "ALL"}`,
-          name: studentName,
-          version: 1,
+          courseIds,
         };
 
         const data = await QRCode.toDataURL(JSON.stringify(payload));
-        setQrImage(data);
+
+        if (!cancelled) {
+          setQrImage(data);
+          setError("");
+        }
       } catch (e) {
         console.error("Failed to build student QR", e);
-        setQrImage("");
-        setError(
-          "Unable to create your QR code. Please refresh and try again."
-        );
+        if (!cancelled) {
+          setQrImage("");
+          setError(
+            "Unable to create your QR code. Please refresh and try again."
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
     generate();
-  }, [courseId, studentId, studentName]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, studentId]);
 
   return (
     <div className="flex flex-col items-center space-y-4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">

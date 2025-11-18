@@ -4,6 +4,7 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 import { useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { recordAttendance } from "../../services/attendanceService";
+import { getStudentById } from "../../services/studentService";
 import {
   getTeacherCourses,
   getTeacherCourseStudents,
@@ -24,6 +25,8 @@ const QRScanner = () => {
   const [courseStudents, setCourseStudents] = useState([]);
   const [rosterStatus, setRosterStatus] = useState("idle");
   const [rosterError, setRosterError] = useState("");
+  const [sessionStartTime, setSessionStartTime] = useState("");
+  const [sessionEndTime, setSessionEndTime] = useState("");
 
   // Simple camera preview to match the uploaded UI
   const videoRef = useRef(null);
@@ -34,6 +37,9 @@ const QRScanner = () => {
   const [scanError, setScanError] = useState("");
   const [lastRecord, setLastRecord] = useState(null);
   const [scanIteration, setScanIteration] = useState(0);
+  const [studentDetails, setStudentDetails] = useState(null);
+  const [studentLoading, setStudentLoading] = useState(false);
+  const [studentError, setStudentError] = useState("");
 
   const teacherId = useMemo(() => {
     return (
@@ -312,6 +318,37 @@ const QRScanner = () => {
 
       const payload = parsed && typeof parsed === "object" ? parsed : {};
 
+      const payloadCourseIds = (() => {
+        if (!payload || typeof payload !== "object") {
+          return [];
+        }
+
+        const rawList =
+          payload.courseIds ??
+          payload.CourseIds ??
+          payload.courseIDs ??
+          payload.CourseIDs ??
+          payload.courses ??
+          payload.Courses ??
+          null;
+
+        if (!Array.isArray(rawList)) {
+          return [];
+        }
+
+        const normalized = rawList
+          .map((value) => {
+            if (value === undefined || value === null) {
+              return null;
+            }
+            const text = String(value).trim();
+            return text.length ? text : null;
+          })
+          .filter(Boolean);
+
+        return Array.from(new Set(normalized));
+      })();
+
       const qrType =
         payload.type ??
         payload.Type ??
@@ -366,6 +403,25 @@ const QRScanner = () => {
         return;
       }
 
+      // best-effort: fetch student details so the operator can view them
+      // when a QR is scanned. Do not block the scanning flow on failure.
+      (async () => {
+        try {
+          setStudentLoading(true);
+          setStudentError("");
+          setStudentDetails(null);
+
+          const s = await getStudentById(resolvedStudentId);
+          setStudentDetails(s || null);
+        } catch (err) {
+          console.debug("Unable to fetch student details", err);
+          setStudentDetails(null);
+          setStudentError("Student details unavailable");
+        } finally {
+          setStudentLoading(false);
+        }
+      })();
+
       const resolvedCourseId =
         selectedCourseId ||
         payload.courseId ||
@@ -380,6 +436,24 @@ const QRScanner = () => {
         return;
       }
 
+      const normalizedCourseId = String(resolvedCourseId).trim();
+
+      if (
+        normalizedCourseId &&
+        payloadCourseIds.length > 0 &&
+        !payloadCourseIds.some((id) => id === normalizedCourseId)
+      ) {
+        setStatus("error");
+        setMessage("QR code is not valid for the selected course.");
+        setScanError(
+          "The scanned QR does not list the selected course among the student's enrollments."
+        );
+        try {
+          playBeep(2, 700, 0.14, 0.12);
+        } catch (_) {}
+        return;
+      }
+
       const resolvedName =
         payload.name ??
         payload.studentName ??
@@ -388,9 +462,36 @@ const QRScanner = () => {
         payload.FullName ??
         "";
 
-      const attendanceDate = resolveAttendanceDate();
-      const attendanceIso = attendanceDate.iso;
-      const attendanceDisplay = attendanceDate.display;
+      // sessionDate comes from the teacher's selected date (session date)
+      const sessionDate = resolveAttendanceDate();
+      const sessionIso = sessionDate.iso;
+      const sessionDisplay = sessionDate.display;
+
+      // scannedAt is the current timestamp when the QR was scanned
+      const scannedAtIso = new Date().toISOString();
+      const scannedAtDisplay = new Date(scannedAtIso).toLocaleString();
+
+      const sessionDatePart = (() => {
+        if (selectedDate && selectedDate.includes("-")) {
+          return selectedDate;
+        }
+        const isoSplit = sessionIso ? sessionIso.split("T")[0] : "";
+        return isoSplit || new Date().toISOString().split("T")[0];
+      })();
+
+      const mergeDateAndTime = (timeValue) => {
+        if (!timeValue) {
+          return null;
+        }
+
+        const candidate = new Date(`${sessionDatePart}T${timeValue}`);
+        return Number.isNaN(candidate.getTime())
+          ? null
+          : candidate.toISOString();
+      };
+
+      const sessionStartIsoBound = mergeDateAndTime(sessionStartTime);
+      const sessionEndIsoBound = mergeDateAndTime(sessionEndTime);
 
       const enrollmentKey = String(resolvedStudentId).trim();
       if (!enrollmentKey || !enrolledStudentIds.has(enrollmentKey)) {
@@ -417,8 +518,16 @@ const QRScanner = () => {
           studentId: resolvedStudentId,
           courseId: resolvedCourseId,
           teacherId,
-          date: attendanceIso,
-          attendanceDate: attendanceDisplay,
+          // the teacher's selected date represents the session date
+          attendanceDate: sessionIso,
+          // the actual scan time should be the current time
+          scanTime: scannedAtIso,
+          sessionStartTime: sessionStartIsoBound,
+          sessionEndTime: sessionEndIsoBound,
+          SessionStart: sessionStartIsoBound,
+          SessionEnd: sessionEndIsoBound,
+          StartTime: sessionStartIsoBound,
+          EndTime: sessionEndIsoBound,
           status: payload.status ?? "Present",
         });
 
@@ -428,17 +537,48 @@ const QRScanner = () => {
         setLastRecord({
           ...record,
           attendanceDate:
-            record?.attendanceDate ??
-            record?.AttendanceDate ??
-            attendanceDisplay,
+            record?.attendanceDate ?? record?.AttendanceDate ?? sessionIso,
+          scanTime: record?.scanTime ?? record?.ScanTime ?? scannedAtIso,
+          sessionStartTime:
+            record?.sessionStartTime ??
+            record?.SessionStartTime ??
+            record?.SessionStart ??
+            record?.StartTime ??
+            sessionStartIsoBound,
+          sessionEndTime:
+            record?.sessionEndTime ??
+            record?.SessionEndTime ??
+            record?.SessionEnd ??
+            record?.EndTime ??
+            sessionEndIsoBound,
         });
+
         const displayName =
           resolvedName ||
           record?.studentName ||
           record?.StudentName ||
           String(resolvedStudentId);
-        const dateText = attendanceDisplay ? ` on ${attendanceDisplay}` : "";
-        setMessage(`Attendance recorded for ${displayName}${dateText}.`);
+        const sessionText = sessionDisplay
+          ? ` for session ${sessionDisplay}`
+          : "";
+        const scannedText = scannedAtDisplay
+          ? ` (scanned at ${scannedAtDisplay})`
+          : "";
+        const startText = sessionStartIsoBound
+          ? ` | starts ${new Date(sessionStartIsoBound).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}`
+          : "";
+        const endText = sessionEndIsoBound
+          ? ` | ends ${new Date(sessionEndIsoBound).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}`
+          : "";
+        setMessage(
+          `Attendance recorded for ${displayName}${sessionText}${scannedText}${startText}${endText}.`
+        );
       } catch (error) {
         console.error("Failed to record attendance", error);
         setStatus("error");
@@ -455,9 +595,12 @@ const QRScanner = () => {
       rosterStatus,
       rosterError,
       selectedCourseId,
+      selectedDate,
       sessionId,
       stopCamera,
       teacherId,
+      sessionEndTime,
+      sessionStartTime,
     ]
   );
 
@@ -615,7 +758,21 @@ const QRScanner = () => {
     const courseLabel =
       lastRecord.courseId ?? lastRecord.CourseID ?? lastRecord.courseID ?? "";
 
-    return { studentLabel, recordDate, courseLabel };
+    const sessionStart =
+      lastRecord.sessionStartTime ??
+      lastRecord.SessionStartTime ??
+      lastRecord.SessionStart ??
+      lastRecord.StartTime ??
+      null;
+
+    const sessionEnd =
+      lastRecord.sessionEndTime ??
+      lastRecord.SessionEndTime ??
+      lastRecord.SessionEnd ??
+      lastRecord.EndTime ??
+      null;
+
+    return { studentLabel, recordDate, courseLabel, sessionStart, sessionEnd };
   }, [lastRecord]);
 
   return (
@@ -652,9 +809,38 @@ const QRScanner = () => {
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            aria-label="Session date"
           />
           <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
             📅
+          </span>
+        </div>
+
+        {/* Session Start Time */}
+        <div className="relative">
+          <input
+            type="time"
+            value={sessionStartTime}
+            onChange={(e) => setSessionStartTime(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            aria-label="Session start time"
+          />
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            🕒
+          </span>
+        </div>
+
+        {/* Session End Time */}
+        <div className="relative">
+          <input
+            type="time"
+            value={sessionEndTime}
+            onChange={(e) => setSessionEndTime(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            aria-label="Session end time"
+          />
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            🕓
           </span>
         </div>
       </div>
@@ -714,6 +900,53 @@ const QRScanner = () => {
         </p>
       )}
 
+      {/* Student details card (shown after scanning a student QR) */}
+      {(studentLoading || studentDetails || studentError) && (
+        <div className="mt-4 p-3 border rounded-lg bg-white dark:bg-gray-800">
+          {studentLoading && (
+            <p className="text-sm text-gray-500">Loading student...</p>
+          )}
+
+          {studentError && !studentLoading && (
+            <p className="text-sm text-red-500">{studentError}</p>
+          )}
+
+          {studentDetails && !studentLoading && (
+            <div className="text-sm text-gray-700 dark:text-gray-200">
+              <p>
+                <span className="font-medium">Name:</span>{" "}
+                {studentDetails.firstName || studentDetails.FirstName || "-"}{" "}
+                {studentDetails.lastName || studentDetails.LastName || ""}
+              </p>
+              <p>
+                <span className="font-medium">Student ID:</span>{" "}
+                {studentDetails.studentId ??
+                  studentDetails.StudentID ??
+                  studentDetails.id}
+              </p>
+              {studentDetails.email && (
+                <p>
+                  <span className="font-medium">Email:</span>{" "}
+                  {studentDetails.email}
+                </p>
+              )}
+              {studentDetails.rollNumber && (
+                <p>
+                  <span className="font-medium">Roll #:</span>{" "}
+                  {studentDetails.rollNumber}
+                </p>
+              )}
+              {studentDetails.currentGrade && (
+                <p>
+                  <span className="font-medium">Grade:</span>{" "}
+                  {studentDetails.currentGrade}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {lastRecordInfo && (
         <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
           <p>
@@ -727,6 +960,28 @@ const QRScanner = () => {
               Recorded at:{" "}
               <span className="font-medium">
                 {new Date(lastRecordInfo.recordDate).toLocaleString()}
+              </span>
+            </p>
+          )}
+          {lastRecordInfo.sessionStart && (
+            <p>
+              Session start:{" "}
+              <span className="font-medium">
+                {new Date(lastRecordInfo.sessionStart).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </p>
+          )}
+          {lastRecordInfo.sessionEnd && (
+            <p>
+              Session end:{" "}
+              <span className="font-medium">
+                {new Date(lastRecordInfo.sessionEnd).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </span>
             </p>
           )}

@@ -1609,11 +1609,19 @@ export const deactivateCourse = async (courseId) => {
       Description: current?.description ?? current?.Description ?? "",
       // Preserve existing subject associations so subjects aren't removed by backend
       SubjectIDs:
-        current?.SubjectIDs ?? current?.subjectIds ?? current?.subjectIDs ??
-        (Array.isArray(existingSubjectIds) && existingSubjectIds.length ? existingSubjectIds : undefined),
+        current?.SubjectIDs ??
+        current?.subjectIds ??
+        current?.subjectIDs ??
+        (Array.isArray(existingSubjectIds) && existingSubjectIds.length
+          ? existingSubjectIds
+          : undefined),
       SubjectID:
-        current?.SubjectID ?? current?.subjectId ?? current?.subjectID ??
-        (Array.isArray(existingSubjectIds) && existingSubjectIds.length ? existingSubjectIds[0] : null),
+        current?.SubjectID ??
+        current?.subjectId ??
+        current?.subjectID ??
+        (Array.isArray(existingSubjectIds) && existingSubjectIds.length
+          ? existingSubjectIds[0]
+          : null),
       IsActive: false,
     };
 
@@ -1661,11 +1669,19 @@ export const reactivateCourse = async (courseId) => {
       AcademicYear: current?.academicYear ?? current?.AcademicYear ?? "",
       Description: current?.description ?? current?.Description ?? "",
       SubjectIDs:
-        current?.SubjectIDs ?? current?.subjectIds ?? current?.subjectIDs ??
-        (Array.isArray(existingSubjectIds) && existingSubjectIds.length ? existingSubjectIds : undefined),
+        current?.SubjectIDs ??
+        current?.subjectIds ??
+        current?.subjectIDs ??
+        (Array.isArray(existingSubjectIds) && existingSubjectIds.length
+          ? existingSubjectIds
+          : undefined),
       SubjectID:
-        current?.SubjectID ?? current?.subjectId ?? current?.subjectID ??
-        (Array.isArray(existingSubjectIds) && existingSubjectIds.length ? existingSubjectIds[0] : null),
+        current?.SubjectID ??
+        current?.subjectId ??
+        current?.subjectID ??
+        (Array.isArray(existingSubjectIds) && existingSubjectIds.length
+          ? existingSubjectIds[0]
+          : null),
       IsActive: true,
     };
 

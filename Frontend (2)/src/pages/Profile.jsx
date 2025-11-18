@@ -1,6 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import QRCode from "qrcode";
+import { getStudentCourses } from "../services/courseService";
+import { collectCourseIdsForStudent } from "../utils/helpers";
 
 // Simple inline SVG icons (no external deps)
 const Icon = ({ name, className = "w-5 h-5" }) => {
@@ -125,6 +127,19 @@ const Profile = () => {
 
   const role = user?.userType || user?.role || "student";
   const [studentQR, setStudentQR] = useState("");
+  const studentId = useMemo(() => {
+    return (
+      user?.StudentID ??
+      user?.studentID ??
+      user?.studentId ??
+      user?.UserID ??
+      user?.userID ??
+      user?.userId ??
+      user?.id ??
+      user?.Id ??
+      null
+    );
+  }, [user]);
   const displayRole =
     role === "admin"
       ? "Administrator"
@@ -212,34 +227,59 @@ const Profile = () => {
 
   // Generate a QR for students only
   useEffect(() => {
+    let cancelled = false;
+
     const generateStudentQR = async () => {
-      try {
-        if (role !== "student") {
+      if (role !== "student") {
+        if (!cancelled) {
           setStudentQR("");
-          return;
         }
-        const id =
-          user?.id ||
-          user?.userId ||
-          user?.studentId ||
-          user?.StudentID ||
-          user?.email ||
-          "unknown";
+        return;
+      }
+
+      if (!studentId) {
+        if (!cancelled) {
+          setStudentQR("");
+        }
+        return;
+      }
+
+      try {
+        let courses = [];
+
+        try {
+          const fetched = await getStudentCourses(studentId);
+          courses = Array.isArray(fetched) ? fetched : [];
+        } catch (fetchError) {
+          console.error("Failed to load courses for profile QR", fetchError);
+        }
+
+        const courseIds = collectCourseIdsForStudent(courses);
+
         const payload = JSON.stringify({
-          type: "student",
-          id,
-          name: fullName || "",
-          issuedAt: new Date().toISOString(),
+          studentId: String(studentId),
+          courseIds,
         });
+
         const dataUrl = await QRCode.toDataURL(payload);
-        setStudentQR(dataUrl);
+
+        if (!cancelled) {
+          setStudentQR(dataUrl);
+        }
       } catch (e) {
         console.error("Failed to generate student QR", e);
-        setStudentQR("");
+        if (!cancelled) {
+          setStudentQR("");
+        }
       }
     };
+
     generateStudentQR();
-  }, [role, user]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [role, studentId]);
 
   return (
     <div className="space-y-8">
