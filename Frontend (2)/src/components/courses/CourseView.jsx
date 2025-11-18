@@ -619,7 +619,7 @@ const CourseView = () => {
     }
 
     return (
-      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden  sm:rounded-md">
         <ul className="divide-y divide-gray-200 dark:divide-gray-700">
           {collection.map((studentEntry, index) => {
             const enrollmentId = resolveEnrollmentId(studentEntry);
@@ -649,8 +649,8 @@ const CourseView = () => {
             return (
               <li key={key} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <div className="px-4 py-4 sm:px-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-start">
                       <div className="flex-shrink-0">
                         <Avatar
                           name={`${
@@ -700,7 +700,7 @@ const CourseView = () => {
                           </div>
                         )}
 
-                        <div className="hidden md:block">
+                        <div className="mt-2 md:mt-0">
                           <div>
                             <p className="text-sm text-gray-900 dark:text-white">
                               Role: Student
@@ -718,7 +718,7 @@ const CourseView = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-3 flex-shrink-0">
+                    <div className="flex flex-wrap items-center space-x-3 flex-shrink-0 mt-3 sm:mt-0">
                       <span className={statusClass}>{statusLabel}</span>
                       {showRemove && (
                         <button
@@ -948,7 +948,7 @@ const CourseView = () => {
   return (
     <div className="space-y-8">
       <div className="bg-white/90 dark:bg-gray-900/60 backdrop-blur shadow-xl ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden rounded-2xl">
-        <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+        <div className="px-4 py-5 sm:px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
               {course.name}
@@ -958,7 +958,7 @@ const CourseView = () => {
               {formattedSubjects ? ` - ${formattedSubjects}` : ""}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 mt-2 sm:mt-0">
             {isAdmin && (
               <button
                 onClick={() => setShowEditModal(true)}
@@ -1154,7 +1154,7 @@ const CourseView = () => {
         </div>
       </div>
 
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
           Study Materials
         </h3>
@@ -1166,7 +1166,7 @@ const CourseView = () => {
       </div>
       <MaterialList materials={materials} />
 
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
           Attendance Records
         </h3>
@@ -1184,7 +1184,7 @@ const CourseView = () => {
       {/* Do not show enrolled students list to student users */}
       {user?.userType !== "student" && (
         <>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
               Enrolled Students
             </h3>

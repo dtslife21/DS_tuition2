@@ -48,7 +48,7 @@ const Navbar = () => {
     { name: "Sign out", onClick: () => setShowLogout(true) },
   ];
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm glass-surface drop-in">
+    <header className="sticky top-0 z-30 bg-white dark:bg-gray-800 shadow-sm glass-surface drop-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center ml-12 md:ml-0">
