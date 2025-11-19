@@ -309,7 +309,7 @@ const TableView = ({ items = [], selected = [], onToggle }) => {
   }, [rowsPerPage, pageCount]);
 
   const handleChoose = (id) => {
-    // toggle selection and move to next page if desired
+    // toggle selection (kept name for compatibility)
     onToggle(id);
   };
 
@@ -334,12 +334,20 @@ const TableView = ({ items = [], selected = [], onToggle }) => {
                   {c.name || c.CourseName || c.title || c.courseName}
                 </div>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => handleChoose(cid)}
-                    className="px-4 py-2 bg-gray-800 hover:bg-purple-900 text-white rounded-md shadow-md text-sm"
-                  >
-                    {isSelected ? "CHOSEN" : "CHOOSE"}
-                  </button>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleChoose(cid)}
+                      className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      aria-label={`Select course ${
+                        c.name || c.CourseName || c.title || c.courseName
+                      }`}
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-200">
+                      {isSelected ? "Selected" : "Select"}
+                    </span>
+                  </label>
                 </div>
               </div>
             );
