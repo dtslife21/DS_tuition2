@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { useForm } from 'react-hook-form';
-import Button from '../common/Button';
-import AuthLayout from '../../components/auth/AuthLayout';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { useForm } from "react-hook-form";
+import Button from "../common/Button";
+import AuthLayout from "../../components/auth/AuthLayout";
 
 const Login = () => {
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -18,27 +18,27 @@ const Login = () => {
   } = useForm();
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
+    const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser && storedUser.userTypeID) {
       switch (storedUser.userTypeID) {
         case 1:
-          navigate('/admin');
+          navigate("/admin");
           break;
         case 2:
-          navigate('/teacher');
+          navigate("/teacher");
           break;
         case 3:
-          navigate('/student');
+          navigate("/student");
           break;
         default:
-          navigate('/dashboard');
+          navigate("/dashboard");
       }
     }
   }, [navigate]);
 
   const onSubmit = async (values) => {
     try {
-      setError('');
+      setError("");
       setLoading(true);
 
       const result = await login(values.username, values.password);
@@ -46,27 +46,27 @@ const Login = () => {
       if (result.success) {
         const userType = result.user?.userType;
 
-        console.log('Login successful. userType:', userType);
+        console.log("Login successful. userType:", userType);
 
         switch (userType) {
-          case 'admin':
-            navigate('/admin');
+          case "admin":
+            navigate("/admin");
             break;
-          case 'teacher':
-            navigate('/teacher');
+          case "teacher":
+            navigate("/teacher");
             break;
-          case 'student':
-            navigate('/student');
+          case "student":
+            navigate("/student");
             break;
           default:
-            navigate('/dashboard');
+            navigate("/dashboard");
         }
       } else {
-        setError(result.error || 'Invalid username or password');
+        setError(result.error || "Invalid username or password");
       }
     } catch (err) {
-      console.error('Login error:', err);
-      setError('Network error – please check your connection');
+      console.error("Login error:", err);
+      setError("Network error – please check your connection");
     } finally {
       setLoading(false);
     }
@@ -115,12 +115,14 @@ const Login = () => {
                 name="username"
                 type="text"
                 required
-                {...register('username', { required: 'Username is required' })}
+                {...register("username", { required: "Username is required" })}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 placeholder="Username"
               />
               {errors.username && (
-                <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.username.message}
+                </p>
               )}
             </div>
             <div>
@@ -133,12 +135,14 @@ const Login = () => {
                 type="password"
                 autoComplete="current-password"
                 required
-                {...register('password', { required: 'Password is required' })}
+                {...register("password", { required: "Password is required" })}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 placeholder="Password"
               />
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.password.message}
+                </p>
               )}
             </div>
           </div>
@@ -176,7 +180,7 @@ const Login = () => {
               className="w-full"
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? "Signing in..." : "Sign in"}
             </Button>
           </div>
         </form>
