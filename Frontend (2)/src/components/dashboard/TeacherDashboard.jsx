@@ -4,6 +4,7 @@ import {
   getTeacherCourses,
   getTeacherStudents,
 } from "../../services/courseService";
+import { getAllClassSchedules } from "../../services/classScheduleService";
 import { getRecentMaterials } from "../../services/materialService";
 import CourseCard from "../courses/CourseCard";
 import StudentCard from "../users/UserCard";
@@ -36,6 +37,7 @@ const TeacherDashboard = () => {
   const [courses, setCourses] = useState([]);
   const [students, setStudents] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [schedules, setSchedules] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   // UI state for header actions (search/filters)
   const [showSearch, setShowSearch] = useState(false);
@@ -65,11 +67,13 @@ const TeacherDashboard = () => {
 
     const fetchData = async () => {
       try {
-        const [coursesData, studentsData, materialsData] = await Promise.all([
-          getTeacherCourses(teacherId),
-          getTeacherStudents(teacherId),
-          getRecentMaterials(teacherId),
-        ]);
+        const [coursesData, studentsData, materialsData, schedulesData] =
+          await Promise.all([
+            getTeacherCourses(teacherId),
+            getTeacherStudents(teacherId),
+            getRecentMaterials(teacherId),
+            getAllClassSchedules(),
+          ]);
         if (!isMounted) {
           return;
         }
@@ -77,6 +81,22 @@ const TeacherDashboard = () => {
         setCourses(coursesData || []);
         setStudents(studentsData || []);
         setMaterials(materialsData || []);
+        // filter schedules to only those that belong to the teacher's courses
+        try {
+          const courseIdSet = new Set(
+            (coursesData || [])
+              .map((c) => String(c?.id ?? c?.CourseID ?? c?.courseId ?? ""))
+              .filter(Boolean)
+          );
+          const filteredSchedules = (schedulesData || []).filter((s) =>
+            courseIdSet.has(
+              String(s?.courseId ?? s?.CourseID ?? s?.courseId ?? "")
+            )
+          );
+          setSchedules(filteredSchedules);
+        } catch (e) {
+          setSchedules([]);
+        }
         // load announcements authored by this teacher
         const anns = await getAnnouncementsByTeacher(teacherId);
         if (isMounted) {
@@ -145,6 +165,7 @@ const TeacherDashboard = () => {
   );
   const totalTests = courses.reduce((sum, c) => sum + (c.testsCount || 0), 0);
   const totalHours = courses.reduce((sum, c) => sum + (c.totalHours || 0), 0);
+  const scheduleCount = schedules.length;
 
   // Prepare announcements list based on search + sort
   const filteredAnnouncements = (announcements || [])
@@ -186,48 +207,54 @@ const TeacherDashboard = () => {
         </Card>
 
         <Card className="p-6 flex flex-col items-start transition-base hover-lift soft-shadow">
-          <div className="flex items-center space-x-4">
-            <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
-              <span className="text-2xl">📘</span>
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
-                Total Lessons
+          <div className="flex items-center w-full justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
+                <span className="text-2xl">📚</span>
               </div>
-              <div className="text-3xl font-bold text-green-500 mt-2">
-                {totalLessons}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 flex flex-col items-start transition-base hover-lift soft-shadow">
-          <div className="flex items-center space-x-4">
-            <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
-              <span className="text-2xl">📝</span>
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
-                Tests Taken
-              </div>
-              <div className="text-3xl font-bold text-green-500 mt-2">
-                {totalTests}
+              <div>
+                <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                  Courses
+                </div>
+                <div className="text-3xl font-bold text-green-500 mt-2">
+                  {courses.length}
+                </div>
               </div>
             </div>
           </div>
         </Card>
 
         <Card className="p-6 flex flex-col items-start transition-base hover-lift soft-shadow">
-          <div className="flex items-center space-x-4">
-            <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
-              <span className="text-2xl">⏱️</span>
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
-                Total Hours
+          <div className="flex items-center w-full justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
+                <span className="text-2xl">🔔</span>
               </div>
-              <div className="text-3xl font-bold text-green-500 mt-2">
-                {totalHours} hrs
+              <div>
+                <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                  Announcements
+                </div>
+                <div className="text-3xl font-bold text-green-500 mt-2">
+                  {announcements.length}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 flex flex-col items-start transition-base hover-lift soft-shadow">
+          <div className="flex items-center w-full justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
+                <span className="text-2xl">📆</span>
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                  Scheduled Classes
+                </div>
+                <div className="text-3xl font-bold text-green-500 mt-2">
+                  {scheduleCount}
+                </div>
               </div>
             </div>
           </div>
@@ -278,9 +305,11 @@ const TeacherDashboard = () => {
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5"
                 />
               </svg>
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">
-                1
-              </span>
+              {announcements.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">
+                  {announcements.length}
+                </span>
+              )}
             </button>
             <button
               onClick={() => {
@@ -393,16 +422,7 @@ const TeacherDashboard = () => {
                 Notices ({announcements.length})
               </button>
 
-              <button
-                onClick={() => setActiveTab("attachments")}
-                className={`pb-3 ${
-                  activeTab === "attachments"
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-                }`}
-              >
-                Attachments ({materials.length})
-              </button>
+              {/* Attachments tab removed: teacher dashboard shows only notices */}
             </div>
 
             <div className="w-1/3 text-right text-sm text-gray-500 dark:text-gray-300">
@@ -413,38 +433,7 @@ const TeacherDashboard = () => {
           </div>
 
           <div className="min-h-[200px]">
-            {activeTab === "notices" ? (
-              <AnnouncementList announcements={filteredAnnouncements} />
-            ) : (
-              <div>
-                {materials.length > 0 ? (
-                  <div className="space-y-4 stagger-children">
-                    {materials.map((m) => (
-                      <div
-                        key={m.id}
-                        className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg p-4 transition-base hover-lift"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="text-md font-medium text-gray-900 dark:text-white">
-                              {m.title}
-                            </h4>
-                            <p className="text-sm text-gray-500">
-                              {m.description}
-                            </p>
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {new Date(m.uploadDate).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <AnnouncementList announcements={[]} />
-                )}
-              </div>
-            )}
+            <AnnouncementList announcements={filteredAnnouncements} />
           </div>
         </div>
       </Card>
