@@ -63,7 +63,7 @@ const StudentMaterials = () => {
                   course: c,
                   materials: [],
                   loading: true,
-                  expanded: true,
+                  expanded: false,
                 }))
               );
 

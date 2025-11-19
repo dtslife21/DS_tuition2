@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { getStudentAttendance } from "../../services/attendanceService";
 import { getStudentMaterials } from "../../services/materialService";
+import { getStudentCourses } from "../../services/courseService";
 import AttendanceCard from "../attendance/AttendanceCard";
 import MaterialCard from "../materials/MaterialCard";
 import AnnouncementList from "../announcements/AnnouncementList";
@@ -10,6 +11,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import Card from "../common/Card";
 import Loader from "../common/Loader";
 import StatsCard from "../common/StatsCard";
+import { getAllClassSchedules } from "../../services/classScheduleService";
 
 const resolveStudentIdentifiers = (user) => {
   if (!user || typeof user !== "object") {
@@ -85,16 +87,18 @@ const StudentDashboard = () => {
   const { theme } = useTheme();
   const [attendance, setAttendance] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [schedules, setSchedules] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   // UI state for header actions (search & sort)
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showOptions, setShowOptions] = useState(false);
   const [sortOrder, setSortOrder] = useState("desc");
+  const [activeTab, setActiveTab] = useState("notices");
   const searchInputRef = useRef(null);
   const searchBoxRef = useRef(null);
   const optionsRef = useRef(null);
-  const [activeTab, setActiveTab] = useState("notices");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -113,12 +117,19 @@ const StudentDashboard = () => {
     const fetchData = async () => {
       try {
         const resolvedStudentId = studentId ?? userId;
-        const [attendanceData, materialsData, announcementsData] =
-          await Promise.all([
-            getStudentAttendance(resolvedStudentId),
-            getStudentMaterials(resolvedStudentId),
-            getAnnouncementsForStudent(resolvedStudentId),
-          ]);
+        const [
+          attendanceData,
+          materialsData,
+          announcementsData,
+          coursesData,
+          schedulesData,
+        ] = await Promise.all([
+          getStudentAttendance(resolvedStudentId),
+          getStudentMaterials(resolvedStudentId),
+          getAnnouncementsForStudent(resolvedStudentId),
+          getStudentCourses(resolvedStudentId),
+          getAllClassSchedules(),
+        ]);
 
         if (!isActive) {
           return;
@@ -147,6 +158,8 @@ const StudentDashboard = () => {
         setAttendance(filteredAttendance);
         setMaterials(materialsData || []);
         setAnnouncements(announcementsData || []);
+        setCourses(coursesData || []);
+        setSchedules(schedulesData || []);
       } catch (error) {
         console.error("Error fetching student dashboard data:", error);
         if (isActive) {
@@ -219,7 +232,25 @@ const StudentDashboard = () => {
   );
 
   const totalSubjects = uniqueCourseIds.size;
+  const totalCourses = Array.isArray(courses) ? courses.length : 0;
   const totalAssignments = materials.length;
+  // Determine scheduled classes (courses that have a schedule and belong to the student)
+  const studentCourseIds = new Set(
+    (courses || [])
+      .map((c) => c?.id ?? c?.CourseID ?? c?.courseId ?? c?.CourseId)
+      .filter((v) => v !== undefined && v !== null)
+      .map(String)
+  );
+
+  const scheduledCourseIds = new Set(
+    (schedules || [])
+      .map((s) => s?.courseId ?? s?.CourseID ?? s?.courseId ?? s?.courseID)
+      .filter((v) => v !== undefined && v !== null)
+      .map(String)
+      .filter((id) => studentCourseIds.has(id))
+  );
+
+  const scheduledClassesCount = scheduledCourseIds.size;
   const presentCount = attendance.reduce((count, record) => {
     const status = (record.status ?? record.Status ?? "")
       .toString()
@@ -271,8 +302,8 @@ const StudentDashboard = () => {
               />
             </svg>
           }
-          title="Total Subjects"
-          value={totalSubjects}
+          title="Courses"
+          value={totalCourses}
         />
 
         <StatsCard
@@ -299,8 +330,8 @@ const StudentDashboard = () => {
               />
             </svg>
           }
-          title="Total Assignments"
-          value={totalAssignments}
+          title="Scheduled classes"
+          value={scheduledClassesCount}
         />
 
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 flex items-center justify-center transition-base hover-lift soft-shadow">
@@ -339,6 +370,36 @@ const StudentDashboard = () => {
             </div>
           </div>
           <div className="flex items-center space-x-3">
+            <button
+              className="relative"
+              onClick={() => {
+                setActiveTab("notices");
+                setShowSearch(false);
+                setShowOptions(false);
+              }}
+              title="View notices"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5"
+                />
+              </svg>
+              {announcements.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">
+                  {announcements.length}
+                </span>
+              )}
+            </button>
+
             <button
               className="p-2 rounded-full bg-white/20"
               onPointerDown={(e) => e.stopPropagation()}
@@ -427,7 +488,6 @@ const StudentDashboard = () => {
               >
                 Notices ({announcements.length})
               </button>
-
               <button
                 onClick={() => setActiveTab("attachments")}
                 className={`pb-3 ${
@@ -443,7 +503,6 @@ const StudentDashboard = () => {
 
           <div className="min-h-[200px]">
             {activeTab === "notices" ? (
-              // Use existing AnnouncementList - it will show EmptyState when announcements are empty
               <AnnouncementList announcements={filteredAnnouncements} />
             ) : (
               <div>

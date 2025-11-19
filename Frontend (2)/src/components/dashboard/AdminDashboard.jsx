@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { getAllUsers } from "../../services/userService";
 import { getAllStudents } from "../../services/studentService";
@@ -11,6 +11,7 @@ import Loader from "../common/Loader";
 import Avatar from "../common/Avatar";
 import StatsCard from "../common/StatsCard";
 import AnnouncementList from "../announcements/AnnouncementList";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -20,7 +21,16 @@ const AdminDashboard = () => {
   const [teachers, setTeachers] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("notices");
+  // UI state for header actions (search & sort)
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showOptions, setShowOptions] = useState(false);
+  const [sortOrder, setSortOrder] = useState("desc");
+  const searchInputRef = useRef(null);
+  const searchBoxRef = useRef(null);
+  const optionsRef = useRef(null);
+  const [activeTab, setActiveTab] = useState("notices");
+  const { theme } = useTheme();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,6 +73,47 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
 
+  // Close overlays when clicking/touching outside
+  useEffect(() => {
+    const handlePointerDown = (e) => {
+      const t = e.target;
+      if (
+        showSearch &&
+        searchBoxRef.current &&
+        !searchBoxRef.current.contains(t)
+      ) {
+        setShowSearch(false);
+      }
+      if (
+        showOptions &&
+        optionsRef.current &&
+        !optionsRef.current.contains(t)
+      ) {
+        setShowOptions(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [showSearch, showOptions]);
+
+  // Prepare announcements list based on search + sort
+  const filteredAnnouncements = (announcements || [])
+    .filter((a) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        a.title?.toLowerCase().includes(q) ||
+        a.content?.toLowerCase().includes(q)
+      );
+    })
+    .slice()
+    .sort((a, b) => {
+      const da = new Date(a.postDate || 0).getTime();
+      const db = new Date(b.postDate || 0).getTime();
+      return sortOrder === "desc" ? db - da : da - db;
+    });
+
   if (loading) {
     return <Loader className="py-12" />;
   }
@@ -77,66 +128,196 @@ const AdminDashboard = () => {
         {/* <StatsCard icon="💵" title="Fees Collection" value={`Rs.${0}`} /> */}
       </div>
 
-      {/* Notices & Announcements panel */}
-      <Card>
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-5 text-white flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-semibold">Notices & Announcements</h3>
-            <p className="text-xs opacity-90">
-              Stay updated with the latest information
-            </p>
+      {/* Notices & Announcements panel (teacher-style) */}
+      <Card className="p-0 ">
+        <div
+          className={`p-6 rounded-t-lg text-white flex items-center justify-between relative ${
+            theme === "dark"
+              ? "bg-gradient-to-r from-blue-700 to-indigo-800"
+              : "bg-gradient-to-r from-blue-400 to-indigo-500"
+          }`}
+        >
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+              <span className="text-2xl">🔔</span>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold">Notices & Announcements</h3>
+              <p className="text-sm opacity-80">
+                (Stay updated with the latest information)
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-white/90">
-            <span className="text-lg">🔔</span>
-            <span className="text-lg">🔎</span>
-            <span className="text-lg">⚙️</span>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="border-b border-gray-200 dark:border-gray-700 px-4">
-          <nav className="-mb-px flex gap-6" aria-label="Tabs">
+          <div className="flex items-center space-x-3">
             <button
-              onClick={() => setTab("notices")}
-              className={`whitespace-nowrap py-4 text-sm font-medium border-b-2 transition-colors ${
-                tab === "notices"
-                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700"
-              }`}
+              className="relative"
+              onClick={() => {
+                setActiveTab("notices");
+                setShowSearch(false);
+                setShowOptions(false);
+              }}
+              title="View notices"
             >
-              NOTICES ({announcements.length})
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5"
+                />
+              </svg>
+              {announcements.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">
+                  {announcements.length}
+                </span>
+              )}
             </button>
             <button
-              onClick={() => setTab("attachments")}
-              className={`whitespace-nowrap py-4 text-sm font-medium border-b-2 transition-colors ${
-                tab === "attachments"
-                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700"
-              }`}
+              onClick={() => {
+                setShowSearch((v) => !v);
+                setShowOptions(false);
+              }}
+              title="Search notices"
             >
-              ATTACHMENTS (0)
+              <svg
+                className="w-6 h-6 text-white/90"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"
+                />
+              </svg>
             </button>
-          </nav>
+            <button
+              onClick={() => {
+                setShowOptions((v) => !v);
+                setShowSearch(false);
+              }}
+              title="Options"
+            >
+              <svg
+                className="w-6 h-6 text-white/90"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Search input overlay */}
+          {showSearch && (
+            <div ref={searchBoxRef} className="absolute right-4 top-4">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search notices..."
+                className="w-56 sm:w-72 rounded-md bg-white/90 text-gray-800 placeholder-gray-500 px-3 py-1.5 focus:outline-none shadow"
+              />
+            </div>
+          )}
+
+          {/* Options dropdown */}
+          {showOptions && (
+            <div
+              ref={optionsRef}
+              className="absolute right-4 top-14 bg-white text-gray-700 rounded-md shadow w-52 ring-1 ring-black/5"
+            >
+              <div className="py-1 text-sm">
+                <div className="px-3 py-1.5 text-xs uppercase tracking-wide text-gray-500">
+                  Sort
+                </div>
+                <button
+                  className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                    sortOrder === "desc" ? "font-semibold text-gray-900" : ""
+                  }`}
+                  onClick={() => {
+                    setSortOrder("desc");
+                    setShowOptions(false);
+                  }}
+                >
+                  Newest first
+                </button>
+                <button
+                  className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                    sortOrder === "asc" ? "font-semibold text-gray-900" : ""
+                  }`}
+                  onClick={() => {
+                    setSortOrder("asc");
+                    setShowOptions(false);
+                  }}
+                >
+                  Oldest first
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Content */}
         <div className="p-6">
-          {tab === "notices" ? (
-            announcements.length ? (
-              <AnnouncementList announcements={announcements} />
+          <div className="border-b mb-6">
+            <nav className="flex space-x-6 text-sm text-gray-500">
+              <button
+                onClick={() => setActiveTab("notices")}
+                className={`pb-3 ${
+                  activeTab === "notices"
+                    ? "border-b-2 border-blue-500 text-blue-600"
+                    : "hover:text-gray-700 dark:hover:text-gray-200"
+                }`}
+              >
+                Notices ({announcements.length})
+              </button>
+              <button
+                onClick={() => setActiveTab("attachments")}
+                className={`pb-3 ${
+                  activeTab === "attachments"
+                    ? "border-b-2 border-blue-500 text-blue-600"
+                    : "hover:text-gray-700 dark:hover:text-gray-200"
+                }`}
+              >
+                Attachments (0)
+              </button>
+            </nav>
+          </div>
+
+          <div className="min-h-[200px]">
+            {activeTab === "notices" ? (
+              announcements.length ? (
+                <AnnouncementList announcements={filteredAnnouncements} />
+              ) : (
+                <EmptyState
+                  title="No notices available"
+                  description="Check back later for updates"
+                />
+              )
             ) : (
               <EmptyState
-                title="No notices available"
-                description="Check back later for updates"
+                title="No attachments available"
+                description="Attachments shared with announcements will appear here."
               />
-            )
-          ) : (
-            <EmptyState
-              title="No attachments available"
-              description="Attachments shared with announcements will appear here."
-            />
-          )}
+            )}
+          </div>
         </div>
       </Card>
 
