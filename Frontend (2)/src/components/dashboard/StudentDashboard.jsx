@@ -11,6 +11,8 @@ import { useTheme } from "../../contexts/ThemeContext";
 import Card from "../common/Card";
 import Loader from "../common/Loader";
 import StatsCard from "../common/StatsCard";
+import EmptyState from "../common/EmptyState";
+import { formatDate, getFileType } from "../../utils/helpers";
 import { getAllClassSchedules } from "../../services/classScheduleService";
 
 const resolveStudentIdentifiers = (user) => {
@@ -492,6 +494,138 @@ const StudentDashboard = () => {
           </div>
         </div>
       </Card>
+
+      {/* Recent materials & attendance */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <div className="p-6 border-b">
+            <h3 className="text-lg font-semibold">Recent Materials</h3>
+            <p className="text-sm text-gray-500">
+              Latest uploads for your courses
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+            {materials && materials.length ? (
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {materials
+                  .slice()
+                  .sort((a, b) => {
+                    const da = new Date(
+                      a.uploadDate || a.postDate || a.createdAt || a.date || 0
+                    ).getTime();
+                    const db = new Date(
+                      b.uploadDate || b.postDate || b.createdAt || b.date || 0
+                    ).getTime();
+                    return db - da;
+                  })
+                  .slice(0, 5)
+                  .map((m) => (
+                    <li key={m.id ?? m.materialId ?? m.MaterialID ?? m.title}>
+                      <div className="px-4 py-4 flex items-center sm:px-6 transition-base hover-lift">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 truncate">
+                            {m.title}
+                          </p>
+                          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 truncate">
+                            {m.description || formatDate(m.uploadDate)}
+                          </p>
+                        </div>
+                        <div className="ml-2 flex-shrink-0 text-right">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            {getFileType(m.filePath || m.path || m.url || "")}
+                          </span>
+                          <div className="mt-2 text-sm text-gray-500 dark:text-gray-300">
+                            {formatDate(m.uploadDate)}
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            ) : (
+              <div className="p-6">
+                <EmptyState
+                  title="No materials yet"
+                  description="Your instructor hasn't uploaded any materials."
+                />
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="p-6 border-b">
+            <h3 className="text-lg font-semibold">Recent Attendance</h3>
+            <p className="text-sm text-gray-500">
+              Your latest attendance records
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+            {attendance && attendance.length ? (
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {attendance
+                  .slice()
+                  .sort((a, b) => {
+                    const da = new Date(
+                      a.date || a.attendanceDate || a.AttendedDate || 0
+                    ).getTime();
+                    const db = new Date(
+                      b.date || b.attendanceDate || b.AttendedDate || 0
+                    ).getTime();
+                    return db - da;
+                  })
+                  .slice(0, 5)
+                  .map((r) => (
+                    <li key={r.id ?? r.AttendanceID ?? r.date}>
+                      <div className="px-4 py-4 flex items-center sm:px-6 transition-base hover-lift">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 truncate">
+                            {formatDate(
+                              r.date || r.attendanceDate || r.AttendedDate
+                            )}
+                          </p>
+                          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 truncate">
+                            {r.courseName ||
+                              r.course?.name ||
+                              r.CourseName ||
+                              r.Course?.name ||
+                              ""}
+                          </p>
+                        </div>
+                        <div className="ml-2 flex-shrink-0 text-right">
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              (r.status || r.Status || "")
+                                .toString()
+                                .toLowerCase() === "present"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                : (r.status || r.Status || "")
+                                    .toString()
+                                    .toLowerCase() === "late"
+                                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                            }`}
+                          >
+                            {r.status || r.Status || "Unknown"}
+                          </span>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            ) : (
+              <div className="p-6">
+                <EmptyState
+                  title="No attendance records"
+                  description="No attendance data available yet."
+                />
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 };
