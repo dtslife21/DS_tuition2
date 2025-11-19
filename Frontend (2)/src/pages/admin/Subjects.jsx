@@ -185,8 +185,11 @@ const AdminSubjects = () => {
   };
 
   const handleLinkCourse = async (selectedIds) => {
+    // defensive: ensure we have draft subject to attach courses to
     if (!subjectInProgress) {
-      setCourseStepError("Subject details are missing. Please start again.");
+      const msg = "Subject details are missing. Please start again.";
+      console.error("AdminSubjects.linkCourse:", msg, { selectedIds });
+      setCourseStepError(msg);
       return;
     }
 
@@ -226,7 +229,9 @@ const AdminSubjects = () => {
       return;
     }
 
+    // reset any previous error and mark operation in progress
     setCourseStepError("");
+    console.debug("AdminSubjects.linkCourse:start", { selectedIds });
     setLinkingCourse(true);
 
     try {
@@ -248,9 +253,17 @@ const AdminSubjects = () => {
         (entry) => !entry.details
       );
       if (unresolvedSelection.length) {
-        setCourseStepError(
-          "Some selected courses could not be loaded. Please try again."
+        const failedKeys = unresolvedSelection.map(
+          (r) => r.idKey || r.id || null
         );
+        const msg = `Some selected courses could not be loaded: ${failedKeys.join(
+          ", "
+        )}`;
+        console.error("AdminSubjects.linkCourse: unresolved courses", {
+          failedKeys,
+          courseResults,
+        });
+        setCourseStepError(msg + ". Please try again.");
         return;
       }
 
@@ -259,6 +272,10 @@ const AdminSubjects = () => {
         .filter(Boolean);
 
       if (!courseMetas.length) {
+        console.error("AdminSubjects.linkCourse: no course metas", {
+          courseResults,
+          sanitizedSelectionKeys,
+        });
         setCourseStepError(
           "No valid courses were found for the current selection."
         );
@@ -418,10 +435,16 @@ const AdminSubjects = () => {
 
       if (courseOperations.length) {
         const results = await Promise.allSettled(courseOperations);
-        const rejected = results.find((res) => res.status === "rejected");
-        if (rejected) {
+        const rejected = results
+          .map((r, i) => ({ r, i }))
+          .filter((x) => x.r.status === "rejected");
+        if (rejected.length) {
+          console.error("AdminSubjects.linkCourse: course update failures", {
+            rejected,
+            sanitizedSelectionKeys,
+          });
           throw (
-            rejected.reason ||
+            rejected[0].r.reason ||
             new Error("Failed to update one or more course assignments.")
           );
         }
@@ -499,9 +522,11 @@ const AdminSubjects = () => {
       setShowCoursePicker(false);
       setCourseStepError("");
     } catch (err) {
-      console.error("AdminSubjects.linkCourse:", err);
+      console.error("AdminSubjects.linkCourse:", err, { selectedIds });
+      // try to extract useful info from axios-style errors
+      const axiosData = err?.response?.data ?? err?.message ?? String(err);
       setCourseStepError(
-        err?.message ||
+        (axiosData && String(axiosData)) ||
           "Unable to link the subject to the selected courses. Please try again."
       );
     } finally {

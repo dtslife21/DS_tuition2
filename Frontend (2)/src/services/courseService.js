@@ -1466,11 +1466,40 @@ export const updateCourse = async (courseId, updates = {}) => {
   }
 
   const existingCourse = formatCourse(existing) || {};
-  const updateCourse = formatCourse({ id: idStr, ...updates }) || {};
+  const formattedUpdates = formatCourse({ id: idStr, ...updates }) || {};
+
+  // When callers only send association fields (e.g., SubjectIDs) we do not
+  // want to overwrite descriptive fields like name/code with empty strings
+  // produced by formatCourse. Remove empty string fields unless the caller
+  // explicitly provided a new value.
+  const providedKeys = new Set(
+    Object.keys(updates || {}).map((key) => key.toLowerCase())
+  );
+
+  const sanitizeField = (candidateKey, aliases = []) => {
+    const normalizedAliases = [candidateKey, ...aliases].map((alias) =>
+      alias.toLowerCase()
+    );
+    const callerProvided = normalizedAliases.some((alias) =>
+      providedKeys.has(alias)
+    );
+    if (!callerProvided && formattedUpdates.hasOwnProperty(candidateKey)) {
+      const value = formattedUpdates[candidateKey];
+      if (typeof value === "string" && value.trim() === "") {
+        delete formattedUpdates[candidateKey];
+      }
+    }
+  };
+
+  sanitizeField("name", ["CourseName", "courseName"]);
+  sanitizeField("code", ["CourseCode", "courseCode"]);
+  sanitizeField("description", ["Description", "courseDescription"]);
+  sanitizeField("academicYear", ["AcademicYear", "academic_year"]);
+  sanitizeField("subject", ["Subject", "subjectName", "SubjectName"]);
 
   const merged = {
     ...existingCourse,
-    ...updateCourse,
+    ...formattedUpdates,
   };
 
   const subjectId =
