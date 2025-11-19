@@ -88,14 +88,9 @@ const StudentCourses = () => {
           <>
             <div className="w-full flex flex-col items-center mb-8">
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 text-center">
-                Class Details
+                Course Details
               </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300 font-medium text-center">
-                You are currently in Class{" "}
-                <span className="font-bold text-gray-800 dark:text-white">
-                  Grade 11
-                </span>
-              </p>
+            
             </div>
             {courses.length > 0 ? (
               <div className="w-full flex flex-wrap justify-center gap-8 mt-6">

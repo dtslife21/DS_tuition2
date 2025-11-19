@@ -95,7 +95,6 @@ const StudentDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showOptions, setShowOptions] = useState(false);
   const [sortOrder, setSortOrder] = useState("desc");
-  const [activeTab, setActiveTab] = useState("notices");
   const searchInputRef = useRef(null);
   const searchBoxRef = useRef(null);
   const optionsRef = useRef(null);
@@ -371,16 +370,16 @@ const StudentDashboard = () => {
           </div>
           <div className="flex items-center space-x-3">
             <button
-              className="relative"
+              className="relative p-2 rounded-full bg-white/20"
               onClick={() => {
-                setActiveTab("notices");
+                // keep behavior consistent with other dashboards
                 setShowSearch(false);
                 setShowOptions(false);
               }}
               title="View notices"
             >
               <svg
-                className="w-6 h-6"
+                className="w-6 h-6 text-white/90"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -478,89 +477,21 @@ const StudentDashboard = () => {
         <div className="p-6">
           <div className="border-b mb-6">
             <nav className="flex space-x-6 text-sm text-gray-500">
-              <button
-                onClick={() => setActiveTab("notices")}
-                className={`pb-3 ${
-                  activeTab === "notices"
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "hover:text-gray-700 dark:hover:text-gray-200"
-                }`}
-              >
+              <div className={`pb-3 border-b-2 border-blue-500 text-blue-600`}>
                 Notices ({announcements.length})
-              </button>
-              <button
-                onClick={() => setActiveTab("attachments")}
-                className={`pb-3 ${
-                  activeTab === "attachments"
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "hover:text-gray-700 dark:hover:text-gray-200"
-                }`}
-              >
-                Attachments ({materials.length})
-              </button>
+              </div>
             </nav>
           </div>
 
           <div className="min-h-[200px]">
-            {activeTab === "notices" ? (
+            {announcements.length ? (
               <AnnouncementList announcements={filteredAnnouncements} />
             ) : (
-              <div>
-                {materials.length > 0 ? (
-                  <div className="space-y-4 stagger-children">
-                    {materials.map((m) => (
-                      <div
-                        key={m.id}
-                        className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg p-4 transition-base hover-lift"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="text-md font-medium text-gray-900 dark:text-white">
-                              {m.title}
-                            </h4>
-                            <p className="text-sm text-gray-500">
-                              {m.description}
-                            </p>
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {new Date(m.uploadDate).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <AnnouncementList announcements={[]} />
-                )}
-              </div>
+              <AnnouncementList announcements={[]} />
             )}
           </div>
         </div>
       </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            Recent Attendance
-          </h3>
-          <div className="space-y-4">
-            {attendance.slice(0, 5).map((record) => (
-              <AttendanceCard key={record.id} record={record} />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            Recent Materials
-          </h3>
-          <div className="space-y-4">
-            {materials.slice(0, 3).map((material) => (
-              <MaterialCard key={material.id} material={material} />
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

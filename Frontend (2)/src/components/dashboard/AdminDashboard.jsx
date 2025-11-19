@@ -29,7 +29,6 @@ const AdminDashboard = () => {
   const searchInputRef = useRef(null);
   const searchBoxRef = useRef(null);
   const optionsRef = useRef(null);
-  const [activeTab, setActiveTab] = useState("notices");
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -150,16 +149,16 @@ const AdminDashboard = () => {
           </div>
           <div className="flex items-center space-x-3">
             <button
-              className="relative"
+              className="relative p-2 rounded-full bg-white/20"
               onClick={() => {
-                setActiveTab("notices");
+                // focus the notices area; no-op for now but keeps behavior consistent
                 setShowSearch(false);
                 setShowOptions(false);
               }}
               title="View notices"
             >
               <svg
-                className="w-6 h-6"
+                className="w-6 h-6 text-white/90"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -178,7 +177,9 @@ const AdminDashboard = () => {
                 </span>
               )}
             </button>
+
             <button
+              className="p-2 rounded-full bg-white/20"
               onClick={() => {
                 setShowSearch((v) => !v);
                 setShowOptions(false);
@@ -206,6 +207,7 @@ const AdminDashboard = () => {
                 setShowSearch(false);
               }}
               title="Options"
+              className="p-2 rounded-full bg-white/20"
             >
               <svg
                 className="w-6 h-6 text-white/90"
@@ -278,43 +280,19 @@ const AdminDashboard = () => {
         <div className="p-6">
           <div className="border-b mb-6">
             <nav className="flex space-x-6 text-sm text-gray-500">
-              <button
-                onClick={() => setActiveTab("notices")}
-                className={`pb-3 ${
-                  activeTab === "notices"
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "hover:text-gray-700 dark:hover:text-gray-200"
-                }`}
-              >
+              <div className={`pb-3 border-b-2 border-blue-500 text-blue-600`}>
                 Notices ({announcements.length})
-              </button>
-              <button
-                onClick={() => setActiveTab("attachments")}
-                className={`pb-3 ${
-                  activeTab === "attachments"
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "hover:text-gray-700 dark:hover:text-gray-200"
-                }`}
-              >
-                Attachments (0)
-              </button>
+              </div>
             </nav>
           </div>
 
           <div className="min-h-[200px]">
-            {activeTab === "notices" ? (
-              announcements.length ? (
-                <AnnouncementList announcements={filteredAnnouncements} />
-              ) : (
-                <EmptyState
-                  title="No notices available"
-                  description="Check back later for updates"
-                />
-              )
+            {announcements.length ? (
+              <AnnouncementList announcements={filteredAnnouncements} />
             ) : (
               <EmptyState
-                title="No attachments available"
-                description="Attachments shared with announcements will appear here."
+                title="No notices available"
+                description="Check back later for updates"
               />
             )}
           </div>
