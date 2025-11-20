@@ -301,31 +301,46 @@ const Sidebar = () => {
           className="absolute inset-0 bg-black/30"
           aria-hidden="true"
         />
-        {/* Panel */}
-        <div className="relative h-full">
-          <div className="absolute left-0 top-0 h-full flex flex-col w-56 sm:w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl drop-in">
-            <div className="h-0 flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-              <nav className="flex-1 px-2 space-y-1">
+        {/* Desktop static sidebar */}
+        <div className="hidden md:flex md:flex-shrink-0">
+          <div className="flex flex-col w-60 sm:w-72 sticky top-0 h-screen glass-surface admin-bg soft-shadow-md overflow-hidden">
+            <div className="h-0 flex-1 flex flex-col pt-6 pb-6 overflow-y-auto">
+              <nav className="flex-1 px-3 space-y-2">
                 {navigation.map((item) => {
                   const isActive =
                     activeNavItem && activeNavItem.href === item.href;
-
-                  const classes = `group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-base hover-lift ${
+                  const classes = `group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-base hover-lift space-x-3 ${
                     isActive
-                      ? "bg-indigo-100 text-indigo-900 dark:bg-indigo-900 dark:text-indigo-100"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
+                      ? "bg-white/30 text-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-100"
+                      : "text-gray-700 hover:bg-white/10 dark:text-gray-300 dark:hover:bg-gray-700/40"
                   }`;
 
+                  // choose indicator variant based on user type
+                  const indicatorVariant =
+                    user?.userType === "teacher"
+                      ? "nav-indicator-teacher"
+                      : user?.userType === "admin"
+                      ? "nav-indicator-admin"
+                      : "nav-indicator-student";
+
                   return (
-                    <label
-                      key={item.name}
-                      htmlFor="mobile-sidebar"
-                      className={classes}
-                      onClick={() => navigate(item.href)}
-                    >
-                      <span className="mr-3">{getIcon(item.icon)}</span>
-                      {item.name}
-                    </label>
+                    <div key={item.name} className="flex items-center">
+                      {/* active indicator */}
+                      {isActive ? (
+                        <div className={`nav-indicator ${indicatorVariant}`} aria-hidden />
+                      ) : (
+                        <div className="w-1 mr-3" />
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => navigate(item.href)}
+                        className={classes}
+                      >
+                        <span className="mr-2 icon-pop text-xl text-indigo-500/90">{getIcon(item.icon)}</span>
+                        <span className="truncate">{item.name}</span>
+                      </button>
+                    </div>
                   );
                 })}
               </nav>
@@ -342,7 +357,7 @@ const Sidebar = () => {
                           state: { backgroundLocation: location },
                         })
                       }
-                      className="group w-full flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
+                      className="group w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg text-white/90 hover:bg-white/10"
                     >
                       <span className="mr-3">{getIcon("profile")}</span>
                       Profile
@@ -350,7 +365,7 @@ const Sidebar = () => {
                     <label
                       htmlFor="mobile-sidebar"
                       onClick={(e) => {
-                        e.preventDefault();
+                      className="group w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg text-white/90 hover:bg-red-600/12"
                         setShowLogout(true);
                       }}
                       className="group w-full flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"

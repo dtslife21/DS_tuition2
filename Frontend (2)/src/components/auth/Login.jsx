@@ -74,11 +74,16 @@ const Login = () => {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-md space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Sign in to your account
-          </h2>
+      <div className="w-full space-y-6 page-enter">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-indigo-600 text-white mx-auto mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422A12.083 12.083 0 0118 12.5c0 3.866-3.582 7-8 7s-8-3.134-8-7c0-.52.032-1.026.092-1.518L12 14z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Sign in to your account</h2>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Welcome back — manage classes, attendance and materials.</p>
         </div>
 
         {/*  Improved Error Message Section */}
@@ -104,8 +109,8 @@ const Login = () => {
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="rounded-md shadow-sm space-y-4">
+        <form className="mt-4 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <div className="rounded-lg bg-white/0 dark:bg-transparent space-y-4">
             <div>
               <label htmlFor="username" className="sr-only">
                 Username
@@ -116,7 +121,7 @@ const Login = () => {
                 type="text"
                 required
                 {...register("username", { required: "Username is required" })}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="appearance-none relative block w-full px-4 py-3 border border-gray-200 placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent focus:z-10 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white soft-shadow"
                 placeholder="Username"
               />
               {errors.username && (
@@ -136,7 +141,7 @@ const Login = () => {
                 autoComplete="current-password"
                 required
                 {...register("password", { required: "Password is required" })}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="appearance-none relative block w-full px-4 py-3 border border-gray-200 placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent focus:z-10 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white soft-shadow"
                 placeholder="Password"
               />
               {errors.password && (
@@ -177,7 +182,7 @@ const Login = () => {
             <Button
               type="submit"
               variant="primary"
-              className="w-full"
+              className="w-full btn-ripple shine-on-hover"
               disabled={loading}
             >
               {loading ? "Signing in..." : "Sign in"}
