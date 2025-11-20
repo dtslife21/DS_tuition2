@@ -1,10 +1,15 @@
 ﻿using ClassSystemAPI.Models;
 using System;
 using System.Data.Entity;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Web;
+using System.Web.Hosting;
 using System.Web.Http;
 using System.Web.Http.Cors;
+using Newtonsoft.Json;
 
 namespace ClassSystemAPI.Controllers
 {
@@ -134,6 +139,101 @@ namespace ClassSystemAPI.Controllers
 
             AddLog(null, "UserCreated", $"Created new user with ID {user.UserID}");
             return CreatedAtRoute("DefaultApi", new { id = user.UserID }, user);
+        }
+
+        // POST: api/Users/UploadProfile
+        [HttpPost]
+        [Route("api/Users/UploadProfile")]
+        public IHttpActionResult UploadProfilePhoto()
+        {
+            var httpRequest = HttpContext.Current.Request;
+
+            if (httpRequest == null)
+            {
+                AddLog(null, "UploadProfileFailed", "No http request available");
+                return BadRequest("Invalid request");
+            }
+
+            // Expect a form field named "userId" (or "UserID")
+            var userIdStr = httpRequest.Form["userId"] ?? httpRequest.Form["UserID"];
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+            {
+                AddLog(null, "UploadProfileFailed", "Missing or invalid 'userId'");
+                return BadRequest("'userId' form field is required.");
+            }
+
+            var user = db.Users.Find(userId);
+            if (user == null)
+            {
+                AddLog(null, "UploadProfileFailed", $"User with ID {userId} not found");
+                return NotFound();
+            }
+
+            if (httpRequest.Files == null || httpRequest.Files.Count == 0)
+            {
+                AddLog(userId, "UploadProfileFailed", "No file provided");
+                return BadRequest("No file uploaded");
+            }
+
+            var postedFile = httpRequest.Files[0];
+
+            // Validate file extension
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            var fileExt = Path.GetExtension(postedFile.FileName)?.ToLowerInvariant();
+            if (string.IsNullOrEmpty(fileExt) || !allowedExtensions.Contains(fileExt))
+            {
+                AddLog(userId, "UploadProfileFailed", $"Invalid file type: {postedFile.FileName}");
+                return BadRequest("Invalid file type. Allowed: .jpg, .jpeg, .png, .gif");
+            }
+
+            // Max 5 MB example
+            const int maxBytes = 5 * 1024 * 1024;
+            if (postedFile.ContentLength > maxBytes)
+            {
+                AddLog(userId, "UploadProfileFailed", $"File too large: {postedFile.ContentLength} bytes");
+                return BadRequest("File size exceeds limit (5 MB).");
+            }
+
+            var uploadsVirtualFolder = "/Uploads/ProfilePhotos";
+            var uploadsPath = HostingEnvironment.MapPath("~" + uploadsVirtualFolder);
+            if (uploadsPath == null)
+            {
+                AddLog(userId, "UploadProfileFailed", "Unable to resolve uploads path");
+                return InternalServerError(new Exception("Unable to resolve uploads path"));
+            }
+
+            Directory.CreateDirectory(uploadsPath);
+
+            var fileName = Guid.NewGuid().ToString("N") + fileExt;
+            var physicalFilePath = Path.Combine(uploadsPath, fileName);
+
+            try
+            {
+                postedFile.SaveAs(physicalFilePath);
+            }
+            catch (Exception ex)
+            {
+                AddLog(userId, "UploadProfileFailed", "Error saving file: " + ex.Message);
+                return InternalServerError(ex);
+            }
+
+            // Save virtual path in DB: e.g. "/Uploads/ProfilePhotos/{fileName}"
+            user.ProfilePicture = uploadsVirtualFolder + "/" + fileName;
+
+            try
+            {
+                db.Entry(user).State = EntityState.Modified;
+                db.SaveChanges();
+                AddLog(userId, "ProfilePhotoUploaded", $"Updated ProfilePicture for user {userId} to {user.ProfilePicture}");
+            }
+            catch (Exception ex)
+            {
+                AddLog(userId, "UploadProfileFailed", "DB update error: " + ex.Message);
+                return InternalServerError(ex);
+            }
+
+            // Return the path so frontend can save it to DB (or this saved it already) — consistent with frontend expectation
+            return Ok(new { filePath = user.ProfilePicture });
         }
 
         // PUT: api/Users/5
