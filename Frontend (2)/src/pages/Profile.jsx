@@ -1,5 +1,6 @@
- import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import Avatar from "../components/common/Avatar";
 import QRCode from "qrcode";
 import { getStudentCourses } from "../services/courseService";
 import { collectCourseIdsForStudent } from "../utils/helpers";
@@ -284,11 +285,13 @@ const Profile = () => {
   return (
     <div className="space-y-8">
       <div className="flex flex-col items-center gap-4">
-        <div className="h-14 w-14 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-lg ring-2 ring-white/60 dark:ring-gray-900/60">
-          <span className="text-xl font-semibold">
-            {(displayName || "U").charAt(0)}
-          </span>
-        </div>
+        <Avatar
+          name={displayName}
+          user={user}
+          src={user?.ProfilePicture || user?.profilePicture}
+          size="lg"
+          className="h-16 w-16 ring-2 ring-white/60 dark:ring-gray-900/60 shadow-lg bg-gradient-to-br from-indigo-500 to-violet-600"
+        />
         <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
           {displayName}
         </h1>

@@ -327,7 +327,10 @@ const Sidebar = () => {
                     <div key={item.name} className="flex items-center">
                       {/* active indicator */}
                       {isActive ? (
-                        <div className={`nav-indicator ${indicatorVariant}`} aria-hidden />
+                        <div
+                          className={`nav-indicator ${indicatorVariant}`}
+                          aria-hidden
+                        />
                       ) : (
                         <div className="w-1 mr-3" />
                       )}
@@ -337,7 +340,9 @@ const Sidebar = () => {
                         onClick={() => navigate(item.href)}
                         className={classes}
                       >
-                        <span className="mr-2 icon-pop text-xl text-indigo-500/90">{getIcon(item.icon)}</span>
+                        <span className="mr-2 icon-pop text-xl text-indigo-500/90">
+                          {getIcon(item.icon)}
+                        </span>
                         <span className="truncate">{item.name}</span>
                       </button>
                     </div>
@@ -365,7 +370,8 @@ const Sidebar = () => {
                     <label
                       htmlFor="mobile-sidebar"
                       onClick={(e) => {
-                      className="group w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg text-white/90 hover:bg-red-600/12"
+                        className =
+                          "group w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg text-white/90 hover:bg-red-600/12";
                         setShowLogout(true);
                       }}
                       className="group w-full flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"

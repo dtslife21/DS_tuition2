@@ -211,6 +211,63 @@ export const getUserById = async (userID) => {
   return mapUser(payload) ?? null;
 };
 
+// Upload a profile photo to server. Accepts either a File/Blob or a data URL string.
+export const uploadProfilePhoto = async (userId, fileOrDataUrl) => {
+  if (!userId) throw new Error("userId is required");
+
+  const url = `${API_URL}/UploadProfile`;
+  const form = new FormData();
+  form.append("userId", String(userId));
+
+  // helper: convert base64/dataURL to Blob
+  const dataUrlToBlob = (dataUrl) => {
+    const arr = dataUrl.split(",");
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+  };
+
+  let fileToSend = fileOrDataUrl;
+  if (typeof fileOrDataUrl === "string" && fileOrDataUrl.startsWith("data:")) {
+    fileToSend = dataUrlToBlob(fileOrDataUrl);
+  }
+
+  if (fileToSend instanceof Blob || fileToSend instanceof File) {
+    // Name the file so backend can infer extension if needed
+    const filename = `profile_${userId}${
+      fileToSend.type ? `.${fileToSend.type.split("/").pop()}` : ""
+    }`;
+    form.append("file", fileToSend, filename);
+  } else {
+    throw new Error("fileOrDataUrl must be a File/Blob or data URL string");
+  }
+
+  const resp = await fetch(url, {
+    method: "POST",
+    body: form,
+  });
+
+  if (!resp.ok) {
+    const txt = await resp.text().catch(() => null);
+    throw new Error(
+      `Failed to upload profile photo: ${resp.status} ${txt || resp.statusText}`
+    );
+  }
+
+  try {
+    const payload = await resp.json();
+    // backend returns { filePath: "..." }
+    return payload?.filePath || null;
+  } catch (e) {
+    return null;
+  }
+};
+
 export const createUser = async (userData) => {
   const response = await fetch(API_URL, {
     method: "POST",
@@ -229,6 +286,27 @@ export const createUser = async (userData) => {
 };
 
 export const updateUser = async (userID, userData) => {
+  // If caller provided a data URL for the profile picture, upload it first
+  if (
+    userData &&
+    typeof userData.ProfilePicture === "string" &&
+    userData.ProfilePicture.startsWith("data:")
+  ) {
+    try {
+      const uploadedPath = await uploadProfilePhoto(
+        userID,
+        userData.ProfilePicture
+      );
+      if (uploadedPath) {
+        // replace data URL with server path so PUT persists it
+        userData = { ...userData, ProfilePicture: uploadedPath };
+      }
+    } catch (uErr) {
+      // upload failed — proceed without blocking the update, backend will keep existing picture
+      console.warn("Profile upload failed during updateUser:", uErr);
+    }
+  }
+
   // Fetch current server record to avoid nulling unspecified fields (backend uses Modified state)
   let current = null;
   try {
@@ -264,6 +342,28 @@ export const updateUser = async (userID, userData) => {
     // pass through any extra fields (backend may ignore)
     ...userData,
   };
+
+  // If the client explicitly cleared the ProfilePicture (empty string)
+  // and there was previously a profile picture on record, signal intent
+  // to remove it by adding `RemoveProfilePicture: true` to the payload.
+  // Note: backend must implement handling for `RemoveProfilePicture` to
+  // actually delete the file and set the DB field to null.
+  try {
+    const hadPreviousPicture = Boolean(
+      base.ProfilePicture || base.profilePicture || base.ProfilePicture === ""
+    );
+    if (
+      userData &&
+      (userData.ProfilePicture === "" || userData.ProfilePicture === null) &&
+      hadPreviousPicture
+    ) {
+      merged.RemoveProfilePicture = true;
+      // ensure ProfilePicture value is null so it's clear in the merged object
+      merged.ProfilePicture = null;
+    }
+  } catch (e) {
+    // ignore safety checks
+  }
 
   const response = await fetch(`${API_URL}/${userID}`, {
     method: "PUT",

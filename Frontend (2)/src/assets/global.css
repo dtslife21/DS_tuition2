@@ -69,22 +69,32 @@ body {
   /* Glass surface (nice for navbars) */
   .glass-surface {
     /* soft translucent gradient with blur and subtle border */
-    background: linear-gradient(135deg, rgba(255,255,255,0.72), rgba(255,255,255,0.48));
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.72),
+      rgba(255, 255, 255, 0.48)
+    );
     -webkit-backdrop-filter: blur(10px) saturate(120%);
     backdrop-filter: blur(10px) saturate(120%);
-    border: 1px solid rgba(255,255,255,0.5);
-    box-shadow: 0 10px 30px rgba(2,6,23,0.08), inset 0 1px 0 rgba(255,255,255,0.35);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35);
     border-radius: 12px;
     color: inherit;
   }
 
   /* Dark mode variation for a deeper glass effect */
   .dark .glass-surface {
-    background: linear-gradient(135deg, rgba(17,24,39,0.6), rgba(17,24,39,0.45));
+    background: linear-gradient(
+      135deg,
+      rgba(17, 24, 39, 0.6),
+      rgba(17, 24, 39, 0.45)
+    );
     -webkit-backdrop-filter: blur(8px) saturate(115%);
     backdrop-filter: blur(8px) saturate(115%);
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow: 0 8px 24px rgba(2,6,23,0.25), inset 0 1px 0 rgba(255,255,255,0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 8px 24px rgba(2, 6, 23, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.02);
     border-radius: 12px;
   }
 
@@ -247,13 +257,24 @@ body {
 
   /* Admin background subtle gradient shift */
   @keyframes gradient-shift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
   }
 
   .admin-bg {
-    background: linear-gradient(120deg, rgba(99,102,241,0.06), rgba(16,185,129,0.04), rgba(99,102,241,0.03));
+    background: linear-gradient(
+      120deg,
+      rgba(99, 102, 241, 0.06),
+      rgba(16, 185, 129, 0.04),
+      rgba(99, 102, 241, 0.03)
+    );
     background-size: 300% 300%;
     animation: gradient-shift 12s ease infinite;
   }
@@ -263,29 +284,34 @@ body {
     width: 4px;
     height: 36px;
     border-radius: 8px;
-    background: linear-gradient(180deg,#6366F1,#10B981);
-    box-shadow: 0 6px 18px rgba(16,185,129,0.12);
+    background: linear-gradient(180deg, #6366f1, #10b981);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.12);
     margin-right: 8px;
     flex-shrink: 0;
   }
 
   /* Variants for different user types */
   .nav-indicator-admin {
-    background: linear-gradient(180deg,#6366F1,#10B981);
-    box-shadow: 0 8px 20px rgba(99,102,241,0.12);
+    background: linear-gradient(180deg, #6366f1, #10b981);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.12);
   }
   .nav-indicator-teacher {
-    background: linear-gradient(180deg,#06B6D4,#8B5CF6);
-    box-shadow: 0 8px 20px rgba(6,182,212,0.10);
+    background: linear-gradient(180deg, #06b6d4, #8b5cf6);
+    box-shadow: 0 8px 20px rgba(6, 182, 212, 0.1);
   }
   .nav-indicator-student {
-    background: linear-gradient(180deg,#F59E0B,#F97316);
-    box-shadow: 0 8px 20px rgba(245,158,11,0.09);
+    background: linear-gradient(180deg, #f59e0b, #f97316);
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.09);
   }
 
   /* Student themed subtle background */
   .student-bg {
-    background: linear-gradient(120deg, rgba(99,102,241,0.03), rgba(245,158,11,0.03) 40%, rgba(99,102,241,0.02));
+    background: linear-gradient(
+      120deg,
+      rgba(99, 102, 241, 0.03),
+      rgba(245, 158, 11, 0.03) 40%,
+      rgba(99, 102, 241, 0.02)
+    );
     background-size: 220% 220%;
     animation: gradient-shift 14s ease-in-out infinite;
   }
@@ -296,20 +322,29 @@ body {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: rgba(249,115,22,0.12);
-    box-shadow: 0 8px 18px rgba(249,115,22,0.06);
+    background: rgba(249, 115, 22, 0.12);
+    box-shadow: 0 8px 18px rgba(249, 115, 22, 0.06);
     animation: floaty 6s ease-in-out infinite;
   }
 
   @keyframes floaty {
-    0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.9 }
-    50% { transform: translateY(-18px) translateX(6px) scale(1.06); opacity: 0.6 }
-    100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.9 }
+    0% {
+      transform: translateY(0) translateX(0) scale(1);
+      opacity: 0.9;
+    }
+    50% {
+      transform: translateY(-18px) translateX(6px) scale(1.06);
+      opacity: 0.6;
+    }
+    100% {
+      transform: translateY(0) translateX(0) scale(1);
+      opacity: 0.9;
+    }
   }
 
   /* Icon hover micro animation */
   .icon-pop {
-    transition: transform 220ms cubic-bezier(.2,.9,.3,1), color 220ms;
+    transition: transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1), color 220ms;
   }
   .icon-pop:hover {
     transform: translateY(-3px) scale(1.06);

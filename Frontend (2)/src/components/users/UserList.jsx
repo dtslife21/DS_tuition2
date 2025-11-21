@@ -74,6 +74,7 @@ const UserList = ({
                           user.LastName || user.lastName || ""
                         }`}
                         size="sm"
+                        user={user}
                       />
                     </div>
                     <div className="min-w-0 flex-1 px-4 md:grid md:grid-cols-2 md:gap-4">

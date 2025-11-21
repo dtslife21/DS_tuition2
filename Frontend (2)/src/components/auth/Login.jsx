@@ -77,13 +77,33 @@ const Login = () => {
       <div className="w-full space-y-6 page-enter">
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-indigo-600 text-white mx-auto mb-3">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422A12.083 12.083 0 0118 12.5c0 3.866-3.582 7-8 7s-8-3.134-8-7c0-.52.032-1.026.092-1.518L12 14z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-6 h-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 14l9-5-9-5-9 5 9 5z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 14l6.16-3.422A12.083 12.083 0 0118 12.5c0 3.866-3.582 7-8 7s-8-3.134-8-7c0-.52.032-1.026.092-1.518L12 14z"
+              />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Sign in to your account</h2>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Welcome back — manage classes, attendance and materials.</p>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            Sign in to your account
+          </h2>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+            Welcome back — manage classes, attendance and materials.
+          </p>
         </div>
 
         {/*  Improved Error Message Section */}

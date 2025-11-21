@@ -1,4 +1,4 @@
-import Avatar from '../common/Avatar'
+import Avatar from "../common/Avatar";
 
 const UserCard = ({ user }) => {
   return (
@@ -8,6 +8,7 @@ const UserCard = ({ user }) => {
           <Avatar
             name={`${user.firstName} ${user.lastName}`}
             size="lg"
+            user={user}
           />
         </div>
         <div className="ml-4">
@@ -30,7 +31,7 @@ const UserCard = ({ user }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default UserCard
+export default UserCard;

@@ -83,6 +83,7 @@ import {
   updateUser,
   getUserById,
   deleteUser,
+  uploadProfilePhoto,
 } from "../../services/userService";
 import {
   createStudent,
@@ -231,11 +232,32 @@ const AdminUsers = () => {
 
         // If admin, there's no role-specific step — create immediately from step 1
         if (createStep === 1 && typeId === "1") {
+          // capture photo if present on form data
+          const photoToUpload = userData?.ProfilePicture || null;
           const createdAdmin = await createUser({
             ...userData,
             IsActive: true,
             ProfilePicture: null,
           });
+          // upload photo separately if provided (backend endpoint will update DB)
+          if (
+            photoToUpload &&
+            typeof photoToUpload === "string" &&
+            photoToUpload.startsWith("data:")
+          ) {
+            try {
+              const uploadedPath = await uploadProfilePhoto(
+                createdAdmin.UserID || createdAdmin.id,
+                photoToUpload
+              );
+              if (uploadedPath) {
+                createdAdmin.ProfilePicture = uploadedPath;
+                createdAdmin.profilePicture = uploadedPath;
+              }
+            } catch (uErr) {
+              console.warn("Profile upload failed:", uErr);
+            }
+          }
           setUsers([...users, createdAdmin]);
           setShowModal(false);
           setForceUserType(null);
@@ -301,6 +323,11 @@ const AdminUsers = () => {
         }
 
         // Create base user
+        const photoToUpload =
+          mergedCreate.ProfilePicture ||
+          pendingCreateCore?.ProfilePicture ||
+          userData?.ProfilePicture ||
+          null;
         const createdUser = await createUser(mergedCreate);
 
         if (typeId === "2") {
@@ -330,6 +357,25 @@ const AdminUsers = () => {
                 createdUser.TeacherID,
               Teacher: createdTeacher,
             };
+            // upload photo if present
+            if (
+              photoToUpload &&
+              typeof photoToUpload === "string" &&
+              photoToUpload.startsWith("data:")
+            ) {
+              try {
+                const uploadedPath = await uploadProfilePhoto(
+                  createdUser.UserID || createdUser.id,
+                  photoToUpload
+                );
+                if (uploadedPath) {
+                  merged.ProfilePicture = uploadedPath;
+                  merged.profilePicture = uploadedPath;
+                }
+              } catch (uErr) {
+                console.warn("Profile upload failed:", uErr);
+              }
+            }
             setUsers([...users, merged]);
             // Open post-create course assignment modal instead of pre-select step
             const teacherId =
@@ -343,6 +389,25 @@ const AdminUsers = () => {
             setFormError(err?.message || "Failed to create teacher record");
           }
         } else {
+          // upload photo if present
+          if (
+            photoToUpload &&
+            typeof photoToUpload === "string" &&
+            photoToUpload.startsWith("data:")
+          ) {
+            try {
+              const uploadedPath = await uploadProfilePhoto(
+                createdUser.UserID || createdUser.id,
+                photoToUpload
+              );
+              if (uploadedPath) {
+                createdUser.ProfilePicture = uploadedPath;
+                createdUser.profilepicture = uploadedPath;
+              }
+            } catch (uErr) {
+              console.warn("Profile upload failed:", uErr);
+            }
+          }
           setUsers([...users, createdUser]);
         }
 
@@ -357,6 +422,28 @@ const AdminUsers = () => {
         if (editStep === 1) {
           // Step 1: update core details only
           const updatedUser = await updateUser(userId, userData);
+
+          // If the user included a new photo (data URL), upload it separately
+          const photoToUpload = userData?.ProfilePicture || null;
+          if (
+            photoToUpload &&
+            typeof photoToUpload === "string" &&
+            photoToUpload.startsWith("data:")
+          ) {
+            try {
+              const uploadedPath = await uploadProfilePhoto(
+                userId,
+                photoToUpload
+              );
+              if (uploadedPath) {
+                // reflect in the returned updatedUser and in local users list
+                updatedUser.ProfilePicture = uploadedPath;
+                updatedUser.profilePicture = uploadedPath;
+              }
+            } catch (uErr) {
+              console.warn("Profile upload failed:", uErr);
+            }
+          }
 
           // Determine next type and handle admin as a one-step update
           const nextTypeId = String(
@@ -994,6 +1081,8 @@ const AdminUsers = () => {
                 }
 
                 try {
+                  // capture photo from pending data (if user cropped/selected one)
+                  const photoToUpload = pendingUserData?.ProfilePicture || null;
                   const newUser = {
                     ...pendingUserData,
                     CourseIDs: ids,
@@ -1001,6 +1090,25 @@ const AdminUsers = () => {
                     ProfilePicture: null,
                   };
                   const createdUser = await createUser(newUser);
+                  // upload photo separately if present
+                  if (
+                    photoToUpload &&
+                    typeof photoToUpload === "string" &&
+                    photoToUpload.startsWith("data:")
+                  ) {
+                    try {
+                      const uploadedPath = await uploadProfilePhoto(
+                        createdUser.UserID || createdUser.id,
+                        photoToUpload
+                      );
+                      if (uploadedPath) {
+                        createdUser.ProfilePicture = uploadedPath;
+                        createdUser.profilePicture = uploadedPath;
+                      }
+                    } catch (uErr) {
+                      console.warn("Profile upload failed:", uErr);
+                    }
+                  }
                   // Persist student record in Students table as well
                   try {
                     const studentPayload = {

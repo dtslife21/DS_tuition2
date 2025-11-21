@@ -211,7 +211,7 @@ const StudentPickerModal = ({
                   <li key={sid} className="bg-white dark:bg-gray-900">
                     <div className="flex items-center justify-between px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <Avatar name={name} size="sm" />
+                        <Avatar name={name} size="sm" user={student} />
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             {name}

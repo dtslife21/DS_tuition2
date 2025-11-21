@@ -693,7 +693,7 @@ const SubjectView = () => {
                                     className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/40 p-3"
                                   >
                                     <div className="flex items-center gap-3">
-                                      <Avatar name={displayName} />
+                                      <Avatar name={displayName} user={st} />
                                       <div>
                                         <div className="text-sm font-medium text-gray-900 dark:text-white">
                                           {displayName}

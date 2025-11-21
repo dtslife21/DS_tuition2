@@ -15,6 +15,7 @@ import {
   deleteUser,
   getUserById,
 } from "../../services/userService";
+import { uploadProfilePhoto } from "../../services/userService";
 import {
   createStudent,
   updateStudent,
@@ -165,9 +166,7 @@ const TeacherStudents = () => {
     try {
       setFormError("");
       // confirm removal
-      const ok = window.confirm(
-        "Do You Want To Remove This Student?"
-      );
+      const ok = window.confirm("Do You Want To Remove This Student?");
       if (!ok) return;
       const updated = await updateUser(userID, { IsActive: false });
       setStudents((prev) =>
@@ -321,17 +320,35 @@ const TeacherStudents = () => {
     setCoursePickerError("");
 
     try {
+      const photoToUpload =
+        pendingStudentData.ProfilePicture ||
+        pendingStudentData.profilepicture ||
+        null;
+
       const createdUser = await createUser({
         ...pendingStudentData,
         CourseIDs: ids.map((cid) =>
           Number.isNaN(Number(cid)) ? cid : Number(cid)
         ),
         IsActive: true,
-        ProfilePicture:
-          pendingStudentData.ProfilePicture ||
-          pendingStudentData.profilePicture ||
-          null,
+        ProfilePicture: null,
       });
+
+      // upload profile photo if provided
+      if (
+        photoToUpload &&
+        typeof photoToUpload === "string" &&
+        photoToUpload.startsWith("data:")
+      ) {
+        try {
+          await uploadProfilePhoto(
+            createdUser.UserID || createdUser.id,
+            photoToUpload
+          );
+        } catch (uErr) {
+          console.warn("Profile upload failed:", uErr);
+        }
+      }
 
       const studentPayload = {
         UserID:
@@ -426,6 +443,25 @@ const TeacherStudents = () => {
           ...formData,
           UserTypeID: 3,
         });
+
+        // If a new profile photo was supplied (data URL), upload it
+        const photoToUpload =
+          formData?.ProfilePicture || formData?.profilepicture || null;
+        if (
+          photoToUpload &&
+          typeof photoToUpload === "string" &&
+          photoToUpload.startsWith("data:")
+        ) {
+          try {
+            const uploadedPath = await uploadProfilePhoto(uid, photoToUpload);
+            if (uploadedPath) {
+              updatedUser.ProfilePicture = uploadedPath;
+              updatedUser.profilepicture = uploadedPath;
+            }
+          } catch (uErr) {
+            console.warn("Profile upload failed:", uErr);
+          }
+        }
 
         let merged = { ...updatedUser };
         try {
