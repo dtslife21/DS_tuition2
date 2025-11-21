@@ -23,135 +23,137 @@ const UserList = ({
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
-      <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-        {users.map((user) => {
-          const defaultId =
-            user.UserID || user.userID || user.userId || user.id || null;
-          const actionId =
-            defaultId ||
-            user.StudentID ||
-            user.studentID ||
-            user.studentId ||
-            null;
-          const detailPath = getDetailsPath
-            ? getDetailsPath(user)
-            : defaultId
-            ? `/admin/users/${defaultId}`
-            : null;
-          const primaryInfo = (
-            <>
-              <p
-                className="text-sm font-medium text-indigo-600 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300 truncate max-w-full"
-                title={`${user.FirstName || user.firstName || ""} ${
-                  user.LastName || user.lastName || ""
-                }`.trim()}
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-900">
+            <tr>
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
               >
-                {user.FirstName || user.firstName}{" "}
-                {user.LastName || user.lastName}
-              </p>
-              <p className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
-                <span
-                  className="truncate block max-w-full"
-                  title={user.Email || user.email}
-                >
-                  {user.Email || user.email}
-                </span>
-              </p>
-            </>
-          );
+                Name
+              </th>
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+              >
+                Email
+              </th>
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell"
+              >
+                Role
+              </th>
+              {/* Identifier column removed per request */}
+              <th scope="col" className="px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {users.map((user) => {
+              const defaultId =
+                user.UserID || user.userID || user.userId || user.id || null;
+              const actionId =
+                defaultId ||
+                user.StudentID ||
+                user.studentID ||
+                user.studentId ||
+                null;
+              const detailPath = getDetailsPath
+                ? getDetailsPath(user)
+                : defaultId
+                ? `/admin/users/${defaultId}`
+                : null;
 
-          return (
-            <li
-              key={user.UserID || user.id}
-              className="hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              <div className="px-4 py-4 sm:px-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-start sm:items-center">
-                    <div className="flex-shrink-0">
-                      <Avatar
-                        name={`${user.FirstName || user.firstName || ""} ${
-                          user.LastName || user.lastName || ""
-                        }`}
-                        size="sm"
-                        user={user}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1 px-4 md:grid md:grid-cols-2 md:gap-4">
-                      {/* Clickable area navigates to user details */}
-                      {detailPath ? (
-                        <Link to={detailPath} className="min-w-0 block group">
-                          {primaryInfo}
-                        </Link>
-                      ) : (
-                        <div className="min-w-0 block group">{primaryInfo}</div>
-                      )}
-                      <div className="hidden md:block">
-                        <div>
-                          <p className="text-sm text-gray-900 dark:text-white">
-                            Role:{" "}
-                            {getUserTypeText(
-                              user.UserTypeID || user.userTypeID
-                            )}
-                          </p>
-                          {(user.RollNumber || user.rollNumber) && (
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                              Roll No: {user.RollNumber || user.rollNumber}
-                            </p>
-                          )}
-                          {(user.EmployeeID || user.employeeID) && (
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                              Employee ID: {user.EmployeeID || user.employeeID}
-                            </p>
-                          )}
+              const fullName = `${user.FirstName || user.firstName || ""} ${
+                user.LastName || user.lastName || ""
+              }`.trim();
+
+              return (
+                <tr
+                  key={user.UserID || user.id || user.email}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  <td className="px-4 py-4 whitespace-nowrap align-top">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <Avatar name={fullName} size="sm" user={user} />
+                      </div>
+                      <div className="ml-3">
+                        {detailPath ? (
+                          <Link
+                            to={detailPath}
+                            className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 truncate block"
+                            title={fullName}
+                          >
+                            {fullName}
+                          </Link>
+                        ) : (
+                          <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {fullName}
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {user.Email || user.email}
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="mt-3 sm:mt-0 flex items-center space-x-3 flex-shrink-0">
-                    {allowManage && (
-                      <>
-                        <button
-                          onClick={() => onEdit && actionId && onEdit(actionId)}
-                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
-                        >
-                          Edit
-                        </button>
-                        {/* Show Activate for inactive users */}
-                        {!Boolean(user.IsActive ?? user.isActive ?? true) &&
-                          onActivate && (
-                            <button
-                              onClick={() =>
-                                onActivate && actionId && onActivate(actionId)
-                              }
-                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-green-600 hover:text-green-800"
-                            >
-                              Active
-                            </button>
-                          )}
-                        {/* Show Deactivate for active users */}
-                        {Boolean(user.IsActive ?? user.isActive ?? true) &&
-                          onDeactivate && (
-                            <button
-                              onClick={() =>
-                                onDeactivate &&
-                                actionId &&
-                                onDeactivate(actionId)
-                              }
-                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-orange-600 hover:text-orange-800"
-                            >
-                              Remove
-                            </button>
-                          )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap align-top text-sm text-gray-700 dark:text-gray-300">
+                    {user.Email || user.email}
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap align-top text-sm text-gray-700 dark:text-gray-300 hidden md:table-cell">
+                    {getUserTypeText(user.UserTypeID || user.userTypeID)}
+                  </td>
+                  {/* Identifier column removed per request */}
+                  <td className="px-4 py-4 whitespace-nowrap align-top text-right text-sm font-medium">
+                    <div className="inline-flex items-center gap-2">
+                      {allowManage && (
+                        <>
+                          <button
+                            onClick={() =>
+                              onEdit && actionId && onEdit(actionId)
+                            }
+                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+                          >
+                            Edit
+                          </button>
+
+                          {!Boolean(user.IsActive ?? user.isActive ?? true) &&
+                            onActivate && (
+                              <button
+                                onClick={() =>
+                                  onActivate && actionId && onActivate(actionId)
+                                }
+                                className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-green-600 hover:text-green-800"
+                              >
+                                Active
+                              </button>
+                            )}
+
+                          {Boolean(user.IsActive ?? user.isActive ?? true) &&
+                            onDeactivate && (
+                              <button
+                                onClick={() =>
+                                  onDeactivate &&
+                                  actionId &&
+                                  onDeactivate(actionId)
+                                }
+                                className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-orange-600 hover:text-orange-800"
+                              >
+                                Remove
+                              </button>
+                            )}
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

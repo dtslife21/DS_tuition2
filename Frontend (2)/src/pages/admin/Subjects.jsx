@@ -760,7 +760,7 @@ const AdminSubjects = () => {
                     )}
                   </div>
 
-                  <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="primary"
                       onClick={(e) => {
