@@ -149,92 +149,76 @@ namespace ClassSystemAPI.Controllers
             var httpRequest = HttpContext.Current.Request;
 
             if (httpRequest == null)
-            {
-                AddLog(null, "UploadProfileFailed", "No http request available");
                 return BadRequest("Invalid request");
-            }
 
-            // Expect a form field named "userId" (or "UserID")
+            // Read userId from form
             var userIdStr = httpRequest.Form["userId"] ?? httpRequest.Form["UserID"];
             if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
-            {
-                AddLog(null, "UploadProfileFailed", "Missing or invalid 'userId'");
                 return BadRequest("'userId' form field is required.");
-            }
 
             var user = db.Users.Find(userId);
             if (user == null)
-            {
-                AddLog(null, "UploadProfileFailed", $"User with ID {userId} not found");
                 return NotFound();
-            }
 
             if (httpRequest.Files == null || httpRequest.Files.Count == 0)
-            {
-                AddLog(userId, "UploadProfileFailed", "No file provided");
                 return BadRequest("No file uploaded");
-            }
 
             var postedFile = httpRequest.Files[0];
 
-            // Validate file extension
+            // Allowed extensions
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
             var fileExt = Path.GetExtension(postedFile.FileName)?.ToLowerInvariant();
-            if (string.IsNullOrEmpty(fileExt) || !allowedExtensions.Contains(fileExt))
-            {
-                AddLog(userId, "UploadProfileFailed", $"Invalid file type: {postedFile.FileName}");
-                return BadRequest("Invalid file type. Allowed: .jpg, .jpeg, .png, .gif");
-            }
 
-            // Max 5 MB example
+            if (string.IsNullOrEmpty(fileExt) || !allowedExtensions.Contains(fileExt))
+                return BadRequest("Invalid file type. Allowed: .jpg, .jpeg, .png, .gif");
+
+            // Max 5 MB
             const int maxBytes = 5 * 1024 * 1024;
             if (postedFile.ContentLength > maxBytes)
-            {
-                AddLog(userId, "UploadProfileFailed", $"File too large: {postedFile.ContentLength} bytes");
                 return BadRequest("File size exceeds limit (5 MB).");
-            }
 
+            // Upload path
             var uploadsVirtualFolder = "/Uploads/ProfilePhotos";
             var uploadsPath = HostingEnvironment.MapPath("~" + uploadsVirtualFolder);
+
             if (uploadsPath == null)
-            {
-                AddLog(userId, "UploadProfileFailed", "Unable to resolve uploads path");
                 return InternalServerError(new Exception("Unable to resolve uploads path"));
-            }
 
             Directory.CreateDirectory(uploadsPath);
 
-            var fileName = Guid.NewGuid().ToString("N") + fileExt;
+           
+            var fileName = userId + fileExt;   
             var physicalFilePath = Path.Combine(uploadsPath, fileName);
 
             try
             {
+                // Overwrite existing file
+                if (File.Exists(physicalFilePath))
+                    File.Delete(physicalFilePath);
+
                 postedFile.SaveAs(physicalFilePath);
             }
             catch (Exception ex)
             {
-                AddLog(userId, "UploadProfileFailed", "Error saving file: " + ex.Message);
                 return InternalServerError(ex);
             }
 
-            // Save virtual path in DB: e.g. "/Uploads/ProfilePhotos/{fileName}"
-            user.ProfilePicture = uploadsVirtualFolder + "/" + fileName;
+            // Save path to database
+            user.ProfilePicture = $"{uploadsVirtualFolder}/{fileName}";
 
             try
             {
                 db.Entry(user).State = EntityState.Modified;
                 db.SaveChanges();
-                AddLog(userId, "ProfilePhotoUploaded", $"Updated ProfilePicture for user {userId} to {user.ProfilePicture}");
             }
             catch (Exception ex)
             {
-                AddLog(userId, "UploadProfileFailed", "DB update error: " + ex.Message);
                 return InternalServerError(ex);
             }
 
-            // Return the path so frontend can save it to DB (or this saved it already) — consistent with frontend expectation
             return Ok(new { filePath = user.ProfilePicture });
         }
+
 
         // PUT: api/Users/5
         public IHttpActionResult PutUser(int id, User user)
@@ -251,12 +235,110 @@ namespace ClassSystemAPI.Controllers
                 return BadRequest();
             }
 
-            db.Entry(user).State = EntityState.Modified;
+            var existingUser = db.Users.Find(id);
+            if (existingUser == null)
+            {
+                AddLog(null, "UpdateUserFailed", $"User with ID {id} not found");
+                return NotFound();
+            }
+
+            // Preserve values that should not be cleared when client doesn't send them
+            var previousProfilePicture = existingUser.ProfilePicture;
+            var previousDateCreated = existingUser.DateCreated;
+
+            // Apply incoming values onto the existing entity
+            db.Entry(existingUser).CurrentValues.SetValues(user);
+
+            // --- Profile picture handling ---
+            // If client explicitly requests removal via RemoveProfilePicture flag, delete file and clear DB field.
+            // If client provided a new ProfilePicture path (non-empty and different), replace it and optionally delete previous file.
+            // If client omitted ProfilePicture (null or empty) and didn't request remove, keep previousProfilePicture.
+
+            bool clientRequestedRemove = false;
+
+            // Reflection-safe check for an optional RemoveProfilePicture property on the incoming model.
+            var prop = user?.GetType().GetProperty("RemoveProfilePicture");
+            if (prop != null)
+            {
+                try
+                {
+                    var val = prop.GetValue(user);
+                    if (val is bool b) clientRequestedRemove = b;
+                    else if (val is bool?) clientRequestedRemove = ((bool?)val) == true;
+                }
+                catch
+                {
+                    clientRequestedRemove = false;
+                }
+            }
+
+            // Helper to safely delete a file when it appears to be inside our uploads area.
+            void TryDeleteIfUploadedPath(string virtualPath)
+            {
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(virtualPath)) return;
+
+                    // Only delete files that look like they belong to the app uploads folder
+                    const string uploadsVirtualFolder = "/Uploads/ProfilePhotos";
+                    // Accept both "/Uploads/..." and "Uploads/..." shapes
+                    if (!virtualPath.StartsWith(uploadsVirtualFolder, StringComparison.OrdinalIgnoreCase) &&
+                        !virtualPath.StartsWith("/" + uploadsVirtualFolder.TrimStart('/'), StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Do not attempt to delete paths outside the uploads folder
+                        return;
+                    }
+
+                    var physicalPath = HostingEnvironment.MapPath("~" + virtualPath);
+                    if (string.IsNullOrEmpty(physicalPath)) return;
+                    if (File.Exists(physicalPath))
+                    {
+                        File.Delete(physicalPath);
+                        AddLog(null, "ProfilePhotoDeleted", $"Deleted profile photo file: {physicalPath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log but don't fail the whole request for file-system errors
+                    AddLog(existingUser.UserID, "ProfilePhotoDeleteFailed", ex.Message);
+                }
+            }
+
+            if (clientRequestedRemove)
+            {
+                // Delete previous file if present and clear DB field
+                TryDeleteIfUploadedPath(previousProfilePicture);
+                existingUser.ProfilePicture = null;
+            }
+            else
+            {
+                // If incoming model provided a non-empty ProfilePicture value, treat it as an update (replace)
+                var incomingProfilePicture = user.ProfilePicture;
+                if (!string.IsNullOrEmpty(incomingProfilePicture))
+                {
+                    // If the incoming path is different from previous, remove the old file (optional)
+                    if (!string.Equals(previousProfilePicture, incomingProfilePicture, StringComparison.OrdinalIgnoreCase))
+                    {
+                        TryDeleteIfUploadedPath(previousProfilePicture);
+                    }
+                    existingUser.ProfilePicture = incomingProfilePicture;
+                }
+                else
+                {
+                    // Client did not include a profile picture; preserve existing value
+                    existingUser.ProfilePicture = previousProfilePicture;
+                }
+            }
+
+            // Preserve DateCreated to avoid accidental updates from client
+            existingUser.DateCreated = previousDateCreated;
+
+            db.Entry(existingUser).State = EntityState.Modified;
 
             try
             {
                 db.SaveChanges();
-                AddLog(user.UserID, "UserUpdated", $"User with ID {id} updated");
+                AddLog(existingUser.UserID, "UserUpdated", $"User with ID {id} updated");
             }
             catch (Exception ex)
             {
