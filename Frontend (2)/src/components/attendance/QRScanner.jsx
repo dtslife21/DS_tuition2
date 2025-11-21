@@ -21,12 +21,61 @@ const QRScanner = () => {
   // Course selection (replaces subject selection)
   const [courses, setCourses] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState(() => {
+    try {
+      return new Date().toISOString().split("T")[0];
+    } catch (_) {
+      return "";
+    }
+  });
   const [courseStudents, setCourseStudents] = useState([]);
   const [rosterStatus, setRosterStatus] = useState("idle");
   const [rosterError, setRosterError] = useState("");
-  const [sessionStartTime, setSessionStartTime] = useState("");
-  const [sessionEndTime, setSessionEndTime] = useState("");
+  const [sessionStartTime, setSessionStartTime] = useState(() => {
+    try {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      return `${hh}:${mm}`;
+    } catch (_) {
+      return "";
+    }
+  });
+  const [sessionEndTime, setSessionEndTime] = useState(() => {
+    try {
+      const end = new Date();
+      end.setHours(end.getHours() + 2);
+      const hh = String(end.getHours()).padStart(2, "0");
+      const mm = String(end.getMinutes()).padStart(2, "0");
+      return `${hh}:${mm}`;
+    } catch (_) {
+      return "";
+    }
+  });
+  const [sessionEndModified, setSessionEndModified] = useState(false);
+
+  // Keep session end time in sync with start time unless the end was manually edited
+  const computeEndFromStart = (start) => {
+    if (!start || !/^\d{2}:\d{2}$/.test(start)) return "";
+    const [hh, mm] = start.split(":").map((p) => Number(p));
+    if (!Number.isFinite(hh) || !Number.isFinite(mm)) return "";
+    const d = new Date();
+    d.setHours(hh, mm, 0, 0);
+    d.setHours(d.getHours() + 2);
+    const eh = String(d.getHours()).padStart(2, "0");
+    const em = String(d.getMinutes()).padStart(2, "0");
+    return `${eh}:${em}`;
+  };
+
+  useEffect(() => {
+    if (sessionEndModified) return;
+    try {
+      const newEnd = computeEndFromStart(sessionStartTime);
+      if (newEnd) setSessionEndTime(newEnd);
+    } catch (_) {
+      // ignore
+    }
+  }, [sessionStartTime, sessionEndModified]);
 
   // Simple camera preview to match the uploaded UI
   const videoRef = useRef(null);
@@ -835,7 +884,10 @@ const QRScanner = () => {
           <input
             type="time"
             value={sessionEndTime}
-            onChange={(e) => setSessionEndTime(e.target.value)}
+            onChange={(e) => {
+              setSessionEndTime(e.target.value);
+              setSessionEndModified(true);
+            }}
             className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             aria-label="Session end time"
           />
