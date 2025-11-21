@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { getAllUsers } from "../../services/userService";
 import { getAllStudents } from "../../services/studentService";
@@ -30,6 +31,7 @@ const AdminDashboard = () => {
   const searchBoxRef = useRef(null);
   const optionsRef = useRef(null);
   const { theme } = useTheme();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -112,6 +114,44 @@ const AdminDashboard = () => {
       const db = new Date(b.postDate || 0).getTime();
       return sortOrder === "desc" ? db - da : da - db;
     });
+
+  // Helper to format/display user role in a friendly way
+  const formatRole = (u) => {
+    if (!u) return "-";
+    const rawType =
+      u.userType ??
+      u.UserType ??
+      u.userTypeName ??
+      u.UserTypeName ??
+      u.role ??
+      u.Role ??
+      "";
+    const rawId =
+      u.userTypeId ??
+      u.userTypeID ??
+      u.UserTypeID ??
+      u.UserTypeID ??
+      u.userTypeId ??
+      null;
+
+    const idVal = rawId !== undefined && rawId !== null ? Number(rawId) : NaN;
+    const idMap = { 1: "Admin", 2: "Teacher", 3: "Student" };
+    if (!Number.isNaN(idVal) && idMap[idVal]) return idMap[idVal];
+
+    const s = String(rawType || "").trim();
+    if (!s) return "-";
+
+    const lowered = s.toLowerCase();
+    if (lowered === "1" || lowered === "admin" || lowered.includes("admin"))
+      return "Admin";
+    if (lowered === "2" || lowered === "teacher" || lowered.includes("teach"))
+      return "Teacher";
+    if (lowered === "3" || lowered === "student" || lowered.includes("stud"))
+      return "Student";
+
+    // Fallback: capitalize first letter
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  };
 
   if (loading) {
     return <Loader className="py-12" />;
@@ -310,7 +350,17 @@ const AdminDashboard = () => {
               <ul className="divide-y divide-gray-200 dark:divide-gray-700 stagger-children">
                 {users.slice(0, 5).map((user) => (
                   <li key={user.id}>
-                    <div className="px-4 py-4 flex items-center sm:px-6 transition-base hover-lift">
+                    <div
+                      onClick={() => navigate(`/admin/users/${user.id}`)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          navigate(`/admin/users/${user.id}`);
+                        }
+                      }}
+                      className="px-4 py-4 flex items-center sm:px-6 transition-base hover-lift cursor-pointer"
+                    >
                       <div className="min-w-0 flex-1 flex items-center">
                         <div className="flex-shrink-0">
                           <Avatar
@@ -331,7 +381,7 @@ const AdminDashboard = () => {
                           <div className="hidden md:block">
                             <div>
                               <p className="text-sm text-gray-900 dark:text-white">
-                                Role: {user.userType}
+                                Role: {formatRole(user)}
                               </p>
                             </div>
                           </div>
@@ -359,7 +409,17 @@ const AdminDashboard = () => {
               <ul className="divide-y divide-gray-200 dark:divide-gray-700 stagger-children">
                 {courses.slice(0, 5).map((course) => (
                   <li key={course.id}>
-                    <div className="px-4 py-4 sm:px-6 transition-base hover-lift">
+                    <div
+                      onClick={() => navigate(`/admin/courses/${course.id}`)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          navigate(`/admin/courses/${course.id}`);
+                        }
+                      }}
+                      className="px-4 py-4 sm:px-6 transition-base hover-lift cursor-pointer"
+                    >
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 truncate">
                           {course.name}
