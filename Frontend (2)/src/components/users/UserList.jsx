@@ -66,8 +66,8 @@ const UserList = ({
               className="hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <div className="px-4 py-4 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start sm:items-center">
                     <div className="flex-shrink-0">
                       <Avatar
                         name={`${user.FirstName || user.firstName || ""} ${
@@ -108,7 +108,7 @@ const UserList = ({
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3 flex-shrink-0">
+                  <div className="mt-3 sm:mt-0 flex items-center space-x-3 flex-shrink-0">
                     {allowManage && (
                       <>
                         <button

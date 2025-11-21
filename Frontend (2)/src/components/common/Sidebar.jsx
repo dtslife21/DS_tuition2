@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import Modal from "./Modal";
 
@@ -8,6 +8,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showLogout, setShowLogout] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const adminNavigation = [
     { name: "Dashboard", href: "/admin", icon: "home" },
@@ -65,6 +66,23 @@ const Sidebar = () => {
       : user?.userType === "teacher"
       ? teacherNavigation
       : studentNavigation;
+
+  const indicatorVariant =
+    user?.userType === "teacher"
+      ? "nav-indicator-teacher"
+      : user?.userType === "admin"
+      ? "nav-indicator-admin"
+      : "nav-indicator-student";
+
+  // collapse the mobile drawer when navigation changes so content stays visible
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  const handleNavigate = (href) => {
+    setMobileOpen(false);
+    navigate(href);
+  };
 
   // Choose a single best navigation item to mark active. We pick the
   // most-specific match (longest href) whose href equals or prefixes the
@@ -271,12 +289,15 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Mobile: toggle checkbox + button */}
-      <input id="mobile-sidebar" type="checkbox" className="peer hidden" />
-      <label
-        htmlFor="mobile-sidebar"
-        className="md:hidden fixed top-4 left-4 z-50 inline-flex items-center justify-center p-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow peer-checked:hidden"
+      {/* Mobile toggle button */}
+      <button
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        className={`md:hidden fixed top-4 left-4 z-50 inline-flex items-center justify-center p-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow ${
+          mobileOpen ? "hidden" : ""
+        }`}
         aria-label="Open sidebar"
+        aria-expanded={mobileOpen}
       >
         <svg
           className="h-6 w-6"
@@ -291,41 +312,56 @@ const Sidebar = () => {
             d="M4 6h16M4 12h16M4 18h16"
           />
         </svg>
-      </label>
+      </button>
 
       {/* Mobile overlay sidebar */}
-      <div className="md:hidden fixed inset-0 z-40 hidden peer-checked:block">
-        {/* Backdrop closes sidebar */}
-        <label
-          htmlFor="mobile-sidebar"
-          className="absolute inset-0 bg-black/30"
-          aria-hidden="true"
-        />
-        {/* Desktop static sidebar */}
-        <div className="hidden md:flex md:flex-shrink-0">
-          <div className="flex flex-col w-60 sm:w-72 sticky top-0 h-screen glass-surface admin-bg soft-shadow-md overflow-hidden">
-            <div className="h-0 flex-1 flex flex-col pt-6 pb-6 overflow-y-auto">
-              <nav className="flex-1 px-3 space-y-2">
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-40">
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            className="absolute inset-0 bg-black/30"
+            aria-label="Close sidebar"
+          />
+          <div className="relative h-full w-64 max-w-[80%] rounded-r-xl overflow-hidden bg-white dark:bg-gray-900 shadow-xl glass-surface admin-bg">
+            <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+              <span className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Navigation
+              </span>
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-md p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                aria-label="Close sidebar"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="flex h-full flex-col overflow-hidden">
+              <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
                 {navigation.map((item) => {
                   const isActive =
                     activeNavItem && activeNavItem.href === item.href;
                   const classes = `group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-base hover-lift space-x-3 ${
                     isActive
-                      ? "bg-white/30 text-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-100"
+                      ? "bg-white/30 text-indigo-900 dark:bg-indigo-900/40 dark:text-indigo-100"
                       : "text-gray-700 hover:bg-white/10 dark:text-gray-300 dark:hover:bg-gray-700/40"
                   }`;
 
-                  // choose indicator variant based on user type
-                  const indicatorVariant =
-                    user?.userType === "teacher"
-                      ? "nav-indicator-teacher"
-                      : user?.userType === "admin"
-                      ? "nav-indicator-admin"
-                      : "nav-indicator-student";
-
                   return (
                     <div key={item.name} className="flex items-center">
-                      {/* active indicator */}
                       {isActive ? (
                         <div
                           className={`nav-indicator ${indicatorVariant}`}
@@ -337,7 +373,7 @@ const Sidebar = () => {
 
                       <button
                         type="button"
-                        onClick={() => navigate(item.href)}
+                        onClick={() => handleNavigate(item.href)}
                         className={classes}
                       >
                         <span className="mr-2 icon-pop text-xl text-indigo-500/90">
@@ -350,42 +386,37 @@ const Sidebar = () => {
                 })}
               </nav>
               {user?.userType && (
-                <div className="border-t border-gray-200 dark:border-gray-700 px-2 py-4">
-                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
-                    User
-                  </div>
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="mobile-sidebar"
-                      onClick={() =>
-                        navigate("/profile", {
-                          state: { backgroundLocation: location },
-                        })
-                      }
-                      className="group w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg text-white/90 hover:bg-white/10"
-                    >
-                      <span className="mr-3">{getIcon("profile")}</span>
-                      Profile
-                    </label>
-                    <label
-                      htmlFor="mobile-sidebar"
-                      onClick={(e) => {
-                        className =
-                          "group w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg text-white/90 hover:bg-red-600/12";
-                        setShowLogout(true);
-                      }}
-                      className="group w-full flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
-                    >
-                      <span className="mr-3">{getIcon("logout")}</span>
-                      Logout
-                    </label>
-                  </div>
+                <div className="border-t border-gray-200 dark:border-gray-700 px-3 py-4 space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      navigate("/profile", {
+                        state: { backgroundLocation: location },
+                      });
+                    }}
+                    className="group w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
+                  >
+                    <span className="mr-3">{getIcon("profile")}</span>
+                    Profile
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      setShowLogout(true);
+                    }}
+                    className="group w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 dark:text-gray-300 dark:hover:bg-gray-700/60"
+                  >
+                    <span className="mr-3">{getIcon("logout")}</span>
+                    Logout
+                  </button>
                 </div>
               )}
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Desktop static sidebar */}
       <div className="hidden md:flex md:flex-shrink-0">
@@ -406,7 +437,7 @@ const Sidebar = () => {
                   <button
                     key={item.name}
                     type="button"
-                    onClick={() => navigate(item.href)}
+                    onClick={() => handleNavigate(item.href)}
                     className={classes}
                   >
                     <span className="mr-3">{getIcon(item.icon)}</span>

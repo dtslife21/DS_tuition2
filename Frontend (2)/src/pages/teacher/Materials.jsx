@@ -713,7 +713,7 @@ const TeacherMaterials = () => {
     <div className="space-y-8">
       {id ? (
         <>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white border-l-4 border-indigo-500/60 dark:border-indigo-400/60 pl-3">
               Materials for {course?.name}
             </h1>
@@ -723,6 +723,7 @@ const TeacherMaterials = () => {
                 setModalCourseId(id);
                 setShowModal(true);
               }}
+              className="w-full sm:w-auto"
             >
               Upload Material
             </Button>
@@ -808,7 +809,7 @@ const TeacherMaterials = () => {
         </>
       ) : (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white border-l-4 border-indigo-500/60 dark:border-indigo-400/60 pl-3">
               Your Courses & Materials
             </h1>
@@ -852,7 +853,7 @@ const TeacherMaterials = () => {
                       key={cid}
                       className="bg-gradient-to-br from-white to-indigo-50/70 dark:from-gray-900/70 dark:to-indigo-950/20 backdrop-blur shadow-lg ring-1 ring-indigo-100 dark:ring-indigo-800 rounded-2xl p-4 sm:p-6"
                     >
-                      <div className="flex items-start justify-between mb-4 gap-4">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
                         <button
                           type="button"
                           onClick={() =>
@@ -877,13 +878,13 @@ const TeacherMaterials = () => {
                           </div>
                         </button>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                           <Button
                             onClick={() => {
                               setModalCourseId(cid);
                               setShowModal(true);
                             }}
-                            className="bg-green-600 hover:bg-green-700 focus:ring-green-500 text-white"
+                            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 focus:ring-green-500 text-white"
                           >
                             Upload for this course
                           </Button>

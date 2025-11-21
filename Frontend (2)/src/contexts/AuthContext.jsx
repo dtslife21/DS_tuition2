@@ -11,7 +11,8 @@ export const AuthProvider = ({ children }) => {
 
   // Create axios instance with base URL
   const api = axios.create({
-    baseURL: "http://localhost:50447/api",
+    // baseURL: "https://dstuitionbackend.dockyardsoftware.com/api",
+     baseURL: "http://localhost:50447/api",
     headers: {
       "Content-Type": "application/json",
     },

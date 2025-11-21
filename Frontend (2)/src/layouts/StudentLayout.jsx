@@ -4,7 +4,7 @@ import Navbar from "../components/common/Navbar";
 
 const StudentLayout = () => {
   return (
-    <div className="flex h-screen w-full overflow-hidden admin-bg">
+    <div className="relative flex min-h-screen w-full overflow-hidden student-bg md:h-screen">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <Navbar />
