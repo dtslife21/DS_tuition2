@@ -293,7 +293,7 @@ const Sidebar = () => {
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
-        className={`md:hidden fixed top-4 left-4 z-50 inline-flex items-center justify-center p-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow ${
+        className={`md:hidden fixed top-3 left-3 z-50 inline-flex items-center justify-center p-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow ${
           mobileOpen ? "hidden" : ""
         }`}
         aria-label="Open sidebar"
@@ -316,14 +316,18 @@ const Sidebar = () => {
 
       {/* Mobile overlay sidebar */}
       {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-40">
+        <div
+          className="md:hidden fixed inset-0 z-40 flex"
+          role="dialog"
+          aria-modal="true"
+        >
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
             className="absolute inset-0 bg-black/30"
             aria-label="Close sidebar"
           />
-          <div className="relative h-full w-64 max-w-[80%] rounded-r-xl overflow-hidden bg-white dark:bg-gray-900 shadow-xl glass-surface admin-bg">
+          <div className="relative h-full w-full sm:w-72 md:w-80 flex flex-col rounded-none sm:rounded-r-xl overflow-hidden bg-white dark:bg-gray-900 shadow-xl glass-surface admin-bg transform transition-transform duration-300 ease-out translate-x-0">
             <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
               <span className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Navigation
@@ -349,8 +353,8 @@ const Sidebar = () => {
                 </svg>
               </button>
             </div>
-            <div className="flex h-full flex-col overflow-hidden">
-              <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
+            <div className="flex h-full flex-col overflow-y-auto safe-area-b">
+              <nav className="flex-1 px-3 py-4 space-y-2">
                 {navigation.map((item) => {
                   const isActive =
                     activeNavItem && activeNavItem.href === item.href;
@@ -420,7 +424,7 @@ const Sidebar = () => {
 
       {/* Desktop static sidebar */}
       <div className="hidden md:flex md:flex-shrink-0">
-        <div className="flex flex-col w-56 sm:w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-0 h-screen">
+        <div className="flex flex-col w-56 sm:w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-0 h-screen md:h-[100dvh]">
           <div className="h-0 flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
             <nav className="flex-1 px-2 space-y-1">
               {navigation.map((item) => {

@@ -349,4 +349,91 @@ body {
   .icon-pop:hover {
     transform: translateY(-3px) scale(1.06);
   }
+
+  .safe-area-b {
+    padding-bottom: 1rem;
+  }
+
+  @supports (padding: env(safe-area-inset-bottom)) {
+    .safe-area-b {
+      padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    }
+  }
+
+  /* Responsive data table helper */
+  .responsive-table {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-bottom: 0.5rem;
+  }
+
+  @screen sm {
+    .responsive-table {
+      margin-left: 0;
+      margin-right: 0;
+      padding-bottom: 0;
+    }
+  }
+
+  .responsive-table table {
+    width: 100%;
+  }
+
+  .responsive-table::-webkit-scrollbar {
+    height: 6px;
+  }
+  .responsive-table::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+
+  @media (max-width: 639px) {
+    .responsive-table table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .responsive-table table tbody,
+    .responsive-table table tr,
+    .responsive-table table td {
+      display: block;
+      width: 100%;
+    }
+
+    .responsive-table table tbody {
+      @apply space-y-4;
+    }
+
+    .responsive-table table tbody tr {
+      @apply rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 shadow-sm;
+    }
+
+    .responsive-table table tbody tr + tr {
+      @apply mt-2;
+    }
+
+    .responsive-table table tbody td {
+      @apply flex items-start justify-between gap-4 py-2 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .responsive-table table tbody td:last-child {
+      @apply border-b-0;
+    }
+
+    .responsive-table table tbody td::before {
+      content: attr(data-header);
+      @apply font-medium text-gray-500 dark:text-gray-400 pr-4;
+      flex-basis: 40%;
+      max-width: 12rem;
+    }
+  }
 }

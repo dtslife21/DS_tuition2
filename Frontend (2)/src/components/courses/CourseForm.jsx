@@ -451,8 +451,8 @@ const CourseForm = ({
             <div className="text-sm text-gray-500">No classes selected.</div>
           )}
 
-          <div className="flex gap-2 pt-2">
-            <div className="flex-1">
+          <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center">
+            <div className="w-full sm:flex-1">
               <select
                 onChange={(e) => {
                   const val = e.target.value;
@@ -492,7 +492,7 @@ const CourseForm = ({
                   // reset select
                   e.target.value = "";
                 }}
-                className="w-full rounded-md border-gray-300 p-2 bg-white dark:bg-gray-800"
+                className="w-full rounded-md border border-gray-300 bg-white p-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                 disabled={loadingAvailableSubjects}
               >
                 <option value="">-- Choose existing class --</option>
@@ -507,11 +507,12 @@ const CourseForm = ({
               </select>
             </div>
 
-            <div className="flex-shrink-0">
+            <div className="sm:flex-shrink-0">
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => setShowSubjectModal(true)}
+                className="w-full justify-center sm:w-auto"
               >
                 + New
               </Button>
@@ -618,18 +619,24 @@ const CourseForm = ({
         />
       </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
         {onCancel ? (
           <Button
             type="button"
             variant="secondary"
             onClick={onCancel}
             disabled={loading}
+            className="w-full justify-center sm:w-auto"
           >
             Cancel
           </Button>
         ) : null}
-        <Button type="submit" variant="primary" disabled={loading}>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={loading}
+          className="w-full justify-center sm:w-auto"
+        >
           {loading ? "Saving..." : "Save Course"}
         </Button>
       </div>

@@ -1252,9 +1252,9 @@ const CourseView = () => {
   const hasSubjectGrouping = subjectGroupsWithStatus.length > 0;
 
   return (
-    <div className="space-y-8">
-      <div className="bg-white/90 dark:bg-gray-900/60 backdrop-blur shadow-xl ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden rounded-2xl">
-        <div className="px-4 py-5 sm:px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+    <div className="mx-auto w-full max-w-4xl space-y-6 sm:space-y-8">
+      <div className="overflow-hidden rounded-2xl bg-white/90 shadow-xl ring-1 ring-gray-200 backdrop-blur dark:bg-gray-900/60 dark:ring-gray-700">
+        <div className="flex flex-col items-start justify-between gap-4 px-4 py-5 sm:flex-row sm:items-center sm:gap-6 sm:px-6">
           <div>
             <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
               {course.name}
@@ -1264,7 +1264,7 @@ const CourseView = () => {
               {formattedSubjects ? ` - ${formattedSubjects}` : ""}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3 mt-2 sm:mt-0">
+          <div className="mt-2 flex w-full flex-wrap items-center justify-start gap-2 sm:mt-0 sm:w-auto sm:justify-end">
             {isAdmin && (
               <button
                 onClick={() => setShowEditModal(true)}
@@ -1360,7 +1360,7 @@ const CourseView = () => {
             <span className={statusBadgeClassName}>{statusBadgeLabel}</span>
           </div>
         </div>
-        <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+        <div className="border-t border-gray-200 px-4 py-5 dark:border-gray-700 sm:px-6">
           <dl className="sm:divide-y sm:divide-gray-100 dark:sm:divide-gray-800">
             <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt className="text-sm font-medium text-gray-600 dark:text-gray-300">
@@ -1460,7 +1460,7 @@ const CourseView = () => {
         </div>
       </div>
 
-      {/* <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
           Study Materials
         </h3>
@@ -1470,7 +1470,7 @@ const CourseView = () => {
           </Button>
         )}
       </div>
-      <MaterialList materials={materials} /> */}
+      <MaterialList materials={materials} />
 
       {/* <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -1495,8 +1495,8 @@ const CourseView = () => {
               Enrolled Students
             </h3>
             {canModifyStudents ? (
-              <div className="flex items-center gap-2">
-                <div className="relative" ref={studentMenuRef}>
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                <div className="relative ml-auto sm:ml-0" ref={studentMenuRef}>
                   <Button
                     variant="primary"
                     onClick={() => setShowStudentMenu((s) => !s)}

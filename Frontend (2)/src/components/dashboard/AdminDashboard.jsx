@@ -168,28 +168,30 @@ const AdminDashboard = () => {
       </div>
 
       {/* Notices & Announcements panel (teacher-style) */}
-      <Card className="p-0 ">
+      <Card className="p-0">
         <div
-          className={`p-6 rounded-t-lg text-white flex items-center justify-between relative ${
+          className={`relative flex flex-col gap-4 rounded-t-lg p-5 text-white sm:p-6 lg:flex-row lg:items-center lg:justify-between ${
             theme === "dark"
               ? "bg-gradient-to-r from-blue-700 to-indigo-800"
               : "bg-gradient-to-r from-blue-400 to-indigo-500"
           }`}
         >
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20">
               <span className="text-2xl">🔔</span>
             </div>
             <div>
-              <h3 className="text-xl font-semibold">Notices & Announcements</h3>
+              <h3 className="text-lg font-semibold sm:text-xl">
+                Notices & Announcements
+              </h3>
               <p className="text-sm opacity-80">
                 (Stay updated with the latest information)
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button
-              className="relative p-2 rounded-full bg-white/20"
+              className="relative rounded-full bg-white/20 p-2"
               onClick={() => {
                 // focus the notices area; no-op for now but keeps behavior consistent
                 setShowSearch(false);
@@ -219,7 +221,7 @@ const AdminDashboard = () => {
             </button>
 
             <button
-              className="p-2 rounded-full bg-white/20"
+              className="rounded-full bg-white/20 p-2"
               onClick={() => {
                 setShowSearch((v) => !v);
                 setShowOptions(false);
@@ -247,7 +249,7 @@ const AdminDashboard = () => {
                 setShowSearch(false);
               }}
               title="Options"
-              className="p-2 rounded-full bg-white/20"
+              className="rounded-full bg-white/20 p-2"
             >
               <svg
                 className="w-6 h-6 text-white/90"
@@ -268,14 +270,17 @@ const AdminDashboard = () => {
 
           {/* Search input overlay */}
           {showSearch && (
-            <div ref={searchBoxRef} className="absolute right-4 top-4">
+            <div
+              ref={searchBoxRef}
+              className="absolute right-4 top-4 w-[min(18rem,calc(100vw-3rem))] sm:w-72"
+            >
               <input
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search notices..."
-                className="w-56 sm:w-72 rounded-md bg-white/90 text-gray-800 placeholder-gray-500 px-3 py-1.5 focus:outline-none shadow"
+                className="w-full rounded-md bg-white/90 px-3 py-1.5 text-gray-800 placeholder-gray-500 shadow focus:outline-none"
               />
             </div>
           )}
@@ -317,10 +322,10 @@ const AdminDashboard = () => {
           )}
         </div>
 
-        <div className="p-6">
-          <div className="border-b mb-6">
-            <nav className="flex space-x-6 text-sm text-gray-500">
-              <div className={`pb-3 border-b-2 border-blue-500 text-blue-600`}>
+        <div className="p-5 sm:p-6">
+          <div className="mb-5 border-b">
+            <nav className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+              <div className="border-b-2 border-blue-500 pb-3 text-blue-600">
                 Notices ({announcements.length})
               </div>
             </nav>

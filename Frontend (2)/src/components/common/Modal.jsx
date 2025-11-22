@@ -15,11 +15,18 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
   const widthClass = sizeClasses[size] || sizeClasses.md;
 
   const modal = (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 sm:px-6 fade-in">
       <div
-        className={`bg-white dark:bg-gray-800 rounded-lg p-6 ${widthClass} w-full shadow-xl ring-1 ring-gray-200 dark:ring-0 scale-in soft-shadow-md`}
+        className="absolute inset-0 bg-black bg-opacity-40"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className={`relative bg-white dark:bg-gray-800 rounded-lg p-5 sm:p-6 ${widthClass} w-full shadow-xl ring-1 ring-gray-200 dark:ring-0 scale-in soft-shadow-md max-h-[calc(100dvh-3rem)] overflow-y-auto`}
       >
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-start gap-3 mb-4">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             {title}
           </h2>
@@ -34,7 +41,7 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
         <div className="text-gray-900 dark:text-white">
           {/* content wrapper gives form inputs a subtle off-white background in light mode
               so inputs and borders are visible against the modal surface */}
-          <div className="bg-blue-50 dark:bg-gray-800 p-4 rounded-md -mx-1">
+          <div className="bg-blue-50 dark:bg-gray-800 p-4 rounded-md">
             {children}
           </div>
         </div>

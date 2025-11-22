@@ -47,7 +47,7 @@ const Pill = ({ children, color = "indigo" }) => (
 
 const UserDetailsPage = ({
   allowEdit = true,
-  showManageLink = true,
+  showManageLink = false,
   manageLinkPath = "/admin/users",
   manageLinkText = "Manage Users",
   backPath,
@@ -744,11 +744,11 @@ const UserDetailsPage = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
           <button
             onClick={handleBackClick}
-            className="px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
+            className="rounded-md border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-800 shadow-sm transition hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
           >
             Back
           </button>
@@ -757,11 +757,11 @@ const UserDetailsPage = ({
           </h1>
         </div>
         {(allowEdit || (showManageLink && manageLinkPath)) && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             {allowEdit && !isEditing && (
               <button
                 onClick={startEditing}
-                className="px-3 py-1.5 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                className="w-full rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 sm:w-auto"
               >
                 Edit
               </button>
@@ -769,7 +769,7 @@ const UserDetailsPage = ({
             {allowEdit && isEditing && (
               <button
                 onClick={cancelEditing}
-                className="px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
+                className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-800 shadow-sm transition hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 sm:w-auto"
               >
                 Cancel
               </button>
@@ -777,7 +777,7 @@ const UserDetailsPage = ({
             {!isEditing && showManageLink && manageLinkPath && (
               <Link
                 to={manageLinkPath}
-                className="px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
+                className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-800 shadow-sm transition hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 sm:w-auto"
               >
                 {manageLinkText}
               </Link>
@@ -787,7 +787,7 @@ const UserDetailsPage = ({
       </div>
 
       {allowEdit && isEditing ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
+        <div className="rounded-2xl border border-gray-200 bg-white/90 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900/70 sm:p-6">
           <UserForm
             onSubmit={handleSave}
             // pass a merged initialData so teacher-specific fields (like JoiningDate)
@@ -803,16 +803,16 @@ const UserDetailsPage = ({
           />
         </div>
       ) : (
-        <Card className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center gap-6">
+        <Card className="p-5 sm:p-6">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center">
             <Avatar
               name={fullName || user.Username || user.username}
               size="lg"
               src={user.ProfilePicture || user.profilePicture || undefined}
               user={user}
             />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 flex-wrap">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white truncate">
                   {fullName || user.Username || user.username || "User"}
                 </h2>
@@ -839,7 +839,7 @@ const UserDetailsPage = ({
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <InfoRow
               label="First Name"
               value={user.FirstName || user.firstName}
@@ -953,8 +953,8 @@ const UserDetailsPage = ({
               Student Details
             </h2>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="rounded-lg border border-gray-200 bg-white/90 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900/70">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <InfoRow
                 label="Student ID"
                 value={
@@ -1049,8 +1049,8 @@ const UserDetailsPage = ({
           String(user.UserTypeID || user.userTypeID || "").trim() === "3" ||
           String((user.userType || "").toLowerCase()) === "student") && (
           <div className="space-y-4">
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {String(user.UserTypeID || user.userTypeID || "").trim() ===
                     "2" ||
@@ -1061,7 +1061,7 @@ const UserDetailsPage = ({
                 {isTeacherUser && (
                   <button
                     onClick={handleOpenAssignCourses}
-                    className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+                    className="inline-flex w-full items-center justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 sm:w-auto"
                   >
                     Assign Course
                   </button>
@@ -1069,7 +1069,7 @@ const UserDetailsPage = ({
                 {isStudentUser && (
                   <button
                     onClick={handleOpenEnrollCourses}
-                    className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+                    className="inline-flex w-full items-center justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 sm:w-auto"
                   >
                     Enroll Course
                   </button>
@@ -1092,11 +1092,11 @@ const UserDetailsPage = ({
               !coursesError &&
               courses &&
               courses.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {courses.map((course) => (
                     <div
                       key={course.id || course.CourseID || course.courseId}
-                      className="bg-white dark:bg-gray-800 shadow rounded-lg p-4"
+                      className="rounded-lg border border-gray-200 bg-white/90 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900/70"
                     >
                       <div className="flex items-start justify-between">
                         <div>
@@ -1133,7 +1133,7 @@ const UserDetailsPage = ({
                             return (
                               <Link
                                 to={`${prefix}/courses/${cid}`}
-                                className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                                className="inline-flex w-full items-center justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 sm:w-auto"
                               >
                                 View
                               </Link>
@@ -1154,7 +1154,7 @@ const UserDetailsPage = ({
                                   <button
                                     onClick={() => handleUnenrollCourse(course)}
                                     disabled={!eid || unenrollingId === eid}
-                                    className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-gray-600 text-white hover:bg-gray-700"
+                                    className="inline-flex w-full items-center justify-center rounded-md bg-gray-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 sm:w-auto"
                                   >
                                     {unenrollingId === eid
                                       ? "Removing..."

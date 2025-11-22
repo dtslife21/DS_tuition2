@@ -147,7 +147,7 @@ const StudentMaterials = () => {
     intent = "default",
   }) => {
     const baseStyles =
-      "h-12 w-12 rounded-full shadow-lg flex items-center justify-center transition transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2";
+      "flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 sm:h-12 sm:w-12";
     const palette = {
       default:
         "bg-white text-gray-700 hover:bg-gray-100 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700",
@@ -189,12 +189,12 @@ const StudentMaterials = () => {
   // }
 
   return (
-    <div className="space-y-8">
-      <header className="space-y-2">
-        <p className="text-xs uppercase tracking-wide text-indigo-500 font-semibold">
+    <div className="mx-auto w-full max-w-4xl space-y-6 sm:space-y-8">
+      <header className="space-y-2 text-center sm:text-left">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-500">
           Study Hub
         </p>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">
           {id
             ? `Materials for ${course?.name ?? "Selected Course"}`
             : "Your Study Materials"}
@@ -204,7 +204,7 @@ const StudentMaterials = () => {
         </p>
       </header>
 
-      <section className="relative rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 px-6 py-8 sm:px-10 sm:py-12 shadow-sm transition">
+      <section className="relative rounded-2xl border border-dashed border-gray-200 bg-white/95 px-4 py-6 shadow-sm transition dark:border-gray-700 dark:bg-gray-900/60 sm:px-8 sm:py-8">
         {id ? (
           materials.length > 0 ? (
             <MaterialList materials={materials} className="bg-transparent" />
@@ -218,7 +218,7 @@ const StudentMaterials = () => {
           )
         ) : groupedMaterials.length ? (
           // Render grouped materials by course (collapsible cards)
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {groupedMaterials.map(
               ({ course: c, materials: mats, loading, expanded }) => {
                 const key =
@@ -240,20 +240,20 @@ const StudentMaterials = () => {
                 return (
                   <div
                     key={key}
-                    className="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 overflow-hidden"
+                    className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
                   >
-                    <div className="px-4 py-3 sm:px-6 flex items-center justify-between">
+                    <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                       <div className="min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                        <h3 className="truncate text-base font-semibold text-gray-900 dark:text-white sm:text-lg">
                           {courseTitle}
                         </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                        <p className="truncate text-sm text-gray-500 dark:text-gray-400">
                           {courseSubtitle}
                           {teacherName ? ` • ${teacherName}` : ""}
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 sm:text-sm">
                           {loading
                             ? "Loading…"
                             : `${mats.length} ${
@@ -276,7 +276,7 @@ const StudentMaterials = () => {
                               )
                             )
                           }
-                          className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                           aria-expanded={expanded}
                           aria-label={
                             expanded
@@ -296,7 +296,7 @@ const StudentMaterials = () => {
                     {expanded && (
                       <div className="px-4 pb-4 sm:px-6">
                         {loading ? (
-                          <div className="py-6 flex justify-center">
+                          <div className="flex justify-center py-6">
                             <Loader />
                           </div>
                         ) : (
@@ -323,9 +323,9 @@ const StudentMaterials = () => {
 
         {/* Students shouldn't upload materials; show FAB only when viewing a specific course */}
         {id && (
-          <div className="absolute bottom-0 right-0 flex items-center">
+          <div className="absolute bottom-4 right-4 flex items-center sm:bottom-6 sm:right-6">
             <div
-              className={`flex items-center gap-3 mr-3 transition-all duration-200 ease-out transform origin-right ${
+              className={`mr-2 flex items-center gap-2 origin-right transform transition-all duration-200 ease-out sm:mr-4 sm:gap-3 ${
                 fabOpen
                   ? "opacity-100 translate-x-0"
                   : "opacity-0 translate-x-4 pointer-events-none"
@@ -357,7 +357,7 @@ const StudentMaterials = () => {
               type="button"
               aria-label={fabOpen ? "Close actions" : "Open actions"}
               onClick={() => setFabOpen((s) => !s)}
-              className="h-14 w-14 rounded-full bg-green-600 text-white shadow-lg flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-green-600 text-white shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 sm:h-14 sm:w-14"
             >
               <PlusIcon
                 className={`h-6 w-6 transform transition-transform ${

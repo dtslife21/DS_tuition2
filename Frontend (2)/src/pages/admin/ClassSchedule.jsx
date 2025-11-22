@@ -448,13 +448,13 @@ const AdminClassSchedule = () => {
         </div>
         <div className="flex flex-col">
           <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
-            Subject
+            Class
           </label>
           <input
             name="subject"
             value={filters.subject}
             onChange={handleInput}
-            placeholder="Search subject"
+            placeholder="Search Class"
             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -736,10 +736,11 @@ const AdminClassSchedule = () => {
         onClose={handleModalClose}
         title={editingSchedule ? "Edit Schedule" : "Add Schedule"}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="flex flex-col">
-              <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="rounded-2xl border border-gray-200 bg-white/90 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900/70 sm:p-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="flex flex-col">
+                <label className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Course
               </label>
               <select
@@ -749,7 +750,7 @@ const AdminClassSchedule = () => {
                   setFormCourseId(e.target.value);
                   setFormSubjectId("");
                 }}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="">-- Select course --</option>
                 {coursesList.map((c) => (
@@ -764,15 +765,15 @@ const AdminClassSchedule = () => {
                 ))}
               </select>
             </div>
-            <div className="flex flex-col">
-              <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
+              <div className="flex flex-col">
+                <label className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Class
               </label>
               <select
                 name="subjectId"
                 value={formSubjectId}
                 onChange={(e) => setFormSubjectId(e.target.value)}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="">-- Select class --</option>
                 {(subjectsList || [])
@@ -795,15 +796,15 @@ const AdminClassSchedule = () => {
                   ))}
               </select>
             </div>
-            <div className="flex flex-col">
-              <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
+              <div className="flex flex-col">
+                <label className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Day Of Week
               </label>
               <select
                 name="dayOfWeek"
                 value={formDayOfWeek}
                 onChange={(e) => setFormDayOfWeek(Number(e.target.value))}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
               >
                 {dayNames.map((d, i) => (
                   <option value={i} key={d}>
@@ -811,7 +812,7 @@ const AdminClassSchedule = () => {
                   </option>
                 ))}
               </select>
-            </div>
+              </div>
             {/* <div className="flex flex-col">
               <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
                 Room
@@ -828,8 +829,8 @@ const AdminClassSchedule = () => {
                 </div>
               )}
             </div> */}
-            <div className="flex flex-col">
-              <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
+              <div className="flex flex-col">
+                <label className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Start Time
               </label>
               <input
@@ -837,16 +838,16 @@ const AdminClassSchedule = () => {
                 name="startTime"
                 value={formStartTime}
                 onChange={(e) => setFormStartTime(e.target.value)}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
               />
               {formErrors.startTime && (
                 <div className="text-xs text-red-500 mt-1">
                   {formErrors.startTime}
                 </div>
               )}
-            </div>
-            <div className="flex flex-col">
-              <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
+              </div>
+              <div className="flex flex-col">
+                <label className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 End Time
               </label>
               <input
@@ -854,7 +855,7 @@ const AdminClassSchedule = () => {
                 name="endTime"
                 value={formEndTime}
                 onChange={(e) => setFormEndTime(e.target.value)}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
               />
               {formErrors.endTime && (
                 <div className="text-xs text-red-500 mt-1">
@@ -866,22 +867,30 @@ const AdminClassSchedule = () => {
                   {formErrors.timeOrder}
                 </div>
               )}
-            </div>
-            <div className="flex flex-row items-center gap-2">
-              <input
-                type="checkbox"
-                id="isRecurring"
-                name="isRecurring"
-                checked={formIsRecurring}
-                onChange={(e) => setFormIsRecurring(!!e.target.checked)}
-                className="h-4 w-4"
-              />
-              <label
-                htmlFor="isRecurring"
-                className="text-xs font-medium text-gray-600 dark:text-gray-300"
-              >
-                Recurring weekly
-              </label>
+              </div>
+              <div className="sm:col-span-2 lg:col-span-3">
+                <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-gray-700 dark:bg-gray-900/60 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="isRecurring"
+                      name="isRecurring"
+                      checked={formIsRecurring}
+                      onChange={(e) => setFormIsRecurring(!!e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label
+                      htmlFor="isRecurring"
+                      className="text-xs font-medium text-gray-600 dark:text-gray-300"
+                    >
+                      Recurring weekly
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 sm:text-xs">
+                    Enable this option to automatically repeat the class every week.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
           {formSubmitError && (
@@ -889,18 +898,18 @@ const AdminClassSchedule = () => {
               {formSubmitError}
             </div>
           )}
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
             <button
               type="button"
               onClick={handleModalClose}
-              className="px-4 py-2 rounded-md text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+              className="w-full rounded-md border border-gray-200 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 sm:w-auto"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!isFormValid || saving}
-              className={`px-4 py-2 rounded-md text-sm font-medium text-white shadow transition ${
+              className={`w-full rounded-md px-4 py-2 text-sm font-medium text-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 sm:w-auto ${
                 isFormValid && !saving
                   ? "bg-indigo-600 hover:bg-indigo-500"
                   : "bg-indigo-300 cursor-not-allowed"
@@ -950,7 +959,7 @@ const AdminClassSchedule = () => {
                   {formatTime(detailSchedule.endTime)}
                 </div>
               </div>
-              <div className="col-span-2">
+              <div className="col-span-1">
                 <div className="text-xs text-gray-500">Recurring</div>
                 <div className="font-medium">
                   {detailSchedule.isRecurring ? "Yes" : "No"}

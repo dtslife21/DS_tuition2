@@ -1,7 +1,44 @@
+import { Children, Fragment, cloneElement, isValidElement } from "react";
+
 const Table = ({ headers, children, className = "" }) => {
+  const processedRows = Children.map(children, (row) => {
+    if (!isValidElement(row)) return row;
+
+    let columnIndex = 0;
+    const decorateNode = (node) => {
+      if (!isValidElement(node)) return node;
+
+      if (node.type === Fragment) {
+        const fragmentChildren = Children.map(
+          node.props.children,
+          decorateNode
+        );
+        return cloneElement(node, node.props, fragmentChildren);
+      }
+
+      const rawHeader = Array.isArray(headers)
+        ? headers[columnIndex] ?? ""
+        : "";
+      const headerLabel =
+        typeof rawHeader === "string"
+          ? rawHeader
+          : rawHeader?.label ?? rawHeader?.title ?? "";
+
+      columnIndex += 1;
+      return cloneElement(node, {
+        ...node.props,
+        "data-header": headerLabel,
+      });
+    };
+
+    const processedCells = Children.map(row.props.children, decorateNode);
+
+    return cloneElement(row, row.props, processedCells);
+  });
+
   return (
-    <div className={`overflow-x-auto ${className}`}>
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+    <div className={`responsive-table overflow-x-auto ${className}`}>
+      <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead className="bg-gray-50 dark:bg-gray-700">
           <tr>
             {headers.map((header, index) => (
@@ -16,7 +53,7 @@ const Table = ({ headers, children, className = "" }) => {
           </tr>
         </thead>
         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700 table-animated">
-          {children}
+          {processedRows}
         </tbody>
       </table>
     </div>

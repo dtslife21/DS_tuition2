@@ -507,7 +507,7 @@ const TeacherClassSchedule = () => {
                   {formatTime(detailSchedule.endTime)}
                 </div>
               </div>
-              <div className="col-span-2">
+              <div className="col-span-1">
                 <div className="text-xs text-gray-500">Recurring</div>
                 <div className="font-medium">
                   {detailSchedule.isRecurring ? "Yes" : "No"}

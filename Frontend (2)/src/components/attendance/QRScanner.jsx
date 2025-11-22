@@ -928,26 +928,29 @@ const QRScanner = () => {
         </div>
       </div>
 
-      <div className="mt-6 flex items-center gap-3">
+      <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-3">
         <Button
+          className="w-full sm:w-auto"
           onClick={restartScanner}
           disabled={!canScan || status === "scanning" || status === "loading"}
         >
           {actionButtonLabel}
         </Button>
-        {selectedCourseId === "" && (
-          <span className="text-sm text-gray-500">
-            Select a course to enable scanning
-          </span>
-        )}
-        {selectedCourseId !== "" && rosterStatus === "loading" && (
-          <span className="text-sm text-gray-500">
-            Loading enrolled students...
-          </span>
-        )}
-        {selectedCourseId !== "" && rosterStatus === "error" && (
-          <span className="text-sm text-red-500">{rosterError}</span>
-        )}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+          {selectedCourseId === "" && (
+            <span className="text-sm text-gray-500">
+              Select a course to enable scanning
+            </span>
+          )}
+          {selectedCourseId !== "" && rosterStatus === "loading" && (
+            <span className="text-sm text-gray-500">
+              Loading enrolled students...
+            </span>
+          )}
+          {selectedCourseId !== "" && rosterStatus === "error" && (
+            <span className="text-sm text-red-500">{rosterError}</span>
+          )}
+        </div>
       </div>
 
       {message && (

@@ -285,7 +285,7 @@ const StudentDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
         <StatsCard
           icon={
             <svg
@@ -353,13 +353,13 @@ const StudentDashboard = () => {
       {/* Announcements panel */}
       <Card className="p-0 ">
         <div
-          className={`p-6 rounded-t-lg text-white flex items-center justify-between relative ${
+          className={`p-6 rounded-t-lg text-white flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between relative ${
             theme === "dark"
               ? "bg-gradient-to-r from-blue-700 to-indigo-800"
               : "bg-gradient-to-r from-blue-400 to-indigo-500"
           }`}
         >
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
               🔔
             </div>
@@ -370,7 +370,7 @@ const StudentDashboard = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               className="relative p-2 rounded-full bg-white/20"
               onClick={() => {

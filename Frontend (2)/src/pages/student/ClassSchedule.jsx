@@ -158,20 +158,20 @@ const StudentClassSchedule = () => {
   }, [filtered]);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1 text-center sm:text-left">
+          <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-white sm:text-2xl">
             My Class Schedule
           </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             View your weekly class schedule.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex justify-center gap-2 sm:justify-end">
           <button
             onClick={() => setView(view === "week" ? "list" : "week")}
-            className="px-4 py-2 rounded-md text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow transition-colors"
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow transition-colors hover:bg-indigo-500"
           >
             {view === "week" ? "List View" : "Week View"}
           </button>
@@ -179,7 +179,7 @@ const StudentClassSchedule = () => {
       </div>
 
       {/* Filters */}
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
         <div className="flex flex-col">
           <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
             Course
@@ -232,13 +232,13 @@ const StudentClassSchedule = () => {
           description="No classes found for your courses."
         />
       ) : view === "list" ? (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {filtered.map((s) => {
             const color = pickColorForCourse(s.courseId);
             return (
               <Card
                 key={s.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4"
+                className="flex flex-col justify-between gap-3 rounded-xl border border-gray-100 p-4 shadow-sm sm:flex-row sm:items-center dark:border-gray-700"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -266,7 +266,7 @@ const StudentClassSchedule = () => {
                       setDetailSchedule(s);
                       setShowDetails(true);
                     }}
-                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition"
+                    className="rounded-md border border-indigo-200 px-3 py-1.5 text-xs font-medium text-indigo-700 transition hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200 dark:hover:bg-indigo-800"
                   >
                     Details
                   </button>
@@ -276,9 +276,9 @@ const StudentClassSchedule = () => {
           })}
         </div>
       ) : (
-        <div className="overflow-auto border rounded-md bg-white dark:bg-gray-800 p-4">
-          <div className="flex gap-4">
-            <div className="w-20 flex-shrink-0">
+        <div className="overflow-auto rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-5">
+          <div className="flex gap-3 sm:gap-4">
+            <div className="w-16 flex-shrink-0 sm:w-20">
               <div className="h-8" />
               {(() => {
                 const startHour = 7;
@@ -290,7 +290,7 @@ const StudentClassSchedule = () => {
                     {hours.map((h) => (
                       <div
                         key={h}
-                        className="h-12 text-xs text-gray-500 dark:text-gray-400 flex items-center"
+                        className="flex h-12 items-center text-[11px] text-gray-500 dark:text-gray-400 sm:text-xs"
                         style={{ height: `${60}px` }}
                       >
                         {h % 12 === 0 ? 12 : h % 12}:00
@@ -301,8 +301,8 @@ const StudentClassSchedule = () => {
               })()}
             </div>
 
-            <div className="flex-1 min-w-[1050px]">
-              <div className="grid grid-cols-7 gap-4">
+            <div className="min-w-[720px] flex-1 sm:min-w-[960px]">
+              <div className="grid grid-cols-7 gap-3 sm:gap-4">
                 {[1, 2, 3, 4, 5, 6, 0].map((dayIndex) => {
                   const dayName = dayNames[dayIndex];
                   const dayItems = groupedByDay.get(dayIndex) || [];
@@ -369,11 +369,11 @@ const StudentClassSchedule = () => {
 
                   return (
                     <div key={dayName} className="flex flex-col">
-                      <div className="mb-2 font-medium text-sm text-gray-700 dark:text-gray-200">
+                      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 sm:text-sm">
                         {dayName}
                       </div>
                       <div
-                        className="relative rounded-lg border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800"
+                        className="relative rounded-lg border border-gray-100 bg-white dark:border-gray-700 dark:bg-gray-800"
                         style={{ height: containerHeight }}
                       >
                         {Array.from({ length: endHour - startHour }).map(
@@ -402,7 +402,7 @@ const StudentClassSchedule = () => {
                           return (
                             <div
                               key={s.id}
-                              className="absolute rounded-lg p-2 shadow-md cursor-pointer overflow-hidden"
+                              className="absolute cursor-pointer overflow-hidden rounded-lg bg-white/90 p-2 shadow-md backdrop-blur"
                               onClick={() => {
                                 setDetailSchedule(s);
                                 setShowDetails(true);
@@ -425,14 +425,14 @@ const StudentClassSchedule = () => {
                             >
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <div className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                  <div className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">
                                     {s.courseName || `Course ${s.courseId}`}
                                   </div>
-                                  <div className="text-[11px] text-gray-600 dark:text-gray-300 truncate">
+                                  <div className="truncate text-[11px] text-gray-600 dark:text-gray-300">
                                     {s.subjectName || `Class ${s.subjectId}`}
                                   </div>
                                 </div>
-                                <div className="text-[11px] text-gray-700 dark:text-gray-200 ml-2">
+                                <div className="ml-2 text-[11px] text-gray-700 dark:text-gray-200">
                                   {formatTime(s.startTime)}
                                 </div>
                               </div>
@@ -496,7 +496,7 @@ const StudentClassSchedule = () => {
                   {formatTime(detailSchedule.endTime)}
                 </div>
               </div>
-              <div className="col-span-2">
+              <div className="col-span-1">
                 <div className="text-xs text-gray-500">Recurring</div>
                 <div className="font-medium">
                   {detailSchedule.isRecurring ? "Yes" : "No"}

@@ -284,7 +284,7 @@ const TeacherPicker = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="flex-1">
           <select
             value={normalizedValue}
@@ -306,22 +306,25 @@ const TeacherPicker = ({
             ) : null}
           </select>
         </div>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={openModal}
-          disabled={disabled || loading}
-        >
-          + New
-        </Button>
-        <button
-          type="button"
-          onClick={fetchTeachers}
-          disabled={loading}
-          className="text-sm font-medium text-indigo-600 hover:underline disabled:cursor-not-allowed disabled:text-gray-400"
-        >
-          Refresh
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={openModal}
+            disabled={disabled || loading}
+            className="w-full justify-center sm:w-auto"
+          >
+            + New
+          </Button>
+          <button
+            type="button"
+            onClick={fetchTeachers}
+            disabled={loading}
+            className="w-full rounded-md border border-transparent bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-600 shadow-sm transition hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:bg-indigo-900/30 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {loading && (

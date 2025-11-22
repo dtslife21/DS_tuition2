@@ -1,5 +1,5 @@
-import { Fragment, useState } from 'react'
-import { Menu, Transition } from '@headlessui/react'
+import { Fragment, useState } from "react";
+import { Menu, Transition } from "@headlessui/react";
 
 const Dropdown = ({ button, items }) => {
   return (
@@ -28,8 +28,8 @@ const Dropdown = ({ button, items }) => {
                     onClick={item.onClick}
                     className={`${
                       active
-                        ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
-                        : 'text-gray-700 dark:text-gray-300'
+                        ? "bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white"
+                        : "text-gray-700 dark:text-gray-300"
                     } block px-4 py-2 text-sm`}
                   >
                     {item.name}
@@ -41,7 +41,7 @@ const Dropdown = ({ button, items }) => {
         </Menu.Items>
       </Transition>
     </Menu>
-  )
-}
+  );
+};
 
-export default Dropdown
+export default Dropdown;

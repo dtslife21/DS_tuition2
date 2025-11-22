@@ -262,26 +262,28 @@ const TeacherDashboard = () => {
       </div>
 
       {/* Big Notices & Announcements style panel */}
-      <Card className="p-0 ">
+      <Card className="p-0">
         <div
-          className={`p-6 rounded-t-lg text-white flex items-center justify-between relative ${
+          className={`relative flex flex-col gap-4 rounded-t-lg p-5 text-white sm:p-6 lg:flex-row lg:items-center lg:justify-between ${
             theme === "dark"
               ? "bg-gradient-to-r from-blue-700 to-indigo-800"
               : "bg-gradient-to-r from-blue-400 to-indigo-500"
           }`}
         >
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20">
               <span className="text-2xl">🔔</span>
             </div>
             <div>
-              <h2 className="text-xl font-semibold">Notices & Announcements</h2>
+              <h2 className="text-lg font-semibold sm:text-xl">
+                Notices & Announcements
+              </h2>
               <div className="text-sm opacity-90">
                 (Stay updated with the latest information)
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <button
               className="relative"
               onClick={() => {
@@ -359,14 +361,17 @@ const TeacherDashboard = () => {
 
           {/* Search input overlay */}
           {showSearch && (
-            <div ref={searchBoxRef} className="absolute right-4 top-4">
+            <div
+              ref={searchBoxRef}
+              className="absolute right-4 top-4 w-[min(18rem,calc(100vw-3rem))] sm:w-72"
+            >
               <input
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search notices..."
-                className="w-56 sm:w-72 rounded-md bg-white/90 text-gray-800 placeholder-gray-500 px-3 py-1.5 focus:outline-none shadow"
+                className="w-full rounded-md bg-white/90 px-3 py-1.5 text-gray-800 placeholder-gray-500 shadow focus:outline-none"
               />
             </div>
           )}
@@ -408,24 +413,23 @@ const TeacherDashboard = () => {
           )}
         </div>
 
-        <div className="px-6 py-6">
-          <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 flex items-center justify-between">
-            <div className="flex items-center space-x-8 text-sm">
+        <div className="px-5 py-5 sm:px-6 sm:py-6">
+          <div className="mb-4 flex flex-col gap-3 border-b border-gray-200 pb-4 text-sm text-gray-500 dark:border-gray-700 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-4">
               <button
                 onClick={() => setActiveTab("notices")}
-                className={`pb-3 ${
+                className={`border-b-2 pb-3 transition-colors ${
                   activeTab === "notices"
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                 }`}
               >
                 Notices ({announcements.length})
               </button>
-
               {/* Attachments tab removed: teacher dashboard shows only notices */}
             </div>
 
-            <div className="w-1/3 text-right text-sm text-gray-500 dark:text-gray-300">
+            <div className="text-xs text-gray-500 dark:text-gray-300 sm:text-sm sm:text-right">
               {announcements[0]
                 ? new Date(announcements[0].postDate).toLocaleString()
                 : ""}
