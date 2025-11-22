@@ -720,11 +720,11 @@ const UserForm = ({
 
         const max = nums.length ? Math.max(...nums) : 0;
         const next = max + 1;
-        // Prefix student ID with 'R' (e.g. R001) as requested
+        // Prefix student ID with 'S' (e.g. S001) as requested
         const numeric = String(next).padStart(3, "0");
-        const nextId = `R${numeric}`;
+        const nextId = `S${numeric}`;
         setValue("IDNumber", nextId, { shouldValidate: true });
-        // store RollNumber with same format (keeps R prefix)
+        // store RollNumber with same format (keeps S prefix)
         setValue("RollNumber", nextId, { shouldValidate: false });
         // Do NOT auto-fill Username here; require manual entry for clarity
       } catch (err) {
@@ -1269,16 +1269,16 @@ const UserForm = ({
                       {...register("IDNumber", {
                         required: "ID number is required",
                         pattern: {
-                          // enforce leading 'R' followed by at least 3 digits (R001)
-                          value: /^R\d{3,}$/i,
-                          message: "Use format R001, R002...",
+                          // enforce leading 'S' followed by at least 3 digits (S001)
+                          value: /^S\d{3,}$/i,
+                          message: "Use format S001, S002...",
                         },
                       })}
                       className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
-                    Format: R001, R002, R003...
+                    Format: S001, S002, S003...
                   </p>
                   {errors.IDNumber && (
                     <p className="mt-1 text-sm text-red-600">

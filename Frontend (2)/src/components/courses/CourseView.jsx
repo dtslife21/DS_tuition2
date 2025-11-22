@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -28,6 +28,7 @@ import {
   createSubject,
   updateSubject,
   getAllSubjects,
+  getStudentsBySubject,
 } from "../../services/subjectService";
 import {
   createEnrollment,
@@ -68,6 +69,8 @@ const CourseView = () => {
   const [toastType, setToastType] = useState("success");
   const [studentTab, setStudentTab] = useState("active");
   const [enrollmentLoadingMap, setEnrollmentLoadingMap] = useState({});
+  const [subjectStudentGroups, setSubjectStudentGroups] = useState([]);
+  const [selectedSubjectTab, setSelectedSubjectTab] = useState("all");
 
   // Ref for student menu wrapper to detect outside clicks
   const studentMenuRef = useRef(null);
@@ -304,6 +307,203 @@ const CourseView = () => {
   }, [id, user, loading, course?.teacherId, studentsRefreshCounter]);
 
   useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    if (!course) {
+      setSubjectStudentGroups([]);
+      return;
+    }
+
+    const subjectCandidates = Array.isArray(course.subjectIds)
+      ? course.subjectIds
+      : Array.isArray(course.SubjectIDs)
+      ? course.SubjectIDs
+      : [];
+
+    const normalizeSubjectValue = (value) => {
+      if (value === null || value === undefined) return null;
+
+      if (typeof value === "number" && !Number.isNaN(value)) {
+        return value;
+      }
+
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        if (/^-?\d+$/.test(trimmed)) {
+          const parsed = Number(trimmed);
+          if (!Number.isNaN(parsed)) return parsed;
+        }
+        return trimmed;
+      }
+
+      return null;
+    };
+
+    const normalizeSubjectCandidate = (candidate) => {
+      if (candidate === null || candidate === undefined) return null;
+
+      if (typeof candidate === "object") {
+        const possibleFields = [
+          candidate.subjectId,
+          candidate.SubjectID,
+          candidate.SubjectId,
+          candidate.subjectID,
+          candidate.id,
+          candidate.Id,
+        ];
+
+        for (const field of possibleFields) {
+          const normalized = normalizeSubjectValue(field);
+          if (normalized !== null && normalized !== undefined) {
+            return normalized;
+          }
+        }
+
+        return null;
+      }
+
+      const normalized = normalizeSubjectValue(candidate);
+      if (normalized !== null && normalized !== undefined) {
+        return normalized;
+      }
+
+      return null;
+    };
+
+    const normalizedSubjectIds = Array.from(
+      new Set(
+        subjectCandidates
+          .map((candidate) => normalizeSubjectCandidate(candidate))
+          .filter((value) => value !== null && value !== undefined)
+      )
+    );
+
+    if (!normalizedSubjectIds.length) {
+      setSubjectStudentGroups([]);
+      return;
+    }
+
+    let isActive = true;
+
+    const fetchBySubject = async () => {
+      setStudentsLoading(true);
+      setStudentsError(null);
+      try {
+        const courseSubjectNames = Array.isArray(course.subjects)
+          ? course.subjects
+          : [];
+
+        const results = await Promise.allSettled(
+          normalizedSubjectIds.map((subjectId) =>
+            getStudentsBySubject(subjectId)
+          )
+        );
+
+        const groups = normalizedSubjectIds.map((subjectId, index) => {
+          const fallbackName =
+            courseSubjectNames[index] ?? `Subject #${subjectId}`;
+          const result = results[index];
+
+          if (result.status === "fulfilled") {
+            const rawEntries = Array.isArray(result.value)
+              ? result.value
+              : Array.isArray(result.value?.students)
+              ? result.value.students
+              : [];
+
+            const normalizedEntries = rawEntries.map((entry) => {
+              const subjectNameValue =
+                entry?.SubjectName ?? entry?.subjectName ?? fallbackName;
+              const subjectCodeValue =
+                entry?.SubjectCode ?? entry?.subjectCode ?? "";
+              const resolvedSubjectId =
+                entry?.SubjectID ??
+                entry?.subjectID ??
+                entry?.subjectId ??
+                subjectId;
+
+              return {
+                ...entry,
+                SubjectID: resolvedSubjectId,
+                subjectId: resolvedSubjectId,
+                SubjectName: subjectNameValue,
+                subjectName: subjectNameValue,
+                SubjectCode: subjectCodeValue,
+                subjectCode: subjectCodeValue,
+              };
+            });
+
+            const subjectNameValue =
+              normalizedEntries[0]?.SubjectName ?? fallbackName;
+            const subjectCodeValue =
+              normalizedEntries[0]?.SubjectCode ??
+              normalizedEntries[0]?.subjectCode ??
+              "";
+
+            return {
+              subjectId,
+              subjectName: subjectNameValue,
+              subjectCode: subjectCodeValue,
+              students: normalizedEntries,
+              error: null,
+            };
+          }
+
+          return {
+            subjectId,
+            subjectName: fallbackName,
+            subjectCode: "",
+            students: [],
+            error: result.reason,
+          };
+        });
+
+        if (!isActive) return;
+
+        setSubjectStudentGroups(groups);
+
+        const flattened = groups.flatMap((group) => group.students || []);
+        if (flattened.length) {
+          setStudents(flattened);
+        }
+
+        const failedCount = groups.filter((group) =>
+          Boolean(group.error)
+        ).length;
+        if (failedCount) {
+          console.warn(
+            `${failedCount} subject group(s) failed to load via StudentsBySubject endpoint.`
+          );
+        }
+      } catch (err) {
+        if (!isActive) return;
+        console.error("Failed to load subject enrollments:", err);
+        setSubjectStudentGroups([]);
+      } finally {
+        if (isActive) {
+          setStudentsLoading(false);
+        }
+      }
+    };
+
+    fetchBySubject();
+
+    return () => {
+      isActive = false;
+    };
+  }, [
+    loading,
+    course,
+    course?.subjectIds,
+    course?.SubjectIDs,
+    course?.subjects,
+    studentsRefreshCounter,
+  ]);
+
+  useEffect(() => {
     const teacherId = course?.teacherId;
 
     if (
@@ -397,7 +597,7 @@ const CourseView = () => {
     return "";
   };
 
-  const resolveEnrollmentActive = (studentEntry) => {
+  const resolveEnrollmentActive = useCallback((studentEntry) => {
     const raw =
       studentEntry?.EnrollmentIsActive ??
       studentEntry?.enrollmentIsActive ??
@@ -421,7 +621,7 @@ const CourseView = () => {
     }
 
     return true;
-  };
+  }, []);
 
   const formatEnrollmentDate = (value) => {
     if (!value) return "Not specified";
@@ -450,7 +650,33 @@ const CourseView = () => {
       activeStudents: grouped.active,
       inactiveStudents: grouped.inactive,
     };
-  }, [students]);
+  }, [students, resolveEnrollmentActive]);
+
+  const subjectGroupsWithStatus = useMemo(() => {
+    if (!Array.isArray(subjectStudentGroups)) {
+      return [];
+    }
+
+    return subjectStudentGroups.map((group) => {
+      const studentList = Array.isArray(group.students) ? group.students : [];
+      const active = [];
+      const inactive = [];
+
+      for (const entry of studentList) {
+        if (resolveEnrollmentActive(entry)) {
+          active.push(entry);
+        } else {
+          inactive.push(entry);
+        }
+      }
+
+      return {
+        ...group,
+        activeStudents: active,
+        inactiveStudents: inactive,
+      };
+    });
+  }, [subjectStudentGroups, resolveEnrollmentActive]);
 
   const handleExistingStudentConfirm = async (selectedIds = []) => {
     if (!Array.isArray(selectedIds) || !selectedIds.length) {
@@ -569,6 +795,29 @@ const CourseView = () => {
         })
       );
 
+      setSubjectStudentGroups((prevGroups) =>
+        prevGroups.map((group) => {
+          const updatedStudents = (group.students || []).map((studentItem) => {
+            const currentId = resolveEnrollmentId(studentItem);
+            if (currentId && String(currentId) === String(enrollmentId)) {
+              return {
+                ...studentItem,
+                EnrollmentIsActive: makeActive,
+                enrollmentIsActive: makeActive,
+                EnrollmentStatus: nextStatus,
+                enrollmentStatus: nextStatus,
+              };
+            }
+            return studentItem;
+          });
+
+          return {
+            ...group,
+            students: updatedStudents,
+          };
+        })
+      );
+
       setToastType("success");
       setToastMessage(
         makeActive
@@ -633,8 +882,13 @@ const CourseView = () => {
               }`
                 .replace(/\s+/g, " ")
                 .trim() || "Unnamed Student";
+            const username =
+              studentEntry.Username || studentEntry.username || "";
             const email =
-              studentEntry.Email || studentEntry.email || "Email unavailable";
+              studentEntry.Email ||
+              studentEntry.email ||
+              username ||
+              "Details unavailable";
             const isActive = resolveEnrollmentActive(studentEntry);
             const statusClass = isActive
               ? "px-2 inline-flex text-xs font-semibold leading-5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
@@ -758,6 +1012,56 @@ const CourseView = () => {
         </ul>
       </div>
     );
+  };
+
+  const renderSubjectSections = (
+    grouped,
+    { showRemove = false, showReactivate = false } = {}
+  ) => {
+    if (!grouped || !grouped.length) {
+      return (
+        <div className="bg-white dark:bg-gray-800 shadow sm:rounded-md">
+          <div className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-300">
+            No subjects available for this course.
+          </div>
+        </div>
+      );
+    }
+
+    return grouped.map((group, index) => {
+      const key =
+        group.subjectId ??
+        group.SubjectID ??
+        group.subjectName ??
+        group.SubjectName ??
+        `idx-${index}`;
+      const displayName =
+        group.subjectName ??
+        group.SubjectName ??
+        `Subject #${group.subjectId ?? group.SubjectID ?? ""}`;
+      const subjectCode =
+        group.subjectCode ??
+        group.SubjectCode ??
+        group.code ??
+        group.Code ??
+        "";
+
+      return (
+        <div key={`subject-${key}`} className="mb-6 last:mb-0">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+              {displayName}
+            </h4>
+            {subjectCode ? (
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-300">
+                {subjectCode}
+              </span>
+            ) : null}
+          </div>
+          {renderEnrollmentList(group.students, { showRemove, showReactivate })}
+        </div>
+      );
+    });
   };
 
   const handleStudentPickerClose = () => {
@@ -945,6 +1249,7 @@ const CourseView = () => {
         .filter(Boolean)
     )
   );
+  const hasSubjectGrouping = subjectGroupsWithStatus.length > 0;
 
   return (
     <div className="space-y-8">
@@ -1276,11 +1581,125 @@ const CourseView = () => {
                   </nav>
                 </div>
 
+                {/* Subject tabs (appear under Active/Inactive tabs) */}
+                {hasSubjectGrouping && (
+                  <div className="mt-3 border-b border-gray-200 dark:border-gray-700">
+                    <nav
+                      className="-mb-px flex space-x-4 overflow-auto"
+                      aria-label="Subject Tabs"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSubjectTab("all")}
+                        className={`whitespace-nowrap border-b-2 px-2 pb-2 text-sm font-medium transition-colors ${
+                          selectedSubjectTab === "all"
+                            ? "border-indigo-500 text-indigo-600 dark:text-indigo-300"
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200"
+                        }`}
+                      >
+                        All Subjects
+                      </button>
+                      {subjectGroupsWithStatus.map((g) => {
+                        const sid = String(
+                          g.subjectId ??
+                            g.SubjectID ??
+                            g.subjectName ??
+                            g.subjectName ??
+                            ""
+                        );
+                        const label = g.subjectName || `Subject ${sid}`;
+                        return (
+                          <button
+                            key={`stab-${sid}`}
+                            type="button"
+                            onClick={() => setSelectedSubjectTab(sid)}
+                            className={`whitespace-nowrap border-b-2 px-2 pb-2 text-sm font-medium transition-colors ${
+                              String(selectedSubjectTab) === sid
+                                ? "border-indigo-500 text-indigo-600 dark:text-indigo-300"
+                                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </nav>
+                  </div>
+                )}
+
                 <div className="mt-4">
                   {studentTab === "active"
-                    ? renderEnrollmentList(activeStudents, {
-                        showRemove: canModifyStudents,
-                      })
+                    ? hasSubjectGrouping
+                      ? selectedSubjectTab === "all"
+                        ? renderSubjectSections(
+                            subjectGroupsWithStatus.map((group) => ({
+                              ...group,
+                              students: group.activeStudents,
+                            })),
+                            {
+                              showRemove: canModifyStudents,
+                            }
+                          )
+                        : // single-subject view (active)
+                          (() => {
+                            const target = subjectGroupsWithStatus.find(
+                              (gg) =>
+                                String(
+                                  gg.subjectId ??
+                                    gg.SubjectID ??
+                                    gg.subjectName ??
+                                    gg.subjectName ??
+                                    ""
+                                ) === String(selectedSubjectTab)
+                            );
+                            return target
+                              ? renderEnrollmentList(
+                                  target.activeStudents || [],
+                                  {
+                                    showRemove: canModifyStudents,
+                                  }
+                                )
+                              : renderEnrollmentList([], {
+                                  showRemove: canModifyStudents,
+                                });
+                          })()
+                      : renderEnrollmentList(activeStudents, {
+                          showRemove: canModifyStudents,
+                        })
+                    : hasSubjectGrouping
+                    ? selectedSubjectTab === "all"
+                      ? renderSubjectSections(
+                          subjectGroupsWithStatus.map((group) => ({
+                            ...group,
+                            students: group.inactiveStudents,
+                          })),
+                          {
+                            showReactivate: canModifyStudents,
+                          }
+                        )
+                      : // single-subject view (inactive)
+                        (() => {
+                          const target = subjectGroupsWithStatus.find(
+                            (gg) =>
+                              String(
+                                gg.subjectId ??
+                                  gg.SubjectID ??
+                                  gg.subjectName ??
+                                  gg.subjectName ??
+                                  ""
+                              ) === String(selectedSubjectTab)
+                          );
+                          return target
+                            ? renderEnrollmentList(
+                                target.inactiveStudents || [],
+                                {
+                                  showReactivate: canModifyStudents,
+                                }
+                              )
+                            : renderEnrollmentList([], {
+                                showReactivate: canModifyStudents,
+                              });
+                        })()
                     : renderEnrollmentList(inactiveStudents, {
                         showReactivate: canModifyStudents,
                       })}

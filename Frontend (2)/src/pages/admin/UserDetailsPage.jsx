@@ -248,6 +248,40 @@ const UserDetailsPage = ({
       .filter(Boolean);
   }, [courses]);
 
+  const studentSubjects = useMemo(() => {
+    const collected = [];
+    if (!Array.isArray(courses)) return collected;
+
+    for (const c of courses) {
+      if (!c) continue;
+      // normalized subject names may appear in several places
+      if (Array.isArray(c.subjects) && c.subjects.length) {
+        for (const s of c.subjects) {
+          if (s === undefined || s === null) continue;
+          const name = typeof s === "string" ? s.trim() : String(s || "");
+          if (name) collected.push(name);
+        }
+      } else if (c.subject) {
+        const name = String(c.subject || "").trim();
+        if (name) collected.push(name);
+      } else if (
+        c.subjectDetails &&
+        (c.subjectDetails.name || c.subjectDetails.SubjectName)
+      ) {
+        const name = (
+          c.subjectDetails.name ||
+          c.subjectDetails.SubjectName ||
+          ""
+        ).trim();
+        if (name) collected.push(name);
+      } else if (Array.isArray(c.CourseNames) && c.CourseNames.length) {
+        // ignore course names here
+      }
+    }
+
+    return Array.from(new Set(collected));
+  }, [courses]);
+
   const isAdminViewer = useMemo(() => {
     if (!authUser) return false;
     const idVal = String(
@@ -827,7 +861,7 @@ const UserDetailsPage = ({
             )}
             {(user.RollNumber || user.rollNumber) && (
               <InfoRow
-                label="Roll Number"
+                label="Student ID"
                 value={user.RollNumber || user.rollNumber}
               />
             )}
@@ -922,7 +956,7 @@ const UserDetailsPage = ({
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <InfoRow
-                label="Roll Number"
+                label="Student ID"
                 value={
                   studentDetails.RollNumber || studentDetails.rollNumber || "-"
                 }
@@ -937,14 +971,30 @@ const UserDetailsPage = ({
                     : "-"
                 }
               />
-              <InfoRow
-                label="Current Grade"
-                value={
-                  studentDetails.CurrentGrade ||
-                  studentDetails.currentGrade ||
-                  "-"
-                }
-              />
+              <div>
+                <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  Class
+                </span>
+                <div className="mt-1 text-sm text-gray-900 dark:text-gray-100 break-all">
+                  {studentSubjects && studentSubjects.length ? (
+                    <span>
+                      {studentSubjects.map((s, idx) => (
+                        <span key={s}>
+                          <Link
+                            to={`/subjects/${encodeURIComponent(s)}`}
+                            className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                          >
+                            {s}
+                          </Link>
+                          {idx < studentSubjects.length - 1 ? ", " : ""}
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="text-gray-500 dark:text-gray-400">-</span>
+                  )}
+                </div>
+              </div>
               <InfoRow
                 label="Parent Name"
                 value={
@@ -965,7 +1015,7 @@ const UserDetailsPage = ({
       )}
 
       {/* Attendance records for the student (visible to admin/teacher when viewing a student) */}
-      {isStudentUser && (
+      {/* {isStudentUser && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -990,7 +1040,7 @@ const UserDetailsPage = ({
             <AttendanceList attendance={studentAttendance || []} />
           )}
         </div>
-      )}
+      )} */}
 
       {/* Courses section for Teacher or Student (visible to admin) */}
       {user &&

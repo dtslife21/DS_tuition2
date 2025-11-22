@@ -383,6 +383,36 @@ export const getSubjectById = async (subjectId) => {
   }
 };
 
+export const getStudentsBySubject = async (subjectId) => {
+  if (subjectId === null || subjectId === undefined) {
+    return [];
+  }
+
+  const trimmed = String(subjectId).trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  try {
+    const response = await axios.get(
+      `/Subjects/StudentsBySubject/${encodeURIComponent(trimmed)}`
+    );
+
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+
+    if (Array.isArray(response.data?.students)) {
+      return response.data.students;
+    }
+
+    return [];
+  } catch (err) {
+    console.error(`Failed to fetch students for subject ${subjectId}`, err);
+    throw err;
+  }
+};
+
 // Update an existing subject
 export const updateSubject = async (subjectId, data) => {
   try {

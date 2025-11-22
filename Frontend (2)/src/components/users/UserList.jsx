@@ -31,6 +31,12 @@ const UserList = ({
                 scope="col"
                 className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
               >
+                ID
+              </th>
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+              >
                 Name
               </th>
               <th
@@ -59,6 +65,30 @@ const UserList = ({
                 user.studentID ||
                 user.studentId ||
                 null;
+              const rawId = defaultId ?? actionId ?? null;
+              // determine prefix by role
+              const rawType = String(
+                user.UserTypeID ??
+                  user.userTypeID ??
+                  user.UserType ??
+                  user.userType ??
+                  ""
+              ).trim();
+              let rolePrefix = "";
+              if (rawType === "1" || rawType.toLowerCase() === "admin") {
+                rolePrefix = "A";
+              } else if (
+                rawType === "2" ||
+                rawType.toLowerCase() === "teacher"
+              ) {
+                rolePrefix = "T";
+              } else if (
+                rawType === "3" ||
+                rawType.toLowerCase() === "student"
+              ) {
+                rolePrefix = "S";
+              }
+              const displayedId = rawId ? `${rolePrefix}${rawId}` : "-";
               const detailPath = getDetailsPath
                 ? getDetailsPath(user)
                 : defaultId
@@ -74,6 +104,9 @@ const UserList = ({
                   key={user.UserID || user.id || user.email}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
+                  <td className="px-4 py-4 whitespace-nowrap align-top text-sm text-gray-700 dark:text-gray-300">
+                    <span className="font-mono text-sm">{displayedId}</span>
+                  </td>
                   <td className="px-4 py-4 whitespace-nowrap align-top">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
