@@ -82,5 +82,34 @@ namespace ClassSystemAPI.Controllers
 
             return Ok(subject);
         }
+
+        [HttpGet]
+        [Route("api/Subjects/StudentsBySubject/{subjectId}")]
+        public IHttpActionResult GetStudentsBySubject(int subjectId)
+        {
+            var result = (from a in db.CourseSubjects
+                          join b in db.Subjects on a.SubjectID equals b.SubjectID
+                          join c in db.Enrollments on a.CourseID equals c.CourseID
+                          join d in db.Students on c.StudentID equals d.StudentID
+                          join e in db.Users on c.StudentID equals e.UserID
+                          where e.IsActive == true && c.IsActive == true && a.SubjectID == subjectId
+                          orderby a.SubjectID ascending
+                          select new
+                          {
+                              CourseID = a.CourseID,
+                              SubjectID = a.SubjectID,
+                              b.SubjectName,
+                              b.SubjectCode,
+                              b.Description,
+                              d.StudentID,
+                              e.Username,
+                              e.FirstName,
+                              e.LastName,
+                              c.EnrollmentID,
+                              c.EnrollmentDate
+                          }).ToList();
+
+            return Ok(result);
+        }
     }
 }
