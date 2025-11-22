@@ -317,7 +317,7 @@ const TableView = ({ items = [], selected = [], onToggle }) => {
     <div>
       <div className="overflow-hidden rounded-md border">
         <div className="bg-black text-white text-sm px-4 py-2 font-semibold">
-          Class Name
+          Course Name
         </div>
         <div>
           {paged.map((c) => {

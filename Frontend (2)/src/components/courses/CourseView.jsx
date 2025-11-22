@@ -1183,7 +1183,7 @@ const CourseView = () => {
       <AttendanceList attendance={attendance} /> */}
 
       {/* Do not show enrolled students list to student users */}
-      {/* {user?.userType !== "student" && (
+      {user?.userType !== "student" && (
         <>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -1289,7 +1289,7 @@ const CourseView = () => {
             )}
           </div>
         </>
-      )} */}
+      )}
       <StudentPickerModal
         isOpen={showStudentPicker}
         onClose={handleStudentPickerClose}

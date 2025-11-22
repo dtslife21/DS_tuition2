@@ -1287,7 +1287,7 @@ const UserForm = ({
                   )}
                 </div>
 
-                  {/* Enrollment Date (replaces Birthday) */}
+                {/* Enrollment Date (replaces Birthday) */}
                 <div>
                   <label
                     htmlFor="EnrollmentDate"
@@ -1313,20 +1313,18 @@ const UserForm = ({
                   )}
                 </div>
 
-                   {/* Guardian name */}
+                {/* Guardian name */}
                 <div>
                   <label
                     htmlFor="GuardianName"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
-                    Guardian's Name *
+                    Guardian's Name
                   </label>
                   <input
                     id="GuardianName"
                     type="text"
-                    {...register("GuardianName", {
-                      required: "Guardian's name is required",
-                    })}
+                    {...register("GuardianName")}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                   {errors.GuardianName && (
@@ -1342,15 +1340,15 @@ const UserForm = ({
                     htmlFor="GuardianPhone"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
-                    Guardian's Phone *
+                    Guardian's Phone
                   </label>
                   <input
                     id="GuardianPhone"
                     type="tel"
                     placeholder="(+947) 456-7890"
                     {...register("GuardianPhone", {
-                      required: "Guardian's phone is required",
                       validate: (v) =>
+                        !v ||
                         String(v).replace(/\D/g, "").length >= 10 ||
                         "Enter at least 10 digits",
                     })}
@@ -1363,8 +1361,6 @@ const UserForm = ({
                   )}
                 </div>
               </div>
-
-            
 
               {/* Student: Manage enrolled courses (only when editing an existing user) */}
               {initialUser && (
