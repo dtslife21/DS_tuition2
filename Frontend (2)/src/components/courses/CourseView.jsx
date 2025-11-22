@@ -1067,7 +1067,7 @@ const CourseView = () => {
             </div>
             <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                Subjects Included
+                Classes Included
               </dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
                 {subjects.length ? (
@@ -1085,7 +1085,7 @@ const CourseView = () => {
                   </ul>
                 ) : (
                   <span className="text-gray-500 dark:text-gray-400">
-                    No subjects assigned yet.
+                    No classes assigned yet.
                   </span>
                 )}
                 {/* Subjects can be managed in the Edit Course form (open Edit) */}
@@ -1155,7 +1155,7 @@ const CourseView = () => {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      {/* <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
           Study Materials
         </h3>
@@ -1165,9 +1165,9 @@ const CourseView = () => {
           </Button>
         )}
       </div>
-      <MaterialList materials={materials} />
+      <MaterialList materials={materials} /> */}
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      {/* <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
           Attendance Records
         </h3>
@@ -1180,10 +1180,10 @@ const CourseView = () => {
           </Button>
         )}
       </div>
-      <AttendanceList attendance={attendance} />
+      <AttendanceList attendance={attendance} /> */}
 
       {/* Do not show enrolled students list to student users */}
-      {user?.userType !== "student" && (
+      {/* {user?.userType !== "student" && (
         <>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -1191,31 +1191,6 @@ const CourseView = () => {
             </h3>
             {canModifyStudents ? (
               <div className="flex items-center gap-2">
-                {user.userType === "teacher" ? (
-                  <Button
-                    variant="primary"
-                    onClick={() =>
-                      navigate(
-                        `/teacher/students?course=${encodeURIComponent(id)}`
-                      )
-                    }
-                  >
-                    Manage Students
-                  </Button>
-                ) : isAdmin ? (
-                  <Button
-                    variant="primary"
-                    onClick={() =>
-                      navigate(
-                        `/admin/users?tab=students&course=${encodeURIComponent(
-                          id
-                        )}`
-                      )
-                    }
-                  >
-                    Manage Students
-                  </Button>
-                ) : null}
                 <div className="relative" ref={studentMenuRef}>
                   <Button
                     variant="primary"
@@ -1314,7 +1289,7 @@ const CourseView = () => {
             )}
           </div>
         </>
-      )}
+      )} */}
       <StudentPickerModal
         isOpen={showStudentPicker}
         onClose={handleStudentPickerClose}

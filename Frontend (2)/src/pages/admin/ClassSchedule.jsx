@@ -272,7 +272,7 @@ const AdminClassSchedule = () => {
   const validateForm = () => {
     const errors = {};
     if (!formCourseId) errors.courseId = "Please select a course.";
-    if (!formSubjectId) errors.subjectId = "Please select a subject.";
+    if (!formSubjectId) errors.subjectId = "Please select a class.";
     if (!formStartTime) errors.startTime = "Start time is required.";
     if (!formEndTime) errors.endTime = "End time is required.";
     if (formStartTime && formEndTime) {
@@ -283,9 +283,9 @@ const AdminClassSchedule = () => {
       if (endMin <= startMin)
         errors.timeOrder = "End time must be after start time.";
     }
-    if (!formRoomNumber || !String(formRoomNumber).trim())
-      errors.roomNumber = "Room is required.";
-    setFormErrors(errors);
+    // if (!formRoomNumber || !String(formRoomNumber).trim())
+    //   errors.roomNumber = "Room is required.";
+    // setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
@@ -458,7 +458,7 @@ const AdminClassSchedule = () => {
             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
-        <div className="flex flex-col">
+        {/* <div className="flex flex-col">
           <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
             Room
           </label>
@@ -469,7 +469,7 @@ const AdminClassSchedule = () => {
             placeholder="Search room"
             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-        </div>
+        </div> */}
       </div>
 
       {!loading && loadError && (
@@ -506,7 +506,10 @@ const AdminClassSchedule = () => {
                   </div>
                   <p className="text-xs text-gray-600 dark:text-gray-400">
                     {dayNames[s.dayOfWeek]} • {formatTime(s.startTime)} –{" "}
-                    {formatTime(s.endTime)} • Room {s.roomNumber}
+                    {formatTime(s.endTime)}
+                    {/* Room display intentionally commented out
+                    • Room {s.roomNumber}
+                    */}
                     {s.isRecurring && (
                       <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase tracking-wide">
                         Recurring
@@ -706,9 +709,9 @@ const AdminClassSchedule = () => {
                                   {formatTime(s.startTime)}
                                 </div>
                               </div>
-                              <div className="mt-1 text-[11px] text-gray-600 dark:text-gray-300">
+                              {/* <div className="mt-1 text-[11px] text-gray-600 dark:text-gray-300">
                                 Room {s.roomNumber}
-                              </div>
+                              </div> */}
                             </div>
                           );
                         })}
@@ -763,7 +766,7 @@ const AdminClassSchedule = () => {
             </div>
             <div className="flex flex-col">
               <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
-                Subject
+                Class
               </label>
               <select
                 name="subjectId"
@@ -771,7 +774,7 @@ const AdminClassSchedule = () => {
                 onChange={(e) => setFormSubjectId(e.target.value)}
                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm"
               >
-                <option value="">-- Select subject --</option>
+                <option value="">-- Select class --</option>
                 {(subjectsList || [])
                   .filter((s) => {
                     if (!formCourseId) return true;
@@ -809,7 +812,7 @@ const AdminClassSchedule = () => {
                 ))}
               </select>
             </div>
-            <div className="flex flex-col">
+            {/* <div className="flex flex-col">
               <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
                 Room
               </label>
@@ -824,7 +827,7 @@ const AdminClassSchedule = () => {
                   {formErrors.roomNumber}
                 </div>
               )}
-            </div>
+            </div> */}
             <div className="flex flex-col">
               <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
                 Start Time
@@ -922,7 +925,7 @@ const AdminClassSchedule = () => {
                 <div className="font-medium">{detailSchedule.courseName}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Subject</div>
+                <div className="text-xs text-gray-500">Class</div>
                 <div className="font-medium">{detailSchedule.subjectName}</div>
               </div>
               <div>
@@ -931,10 +934,10 @@ const AdminClassSchedule = () => {
                   {dayNames[detailSchedule.dayOfWeek]}
                 </div>
               </div>
-              <div>
+              {/* <div>
                 <div className="text-xs text-gray-500">Room</div>
                 <div className="font-medium">{detailSchedule.roomNumber}</div>
-              </div>
+              </div> */}
               <div>
                 <div className="text-xs text-gray-500">Start</div>
                 <div className="font-medium">

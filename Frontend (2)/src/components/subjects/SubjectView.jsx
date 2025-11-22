@@ -447,15 +447,15 @@ const SubjectView = () => {
                   ? `${
                       subjectCourseNames.length > 1 ? "Courses" : "Course"
                     }: ${subjectCourseNames.join(", ")}`
-                  : "No linked courses"}
+                  : ""}
               </p>
             </div>
           </div>
           <div className="flex gap-3 items-center">
-            <div className="text-right">
+            {/* <div className="text-right">
               <div className="text-xs opacity-90">Students</div>
               <div className="text-lg font-semibold">{totalStudentsCount}</div>
-            </div>
+            </div> */}
             <div className="text-right">
               <div className="text-xs opacity-90">Related Courses</div>
               <div className="text-lg font-semibold">
@@ -489,7 +489,7 @@ const SubjectView = () => {
           >
             Overview
           </button>
-          <button
+          {/* <button
             onClick={() => setActiveTab("students")}
             className={`px-3 py-2 rounded-md text-sm font-medium ${
               activeTab === "students"
@@ -498,7 +498,7 @@ const SubjectView = () => {
             }`}
           >
             Students
-          </button>
+          </button> */}
           <button
             onClick={() => setActiveTab("courses")}
             className={`px-3 py-2 rounded-md text-sm font-medium ${
@@ -535,7 +535,7 @@ const SubjectView = () => {
             </p>
           </Card>
           <Card className="p-6">
-            <h4 className="text-sm text-gray-500">Meta</h4>
+            {/* <h4 className="text-sm text-gray-500">Meta</h4> */}
             <div className="mt-4 space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Code</span>
@@ -547,10 +547,10 @@ const SubjectView = () => {
                 <span className="text-gray-600">Courses</span>
                 <span className="font-medium">{relatedCourses.length}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              {/* <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Students</span>
                 <span className="font-medium">{totalStudentsCount}</span>
-              </div>
+              </div> */}
             </div>
           </Card>
         </div>

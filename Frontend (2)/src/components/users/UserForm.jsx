@@ -917,70 +917,6 @@ const UserForm = ({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label
-                htmlFor="Username"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Username
-              </label>
-              <input
-                id="Username"
-                name="Username"
-                type="text"
-                {...register("Username", {
-                  required: "Username is required",
-                  minLength: {
-                    value: 3,
-                    message: "Username must be at least 3 characters",
-                  },
-                  pattern: {
-                    value: /^[a-zA-Z0-9._-]+$/,
-                    message:
-                      "Username can contain letters, numbers, dot, underscore or hyphen",
-                  },
-                  validate: isUsernameUnique,
-                })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              {errors.Username && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.Username.message}
-                </p>
-              )}
-            </div>
-
-            {!user && (
-              <div>
-                <label
-                  htmlFor="PasswordHash"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Password
-                </label>
-                <input
-                  id="PasswordHash"
-                  name="PasswordHash"
-                  type="password"
-                  {...register("PasswordHash", {
-                    required: !user ? "Password is required" : false,
-                    minLength: {
-                      value: 6,
-                      message: "Password must be at least 6 characters",
-                    },
-                  })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-                {errors.PasswordHash && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.PasswordHash.message}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label
                 htmlFor="FirstName"
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
@@ -1024,33 +960,97 @@ const UserForm = ({
             </div>
           </div>
 
-          <div>
-            <label
-              htmlFor="Email"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Email
-            </label>
-            <input
-              id="Email"
-              name="Email"
-              type="email"
-              {...register("Email", {
-                required: "Email is required",
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "Invalid email address",
-                },
-                validate: isEmailUnique,
-              })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-            {errors.Email && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.Email.message}
-              </p>
-            )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label
+                htmlFor="Username"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Username
+              </label>
+              <input
+                id="Username"
+                name="Username"
+                type="text"
+                {...register("Username", {
+                  required: "Username is required",
+                  minLength: {
+                    value: 3,
+                    message: "Username must be at least 3 characters",
+                  },
+                  pattern: {
+                    value: /^[a-zA-Z0-9._-]+$/,
+                    message:
+                      "Username can contain letters, numbers, dot, underscore or hyphen",
+                  },
+                  validate: isUsernameUnique,
+                })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              {errors.Username && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.Username.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="Email"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Email
+              </label>
+              <input
+                id="Email"
+                name="Email"
+                type="email"
+                {...register("Email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Invalid email address",
+                  },
+                  validate: isEmailUnique,
+                })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              {errors.Email && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.Email.message}
+                </p>
+              )}
+            </div>
           </div>
+
+          {!user && (
+            <div>
+              <label
+                htmlFor="PasswordHash"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Password
+              </label>
+              <input
+                id="PasswordHash"
+                name="PasswordHash"
+                type="password"
+                {...register("PasswordHash", {
+                  required: !user ? "Password is required" : false,
+                  minLength: {
+                    value: 6,
+                    message: "Password must be at least 6 characters",
+                  },
+                })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              {errors.PasswordHash && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.PasswordHash.message}
+                </p>
+              )}
+            </div>
+          )}
 
           {renderPhotoField()}
         </>
@@ -1061,6 +1061,57 @@ const UserForm = ({
         <>
           {showCoreFields && (
             <>
+              {/* First/Last name instead of single Full Name */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="FirstName"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    First Name *
+                  </label>
+                  <input
+                    id="FirstName"
+                    name="FirstName"
+                    type="text"
+                    placeholder="Enter first name"
+                    {...register("FirstName", {
+                      required: "First name is required",
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  {errors.FirstName && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.FirstName.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="LastName"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Last Name *
+                  </label>
+                  <input
+                    id="LastName"
+                    name="LastName"
+                    type="text"
+                    placeholder="Enter last name"
+                    {...register("LastName", {
+                      required: "Last name is required",
+                    })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  {errors.LastName && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.LastName.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
               {/* Core account fields for students (same as admin/teacher) */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {/* Username */}
@@ -1129,59 +1180,6 @@ const UserForm = ({
                 </div>
               </div>
 
-              {/* First/Last name instead of single Full Name */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="FirstName"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    First Name *
-                  </label>
-                  <input
-                    id="FirstName"
-                    name="FirstName"
-                    type="text"
-                    placeholder="Enter first name"
-                    {...register("FirstName", {
-                      required: "First name is required",
-                    })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                  {errors.FirstName && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.FirstName.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="LastName"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Last Name *
-                  </label>
-                  <input
-                    id="LastName"
-                    name="LastName"
-                    type="text"
-                    placeholder="Enter last name"
-                    {...register("LastName", {
-                      required: "Last name is required",
-                    })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-600 focus:ring-green-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                  {errors.LastName && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.LastName.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {renderPhotoField()}
-
               {/* Password (core); only in create flow and only in core step */}
               {!user && (
                 <div>
@@ -1212,6 +1210,8 @@ const UserForm = ({
                   )}
                 </div>
               )}
+
+              {renderPhotoField()}
             </>
           )}
 
@@ -1219,7 +1219,7 @@ const UserForm = ({
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {/* Class */}
-                <div>
+                {/* <div>
                   <label
                     htmlFor="Class"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -1245,7 +1245,7 @@ const UserForm = ({
                       {errors.Class.message}
                     </p>
                   )}
-                </div>
+                </div> */}
 
                 {/* ID Number with generator */}
                 <div>
@@ -1286,10 +1286,8 @@ const UserForm = ({
                     </p>
                   )}
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* Enrollment Date (replaces Birthday) */}
+                  {/* Enrollment Date (replaces Birthday) */}
                 <div>
                   <label
                     htmlFor="EnrollmentDate"
@@ -1314,10 +1312,8 @@ const UserForm = ({
                     </p>
                   )}
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* Guardian name */}
+                   {/* Guardian name */}
                 <div>
                   <label
                     htmlFor="GuardianName"
@@ -1367,6 +1363,8 @@ const UserForm = ({
                   )}
                 </div>
               </div>
+
+            
 
               {/* Student: Manage enrolled courses (only when editing an existing user) */}
               {initialUser && (
@@ -1480,6 +1478,32 @@ const UserForm = ({
 
           <div>
             <label
+              htmlFor="JoiningDate"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Joining Date
+            </label>
+            <input
+              id="JoiningDate"
+              name="JoiningDate"
+              type="date"
+              {...register("JoiningDate", {
+                validate: (v) =>
+                  !v ||
+                  new Date(v) <= new Date() ||
+                  "Joining date can't be in the future",
+              })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+            {errors.JoiningDate && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.JoiningDate.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
               htmlFor="Department"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
@@ -1513,32 +1537,6 @@ const UserForm = ({
               {...register("Qualification")}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
-          </div>
-
-          <div>
-            <label
-              htmlFor="JoiningDate"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Joining Date
-            </label>
-            <input
-              id="JoiningDate"
-              name="JoiningDate"
-              type="date"
-              {...register("JoiningDate", {
-                validate: (v) =>
-                  !v ||
-                  new Date(v) <= new Date() ||
-                  "Joining date can't be in the future",
-              })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-            {errors.JoiningDate && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.JoiningDate.message}
-              </p>
-            )}
           </div>
 
           <div className="sm:col-span-2">

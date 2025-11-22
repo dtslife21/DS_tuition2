@@ -804,6 +804,24 @@ export const recordAttendance = async (arg1, arg2) => {
   const sessionStartIso = toIsoOrNull(resolvedSessionStart);
   const sessionEndIso = toIsoOrNull(resolvedSessionEnd);
 
+  const resolvedAttendanceDateInput =
+    payload.attendanceDate ?? payload.AttendanceDate ?? payload.date ?? null;
+
+  const resolvedSessionDateInput =
+    payload.sessionDate ??
+    payload.SessionDate ??
+    resolvedAttendanceDateInput ??
+    null;
+
+  const attendanceDateIso =
+    toIsoOrNull(resolvedAttendanceDateInput) ??
+    (sessionStartIso ? new Date(sessionStartIso).toISOString() : null);
+
+  const sessionDateIso =
+    toIsoOrNull(resolvedSessionDateInput) ??
+    attendanceDateIso ??
+    (sessionEndIso ? new Date(sessionEndIso).toISOString() : null);
+
   const sessionBodyBase = {
     SessionID: sessionIdNumeric,
     StudentID: studentIdNumeric,
@@ -818,6 +836,8 @@ export const recordAttendance = async (arg1, arg2) => {
     SessionEndTime: sessionEndIso,
     StartTime: sessionStartIso,
     EndTime: sessionEndIso,
+    SessionDate: sessionDateIso,
+    AttendanceDate: attendanceDateIso,
   };
 
   const qrRecordBodyBase = {
@@ -826,6 +846,12 @@ export const recordAttendance = async (arg1, arg2) => {
     DeviceInfo: baseDeviceInfo,
     IPAddress: baseIpAddress,
     Location: baseLocation,
+    SessionStartTime: sessionStartIso,
+    SessionEndTime: sessionEndIso,
+    StartTime: sessionStartIso,
+    EndTime: sessionEndIso,
+    SessionDate: sessionDateIso,
+    AttendanceDate: attendanceDateIso,
   };
 
   if (!sessionIdNumeric || Number.isNaN(sessionIdNumeric)) {

@@ -1056,12 +1056,11 @@ const AdminUsers = () => {
               }
               description={
                 pendingUserData
-                  ? "Choose one or more courses to enroll the new student in."
+                  ? "Choose or create courses to enroll the new student in."
                   : "Select one or more courses to assign to the new teacher."
               }
               multiSelect={true}
-              // when enrolling a student, disallow creating new courses from the picker
-              allowCreate={!pendingUserData}
+              allowCreate={true}
               // when enrolling a pending student, hide courses already passed in (if any)
               excludedIds={pendingUserData?.CourseIDs || []}
               onProceed={async (selectedIds) => {
@@ -1313,8 +1312,12 @@ const AdminUsers = () => {
                       ? editStep === 1
                         ? "Next"
                         : "Update"
-                      : createStep === 1
-                      ? "Next"
+                      : // Creating a new user: if forced to Admin (via + Add Admin),
+                      // show "Save" on the first step instead of "Next".
+                      createStep === 1
+                      ? forceUserType === 1
+                        ? "Save"
+                        : "Next"
                       : "Create"
                   }
                 />

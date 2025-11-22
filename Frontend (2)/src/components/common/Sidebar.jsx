@@ -14,7 +14,7 @@ const Sidebar = () => {
     { name: "Dashboard", href: "/admin", icon: "home" },
     { name: "Courses", href: "/admin/courses", icon: "book" },
     {
-      name: "Subjects",
+      name: "Classes",
       href: "/admin/subjects",
       icon: "document-text",
       matchPaths: ["/admin/subjects", "/subjects"],
@@ -28,11 +28,11 @@ const Sidebar = () => {
     { name: "Dashboard", href: "/teacher", icon: "home" },
     { name: "Courses", href: "/teacher/courses", icon: "book" },
     {
-      name: "Subjects",
+      name: "Classes",
       href: "/teacher/subjects",
       icon: "document-text",
-      // also match the shared subject view so that when user opens /subjects/:id
-      // the teacher "Subjects" tab is highlighted
+      // also match the shared class view so that when user opens /subjects/:id
+      // the teacher "Classes" tab is highlighted
       matchPaths: ["/teacher/subjects", "/subjects"],
     },
     {

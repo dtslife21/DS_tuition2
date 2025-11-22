@@ -288,7 +288,7 @@ const CourseForm = ({
         // require at least one subject on course creation
         if (!selectedSubjects || selectedSubjects.length === 0) {
           setSubjectsError(
-            "At least one subject must be selected for the course."
+            "At least one class must be selected for the course."
           );
           return;
         }
@@ -333,31 +333,13 @@ const CourseForm = ({
       {/* Step indicator removed per request - show the form directly */}
       <div>
         <label
-          htmlFor="name"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          Course Name
-        </label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          {...register("name", { required: "Course name is required" })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        />
-        {errors.name && (
-          <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label
           htmlFor="code"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
           Course Code
         </label>
         <input
+          disabled
           id="code"
           name="code"
           type="text"
@@ -395,6 +377,25 @@ const CourseForm = ({
       </div>
 
       <div>
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Course Name
+        </label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          {...register("name", { required: "Course name is required" })}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        />
+        {errors.name && (
+          <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+        )}
+      </div>
+
+      <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Assigned Teacher
         </label>
@@ -419,7 +420,7 @@ const CourseForm = ({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Subjects
+          Classes
         </label>
         <div className="mt-2 space-y-2">
           {selectedSubjects && selectedSubjects.length ? (
@@ -447,7 +448,7 @@ const CourseForm = ({
               ))}
             </ul>
           ) : (
-            <div className="text-sm text-gray-500">No subjects selected.</div>
+            <div className="text-sm text-gray-500">No classes selected.</div>
           )}
 
           <div className="flex gap-2 pt-2">
@@ -494,7 +495,7 @@ const CourseForm = ({
                 className="w-full rounded-md border-gray-300 p-2 bg-white dark:bg-gray-800"
                 disabled={loadingAvailableSubjects}
               >
-                <option value="">-- Choose existing subject --</option>
+                <option value="">-- Choose existing class --</option>
                 {(availableSubjects || []).map((s) => {
                   const name = s.name ?? s.subjectName ?? s.SubjectName ?? "";
                   return (
@@ -523,7 +524,7 @@ const CourseForm = ({
             <Modal
               isOpen={showSubjectModal}
               onClose={() => setShowSubjectModal(false)}
-              title="Add new subject"
+              title="Add new class"
               size="md"
             >
               <SubjectForm

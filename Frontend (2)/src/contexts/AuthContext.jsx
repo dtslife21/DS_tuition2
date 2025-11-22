@@ -12,18 +12,18 @@ export const AuthProvider = ({ children }) => {
   // Create axios instance with base URL
   const api = axios.create({
     // baseURL: "https://dstuitionbackend.dockyardsoftware.com/api",
-     baseURL: "http://localhost:50447/api",
+    baseURL: "http://localhost:50447/api",
     headers: {
       "Content-Type": "application/json",
     },
   });
 
-  // useEffect(() => {
-  //   const authStatus = !!(user && token);
-  //   if (isAuthenticated !== authStatus) {
-  //     setIsAuthenticated(authStatus);
-  //   }
-  // }, [user, token, isAuthenticated]);
+  useEffect(() => {
+    const authStatus = !!(user && token);
+    if (isAuthenticated !== authStatus) {
+      setIsAuthenticated(authStatus);
+    }
+  }, [user, token, isAuthenticated]);
 
   const login = async (username, password) => {
     try {

@@ -76,7 +76,7 @@ const TeacherSubjects = () => {
       } catch (e) {
         console.error("Failed to load teacher courses", e);
         if (!active) return;
-        setError("Failed to load subjects");
+        setError("Failed to load classes");
       } finally {
         if (active) setLoading(false);
       }
@@ -110,8 +110,8 @@ const TeacherSubjects = () => {
   if (!subjects.length)
     return (
       <EmptyState
-        title="No subjects found"
-        description="There are no subjects associated with your courses yet."
+        title="No classes found"
+        description="There are no classes associated with your courses yet."
         action={
           <Button variant="primary">
             <Link to="/teacher/courses">View my courses</Link>
@@ -123,7 +123,7 @@ const TeacherSubjects = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-indigo-700 to-violet-700 dark:from-white dark:via-indigo-300 dark:to-violet-300">
-        My Subjects
+        My Classes
       </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -135,7 +135,7 @@ const TeacherSubjects = () => {
                   {sub.name}
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  Subjects coming from your courses
+                  Classes coming from your courses
                 </p>
               </div>
               <div className="flex-shrink-0">

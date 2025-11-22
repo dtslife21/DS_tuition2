@@ -90,7 +90,6 @@ const StudentCourses = () => {
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 text-center">
                 Course Details
               </h1>
-            
             </div>
             {courses.length > 0 ? (
               <div className="w-full flex flex-wrap justify-center gap-8 mt-6">
@@ -130,15 +129,15 @@ const StudentCourses = () => {
         {activeTab === "marks" && (
           <div className="w-full flex flex-col items-center mb-8">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 text-center">
-              Subject Marks
+              Class Marks
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-300 font-medium text-center">
-              Marks for each subject will be shown here.
+              Marks for each class will be shown here.
             </p>
             {/* TODO: Replace with actual marks table or component */}
             <div className="mt-8 w-full flex justify-center">
               <div className="bg-gray-100 dark:bg-gray-900 rounded-lg shadow p-8 w-96 max-w-full text-center text-gray-700 dark:text-gray-200">
-                <span>Subject marks data goes here.</span>
+                <span>Class marks data goes here.</span>
               </div>
             </div>
           </div>

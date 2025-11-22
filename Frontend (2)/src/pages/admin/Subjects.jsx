@@ -175,7 +175,7 @@ const AdminSubjects = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this subject?")) return;
+    if (!confirm("Delete this class?")) return;
     try {
       const ok = await deleteSubject(id);
       if (ok) setSubjects((s) => s.filter((x) => String(x.id) !== String(id)));
@@ -187,7 +187,7 @@ const AdminSubjects = () => {
   const handleLinkCourse = async (selectedIds) => {
     // defensive: ensure we have draft subject to attach courses to
     if (!subjectInProgress) {
-      const msg = "Subject details are missing. Please start again.";
+      const msg = "Class details are missing. Please start again.";
       console.error("AdminSubjects.linkCourse:", msg, { selectedIds });
       setCourseStepError(msg);
       return;
@@ -225,7 +225,7 @@ const AdminSubjects = () => {
     );
 
     if (!subjectIdKey) {
-      setCourseStepError("Subject identifier is missing. Please try again.");
+      setCourseStepError("Class identifier is missing. Please try again.");
       return;
     }
 
@@ -527,7 +527,7 @@ const AdminSubjects = () => {
       const axiosData = err?.response?.data ?? err?.message ?? String(err);
       setCourseStepError(
         (axiosData && String(axiosData)) ||
-          "Unable to link the subject to the selected courses. Please try again."
+          "Unable to link the class to the selected courses. Please try again."
       );
     } finally {
       setLinkingCourse(false);
@@ -668,9 +668,9 @@ const AdminSubjects = () => {
     <div className="space-y-4 p-4">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold">Subjects</h1>
+          <h1 className="text-2xl font-semibold">Classes</h1>
           <p className="text-sm text-gray-500">
-            Manage subjects and link them to courses
+            Manage classes and link them to courses
           </p>
         </div>
         <div>
@@ -686,15 +686,15 @@ const AdminSubjects = () => {
             }}
             variant="primary"
           >
-            Add Subject
+            Add Class
           </Button>
         </div>
       </div>
 
       {subjects.length === 0 ? (
         <EmptyState
-          title="No subjects yet"
-          description="Create subjects and assign them to courses so teachers and students can find them."
+          title="No classes yet"
+          description="Create classes and assign them to courses so teachers and students can find them."
           action={
             <Button
               variant="primary"
@@ -708,7 +708,7 @@ const AdminSubjects = () => {
                 setShowAdd(true);
               }}
             >
-              Add Subject
+              Add Class
             </Button>
           }
         />
@@ -795,7 +795,7 @@ const AdminSubjects = () => {
           setShowAdd(false);
           setSubjectDraftData(null);
         }}
-        title="Step 1 of 2 — Add Subject"
+        title="Step 1 of 2 — Add Class"
       >
         <SubjectForm
           step={1}
@@ -812,7 +812,7 @@ const AdminSubjects = () => {
       <Modal
         isOpen={!!viewSubject}
         onClose={() => setViewSubject(null)}
-        title={viewSubject?.name || "Subject Details"}
+        title={viewSubject?.name || "Class Details"}
       >
         {viewSubject
           ? (() => {
@@ -852,7 +852,7 @@ const AdminSubjects = () => {
       <Modal
         isOpen={!!editSubject}
         onClose={() => setEditSubject(null)}
-        title={`Edit Subject`}
+        title={`Edit Class`}
       >
         {editSubject ? (
           <SubjectForm
@@ -871,7 +871,7 @@ const AdminSubjects = () => {
         initialSelected={selectedCourseIds}
         onProceed={handleLinkCourse}
         title="Step 2 of 2 — Assign Courses"
-        description="Select one or more courses to link with this subject or add a new one."
+        description="Select one or more courses to link with this class or add a new one."
         multiSelect
         saving={linkingCourse}
         proceedLabel="Assign Courses"

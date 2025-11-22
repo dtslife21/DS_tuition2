@@ -93,9 +93,7 @@ const UserList = ({
                             {fullName}
                           </div>
                         )}
-                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {user.Email || user.email}
-                        </div>
+                        {/* Email shown in its own column; removed duplicate here */}
                       </div>
                     </div>
                   </td>

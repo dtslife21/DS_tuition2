@@ -56,17 +56,17 @@ const SubjectForm = ({
     // Validate both fields and show both errors at once if missing
     let hasError = false;
     if (!trimmedName) {
-      setFormError("Subject name is required");
+      setFormError("Class name is required");
       hasError = true;
     }
     if (!trimmedCode) {
-      setSubjectCodeError("Subject code is required");
+      setSubjectCodeError("Class code is required");
       hasError = true;
     }
     // enforce format: uppercase alnum, dash or underscore, 2-20 chars
     if (trimmedCode && !/^[A-Z0-9_-]{2,20}$/.test(trimmedCode)) {
       setSubjectCodeError(
-        "Subject code must be 2–20 alphanumeric characters (no spaces)"
+        "Class code must be 2–20 alphanumeric characters (no spaces)"
       );
       hasError = true;
     }
@@ -148,14 +148,14 @@ const SubjectForm = ({
           if (dupCode && dupCode === trimmedCode.toLowerCase()) {
             setFormError(
               courseName
-                ? "A subject with this code already exists for the selected course."
-                : "A subject with this code already exists."
+                ? "A class with this code already exists for the selected course."
+                : "A class with this code already exists."
             );
           } else {
             setFormError(
               courseName
-                ? "This subject already exists for the selected course."
-                : "A subject with this name already exists."
+                ? "This class already exists for the selected course."
+                : "A class with this name already exists."
             );
           }
           setChecking(false);
@@ -208,24 +208,10 @@ const SubjectForm = ({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-          Subject Name <span className="text-red-500">*</span>
+          Class Code <span className="text-red-500">*</span>
         </label>
         <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Mathematics"
-          className="mt-1 block w-full rounded-md dark:bg-gray-700 border-gray-300 p-2"
-        />
-        {formError ? (
-          <p className="mt-1 text-sm text-red-600">{formError}</p>
-        ) : null}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-          Subject Code <span className="text-red-500">*</span>
-        </label>
-        <input
+          disabled
           value={subjectCode}
           onChange={(e) => {
             // normalize to uppercase and clear code errors
@@ -241,6 +227,21 @@ const SubjectForm = ({
         />
         {subjectCodeError ? (
           <p className="mt-1 text-sm text-red-600">{subjectCodeError}</p>
+        ) : null}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+          Class Name <span className="text-red-500">*</span>
+        </label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Mathematics"
+          className="mt-1 block w-full rounded-md dark:bg-gray-700 border-gray-300 p-2"
+        />
+        {formError ? (
+          <p className="mt-1 text-sm text-red-600">{formError}</p>
         ) : null}
       </div>
 

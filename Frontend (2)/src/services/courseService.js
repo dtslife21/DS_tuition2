@@ -62,6 +62,83 @@ const normalizeBooleanLike = (value) => {
   return null;
 };
 
+const normalizeTimestamp = (value) => {
+  if (value === null || value === undefined) return null;
+
+  if (value instanceof Date) {
+    const time = value.getTime();
+    return Number.isNaN(time) ? null : time;
+  }
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return null;
+    if (value > 1e12) return value; // treat as milliseconds
+    if (value > 1e9) return value * 1000; // treat as seconds
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const parsed = Date.parse(trimmed);
+    if (!Number.isNaN(parsed)) return parsed;
+
+    const numeric = Number(trimmed);
+    if (!Number.isNaN(numeric)) {
+      if (numeric > 1e12) return numeric;
+      if (numeric > 1e9) return numeric * 1000;
+      return numeric;
+    }
+  }
+
+  return null;
+};
+
+const toIsoDateString = (value) => {
+  const timestamp = normalizeTimestamp(value);
+  if (timestamp === null) return null;
+
+  try {
+    return new Date(timestamp).toISOString();
+  } catch (err) {
+    return null;
+  }
+};
+
+const collectTemporalMetadata = (...values) => {
+  const flat = values.reduce((acc, entry) => {
+    if (Array.isArray(entry)) {
+      acc.push(...entry);
+    } else {
+      acc.push(entry);
+    }
+    return acc;
+  }, []);
+
+  for (const value of flat) {
+    const timestamp = normalizeTimestamp(value);
+    if (timestamp !== null) {
+      return {
+        iso: toIsoDateString(timestamp),
+        timestamp,
+      };
+    }
+  }
+
+  for (const value of flat) {
+    const iso = toIsoDateString(value);
+    if (iso) {
+      return {
+        iso,
+        timestamp: normalizeTimestamp(iso),
+      };
+    }
+  }
+
+  return { iso: null, timestamp: null };
+};
+
 // Returns true when a course object should be considered active/visible
 const courseIsActive = (course) => {
   if (!course || typeof course !== "object") return false;
@@ -438,6 +515,36 @@ const formatCourse = (course) => {
         }
       : null;
 
+  const { iso: createdAtIso, timestamp: createdTimestamp } =
+    collectTemporalMetadata([
+      course.createdTimestamp,
+      course.createdAt,
+      course.CreatedAt,
+      course.created_at,
+      course.createdOn,
+      course.CreatedOn,
+      course.creationDate,
+      course.CreationDate,
+      course.createdDate,
+      course.CreatedDate,
+      course.dateCreated,
+      course.DateCreated,
+    ]);
+
+  const { iso: updatedAtIso, timestamp: updatedTimestamp } =
+    collectTemporalMetadata([
+      course.updatedTimestamp,
+      course.updatedAt,
+      course.UpdatedAt,
+      course.updated_at,
+      course.updatedOn,
+      course.UpdatedOn,
+      course.lastUpdated,
+      course.LastUpdated,
+      course.modifiedAt,
+      course.ModifiedAt,
+    ]);
+
   return {
     id:
       course.id ??
@@ -482,6 +589,12 @@ const formatCourse = (course) => {
     IsActive: resolvedIsActive,
     status: resolvedStatus,
     Status: resolvedStatus,
+    createdAt: createdAtIso ?? null,
+    CreatedAt: createdAtIso ?? null,
+    createdTimestamp: createdTimestamp ?? null,
+    updatedAt: updatedAtIso ?? null,
+    UpdatedAt: updatedAtIso ?? null,
+    updatedTimestamp: updatedTimestamp ?? null,
   };
 };
 
@@ -1429,6 +1542,33 @@ export const createCourse = async (courseData) => {
         created.id = nextId;
         created.CourseID = nextId;
         created.courseId = nextId;
+      }
+    }
+
+    if (created) {
+      const { iso: resolvedCreatedAt, timestamp: resolvedCreatedTimestamp } =
+        collectTemporalMetadata([
+          created.createdTimestamp,
+          created.createdAt,
+          created.CreatedAt,
+          created.created_at,
+        ]);
+
+      if (resolvedCreatedAt) {
+        created.createdAt = resolvedCreatedAt;
+        created.CreatedAt = resolvedCreatedAt;
+        const finalTimestamp =
+          resolvedCreatedTimestamp ?? normalizeTimestamp(resolvedCreatedAt);
+        created.createdTimestamp =
+          finalTimestamp !== null && finalTimestamp !== undefined
+            ? finalTimestamp
+            : Date.now();
+      } else {
+        const now = Date.now();
+        const isoNow = new Date(now).toISOString();
+        created.createdAt = isoNow;
+        created.CreatedAt = isoNow;
+        created.createdTimestamp = now;
       }
     }
 

@@ -194,17 +194,17 @@ const StudentClassSchedule = () => {
         </div>
         <div className="flex flex-col">
           <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
-            Subject
+            Class
           </label>
           <input
             name="subject"
             value={filters.subject}
             onChange={handleInput}
-            placeholder="Search subject"
+            placeholder="Search class"
             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
-        <div className="flex flex-col">
+        {/* <div className="flex flex-col">
           <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
             Room
           </label>
@@ -215,7 +215,7 @@ const StudentClassSchedule = () => {
             placeholder="Search room"
             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-        </div>
+        </div> */}
       </div>
 
       {!loading && loadError && (
@@ -247,7 +247,7 @@ const StudentClassSchedule = () => {
                     />
                     <h2 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
                       {s.courseName || `Course ${s.courseId}`} /{" "}
-                      {s.subjectName || `Subject ${s.subjectId}`}
+                      {s.subjectName || `Class ${s.subjectId}`}
                     </h2>
                   </div>
                   <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -429,16 +429,16 @@ const StudentClassSchedule = () => {
                                     {s.courseName || `Course ${s.courseId}`}
                                   </div>
                                   <div className="text-[11px] text-gray-600 dark:text-gray-300 truncate">
-                                    {s.subjectName || `Subject ${s.subjectId}`}
+                                    {s.subjectName || `Class ${s.subjectId}`}
                                   </div>
                                 </div>
                                 <div className="text-[11px] text-gray-700 dark:text-gray-200 ml-2">
                                   {formatTime(s.startTime)}
                                 </div>
                               </div>
-                              <div className="mt-1 text-[11px] text-gray-600 dark:text-gray-300">
+                              {/* <div className="mt-1 text-[11px] text-gray-600 dark:text-gray-300">
                                 Room {s.roomNumber}
-                              </div>
+                              </div> */}
                             </div>
                           );
                         })}
@@ -471,7 +471,7 @@ const StudentClassSchedule = () => {
                 <div className="font-medium">{detailSchedule.courseName}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Subject</div>
+                <div className="text-xs text-gray-500">Class</div>
                 <div className="font-medium">{detailSchedule.subjectName}</div>
               </div>
               <div>
@@ -480,10 +480,10 @@ const StudentClassSchedule = () => {
                   {dayNames[detailSchedule.dayOfWeek]}
                 </div>
               </div>
-              <div>
+              {/* <div>
                 <div className="text-xs text-gray-500">Room</div>
                 <div className="font-medium">{detailSchedule.roomNumber}</div>
-              </div>
+              </div> */}
               <div>
                 <div className="text-xs text-gray-500">Start</div>
                 <div className="font-medium">
