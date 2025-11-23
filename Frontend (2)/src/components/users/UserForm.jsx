@@ -1217,6 +1217,7 @@ const UserForm = ({
           {showRoleFields && (
             <div className="space-y-5 rounded-2xl border border-gray-200 bg-white/80 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900/60 sm:p-6">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* ID Number field intentionally hidden for now
                 <div>
                   <label
                     htmlFor="IDNumber"
@@ -1234,7 +1235,7 @@ const UserForm = ({
                           ? "Generating ID..."
                           : "Auto-generated ID"
                       }
-                      readOnly={false} /* keep editable but prefilled */
+                      readOnly={false}
                       {...register("IDNumber", {
                         required: "ID number is required",
                         pattern: {
@@ -1254,6 +1255,7 @@ const UserForm = ({
                     </p>
                   )}
                 </div>
+                */}
 
                 <div>
                   <label

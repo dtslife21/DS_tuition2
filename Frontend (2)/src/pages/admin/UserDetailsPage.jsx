@@ -759,14 +759,14 @@ const UserDetailsPage = ({
         </div>
         {(allowEdit || (showManageLink && manageLinkPath)) && (
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-            {allowEdit && !isEditing && (
+            {/* {allowEdit && !isEditing && (
               <button
                 onClick={startEditing}
                 className="w-full rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 sm:w-auto"
               >
                 Edit
               </button>
-            )}
+            )} */}
             {allowEdit && isEditing && (
               <button
                 onClick={cancelEditing}
@@ -1068,14 +1068,14 @@ const UserDetailsPage = ({
                     Assign Course
                   </button>
                 )}
-                {isStudentUser && (
+                {/* {isStudentUser && (
                   <button
                     onClick={handleOpenEnrollCourses}
                     className="inline-flex w-full items-center justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 sm:w-auto"
                   >
                     Enroll Course
                   </button>
-                )}
+                )} */}
               </div>
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {coursesLoading ? "Loading..." : `${courses.length} course(s)`}
