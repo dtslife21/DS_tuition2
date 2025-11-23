@@ -56,7 +56,7 @@ const Navbar = () => {
               to="/"
               className="text-xl font-bold text-gray-900 dark:text-white"
             >
-              ClassManager
+               Sweet of K Cakes
             </Link>
           </div>
           <div className="flex items-center gap-3 sm:gap-4 flex-wrap justify-end">

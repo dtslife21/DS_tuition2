@@ -39,10 +39,19 @@ const Register = () => {
   return (
     <AuthLayout>
       <div className="w-full max-w-md space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Create a new account
+        <div className="text-center">
+          <img
+            src={`/Logo.jpeg`}
+            alt="Sweet of K Cakes logo"
+            className="mx-auto mb-4 h-24 w-auto drop-shadow-md"
+          />
+          <h2 className="mt-4 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Create a Sweet of K Cakes account
           </h2>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+            Join us — sign up for courses, workshops, and bake along with the
+            community.
+          </p>
         </div>
         {error && (
           <div className="rounded-md bg-red-50 p-4">
