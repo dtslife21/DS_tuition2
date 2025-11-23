@@ -50,6 +50,7 @@ const StudentPickerModal = ({
   onConfirm,
   initialSelected = [],
   excludedIds = [],
+  subjectOptions = [],
   title = "Select Students",
   description = "Choose existing students to enroll in this course.",
   saving = false,
@@ -62,6 +63,8 @@ const StudentPickerModal = ({
     (initialSelected || []).map((id) => String(id))
   );
   const [query, setQuery] = useState("");
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState([]);
+  const [subjectError, setSubjectError] = useState("");
 
   useEffect(() => {
     if (!isOpen) {
@@ -97,11 +100,85 @@ const StudentPickerModal = ({
 
   useEffect(() => {
     setSelectedIds((initialSelected || []).map((id) => String(id)));
+    setSelectedSubjectIds([]);
+    setSubjectError("");
   }, [initialSelected, isOpen]);
 
   const excludedSet = useMemo(() => {
     return new Set((excludedIds || []).map((id) => String(id)));
   }, [excludedIds]);
+
+  const normalizedSubjectOptions = useMemo(() => {
+    const seen = new Set();
+
+    return (subjectOptions || [])
+      .map((option) => {
+        if (!option) {
+          return null;
+        }
+
+        const rawId =
+          option.id ??
+          option.value ??
+          option.SubjectID ??
+          option.subjectID ??
+          option.subjectId ??
+          option.SubjectId ??
+          null;
+
+        if (rawId === null || rawId === undefined) {
+          return null;
+        }
+
+        const id = String(rawId).trim();
+        if (!id || seen.has(id)) {
+          return null;
+        }
+
+        seen.add(id);
+
+        const label = String(
+          option.label ??
+            option.name ??
+            option.subjectName ??
+            option.SubjectName ??
+            option.title ??
+            option.Title ??
+            `Subject ${id}`
+        ).trim();
+
+        const code = String(
+          option.code ??
+            option.subjectCode ??
+            option.SubjectCode ??
+            option.CourseSubjectCode ??
+            option.courseSubjectCode ??
+            ""
+        ).trim();
+
+        return {
+          id,
+          label: label || `Subject ${id}`,
+          code,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [subjectOptions]);
+
+  useEffect(() => {
+    if (!normalizedSubjectOptions.length) {
+      setSelectedSubjectIds([]);
+      setSubjectError("");
+      return;
+    }
+
+    setSelectedSubjectIds((prev) =>
+      prev.filter((sid) =>
+        normalizedSubjectOptions.some((option) => option.id === sid)
+      )
+    );
+  }, [normalizedSubjectOptions]);
 
   const filteredStudents = useMemo(() => {
     const q = String(query || "")
@@ -139,12 +216,21 @@ const StudentPickerModal = ({
 
   const handleConfirm = () => {
     if (saving) return;
+    if (
+      normalizedSubjectOptions.length &&
+      (!selectedSubjectIds || selectedSubjectIds.length === 0)
+    ) {
+      setSubjectError("Select at least one class to enroll the students in.");
+      return;
+    }
+    setSubjectError("");
     if (typeof onConfirm === "function") {
-      onConfirm([...selectedIds]);
+      onConfirm([...selectedIds], [...selectedSubjectIds]);
     }
   };
 
   const selectedCount = selectedIds.length;
+  const selectedSubjectCount = selectedSubjectIds.length;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="lg">
@@ -191,8 +277,75 @@ const StudentPickerModal = ({
               {selectedCount}
             </span>{" "}
             selected
+            {normalizedSubjectOptions.length ? (
+              <>
+                <span className="mx-2 text-gray-300 dark:text-gray-700">|</span>
+                <span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedSubjectCount}
+                  </span>{" "}
+                  {`class${selectedSubjectCount === 1 ? "" : "es"}`}
+                </span>
+              </>
+            ) : null}
           </div>
         </div>
+
+        {normalizedSubjectOptions.length ? (
+          <div className="rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Classes to enroll selected students in
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {normalizedSubjectOptions.map((option) => {
+                const checked = selectedSubjectIds.includes(option.id);
+                return (
+                  <label
+                    key={option.id}
+                    className="flex cursor-pointer items-center gap-2 rounded-md border border-transparent px-2 py-1 text-sm text-gray-700 transition hover:border-indigo-200 hover:bg-white dark:text-gray-200 dark:hover:border-indigo-500/50 dark:hover:bg-gray-800"
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      checked={checked}
+                      onChange={(event) => {
+                        const { checked: isChecked } = event.target;
+                        setSelectedSubjectIds((prev) => {
+                          if (isChecked) {
+                            return prev.includes(option.id)
+                              ? prev
+                              : [...prev, option.id];
+                          }
+                          return prev.filter((sid) => sid !== option.id);
+                        });
+                      }}
+                    />
+                    <span className="flex flex-col">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {option.label}
+                      </span>
+                      {option.code ? (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {option.code}
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            {subjectError && (
+              <p className="mt-2 text-xs text-red-600 dark:text-red-400">
+                {subjectError}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="rounded-md border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+            This course does not have any linked classes. Students will be
+            enrolled at the course level.
+          </div>
+        )}
 
         <div className="max-h-80 overflow-y-auto rounded-md border border-gray-200 dark:border-gray-700">
           {loading ? (

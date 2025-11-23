@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -24,12 +24,16 @@ import {
 } from "../../services/studentService";
 import {
   createEnrollmentsForStudent,
+  createEnrollment,
   getEnrollmentsByStudent,
   deleteEnrollment,
 } from "../../services/enrollmentService";
 import { getStudentCourses } from "../../services/courseService";
 import Loader from "../../components/common/Loader";
 import CoursePickerModal from "../../components/courses/CoursePickerModal";
+import ClassPickerModal from "../../components/classes/ClassPickerModal";
+import { getAllClassSchedules } from "../../services/classScheduleService";
+import { getAllSubjects } from "../../services/subjectService";
 import { motion, AnimatePresence } from "framer-motion";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
@@ -48,6 +52,392 @@ const resolveTeacherId = (user) => {
     user.id ??
     null
   );
+};
+
+const normalizeIdString = (value) => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const str = String(value).trim();
+  if (!str) {
+    return null;
+  }
+
+  if (/^-?\d+$/.test(str)) {
+    const asNumber = Number(str);
+    if (!Number.isNaN(asNumber)) {
+      return String(asNumber);
+    }
+  }
+
+  return str;
+};
+
+const dayNames = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+const formatScheduleSummary = (schedule) => {
+  if (!schedule || typeof schedule !== "object") {
+    return "";
+  }
+
+  const dayIndex = Number.isFinite(schedule.dayOfWeek)
+    ? Math.max(0, Math.min(Number(schedule.dayOfWeek), dayNames.length - 1))
+    : null;
+  const day = dayIndex !== null ? dayNames[dayIndex] : "";
+
+  const trimTime = (value) => {
+    if (!value || typeof value !== "string") {
+      return "";
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return "";
+    }
+    return trimmed.slice(0, 5);
+  };
+
+  const start = trimTime(schedule.startTime);
+  const end = trimTime(schedule.endTime);
+  const time = start && end ? `${start}-${end}` : start || end;
+  const room = schedule.roomNumber
+    ? `Room ${String(schedule.roomNumber).trim()}`
+    : "";
+
+  return [day, time, room].filter(Boolean).join(" • ");
+};
+
+const deriveClassOptions = (
+  courseDetails,
+  courseId,
+  subjects = [],
+  schedules = []
+) => {
+  const normalizedCourseId = normalizeIdString(
+    courseId ??
+      courseDetails?.CourseID ??
+      courseDetails?.courseID ??
+      courseDetails?.CourseId ??
+      courseDetails?.courseId ??
+      courseDetails?.id ??
+      courseDetails?.Id
+  );
+
+  const subjectScheduleMap = new Map();
+  schedules.forEach((schedule) => {
+    if (!schedule || typeof schedule !== "object") {
+      return;
+    }
+
+    const scheduleCourseId = normalizeIdString(
+      schedule.courseId ?? schedule.CourseID ?? schedule.courseID
+    );
+    if (
+      normalizedCourseId &&
+      scheduleCourseId &&
+      scheduleCourseId !== normalizedCourseId
+    ) {
+      return;
+    }
+
+    const subjectId = normalizeIdString(schedule.subjectId);
+    if (!subjectId) {
+      return;
+    }
+
+    const existing = subjectScheduleMap.get(subjectId) || [];
+    existing.push(schedule);
+    subjectScheduleMap.set(subjectId, existing);
+  });
+
+  const options = [];
+  const optionMap = new Map();
+
+  const attachScheduleMeta = (option, subjectId) => {
+    const subjectSchedules = subjectScheduleMap.get(subjectId) || [];
+    if (!subjectSchedules.length) {
+      return;
+    }
+
+    const summaries = subjectSchedules
+      .map((schedule) => formatScheduleSummary(schedule))
+      .filter(Boolean);
+
+    if (summaries.length && !option.meta) {
+      option.meta = summaries.slice(0, 2).join(" | ");
+    }
+
+    const ids = subjectSchedules
+      .map((schedule) => {
+        const idCandidate =
+          schedule.scheduleId ?? schedule.ScheduleID ?? schedule.id ?? null;
+        return idCandidate !== null && idCandidate !== undefined
+          ? normalizeIdString(idCandidate)
+          : null;
+      })
+      .filter(Boolean);
+    if (ids.length) {
+      option.scheduleIds = ids;
+    }
+  };
+
+  const registerOption = (rawId, labelCandidate, extra = {}) => {
+    const normalizedId = normalizeIdString(rawId);
+    if (!normalizedId) {
+      return;
+    }
+
+    const existing = optionMap.get(normalizedId);
+    const resolvedLabel = (() => {
+      const candidates = [
+        labelCandidate,
+        extra?.name,
+        extra?.subjectName,
+        extra?.SubjectName,
+        extra?.title,
+        extra?.Title,
+        existing?.label,
+      ];
+
+      for (const candidate of candidates) {
+        if (typeof candidate === "string") {
+          const trimmed = candidate.trim();
+          if (trimmed) {
+            return trimmed;
+          }
+        }
+      }
+
+      return existing?.label || `Class ${normalizedId}`;
+    })();
+
+    const codeCandidate = (() => {
+      const candidates = [
+        extra?.code,
+        extra?.subjectCode,
+        extra?.SubjectCode,
+        extra?.Code,
+        existing?.code,
+      ];
+
+      for (const candidate of candidates) {
+        if (typeof candidate === "string") {
+          const trimmed = candidate.trim();
+          if (trimmed) {
+            return trimmed;
+          }
+        }
+      }
+
+      return existing?.code || "";
+    })();
+
+    const resolvedCourseSubjectId = (() => {
+      const candidate =
+        extra?.courseSubjectId ??
+        extra?.CourseSubjectId ??
+        extra?.CourseSubjectID ??
+        existing?.courseSubjectId;
+      const normalized = normalizeIdString(candidate);
+      return normalized ?? null;
+    })();
+
+    const option = existing || {
+      id: normalizedId,
+      label: resolvedLabel,
+      code: codeCandidate,
+      courseSubjectId: resolvedCourseSubjectId,
+    };
+
+    option.label = resolvedLabel;
+    option.code = codeCandidate;
+    option.courseSubjectId = resolvedCourseSubjectId;
+
+    attachScheduleMeta(option, normalizedId);
+
+    if (!existing) {
+      optionMap.set(normalizedId, option);
+      options.push(option);
+    }
+  };
+
+  const candidateCollections = [
+    courseDetails?.subjectDetails,
+    courseDetails?.SubjectDetails,
+    courseDetails?.courseSubjects,
+    courseDetails?.CourseSubjects,
+    courseDetails?.subjects,
+    courseDetails?.Subjects,
+    courseDetails?.subjectStudentGroups,
+  ];
+
+  candidateCollections.forEach((collection) => {
+    if (!collection) {
+      return;
+    }
+
+    if (Array.isArray(collection)) {
+      collection.forEach((entry) => {
+        if (!entry || typeof entry !== "object") {
+          return;
+        }
+
+        const rawId =
+          entry.subjectId ??
+          entry.SubjectID ??
+          entry.SubjectId ??
+          entry.subjectID ??
+          entry.SubjectID ??
+          entry.id ??
+          entry.Id ??
+          null;
+
+        registerOption(
+          rawId,
+          entry.name ?? entry.subjectName ?? entry.SubjectName,
+          {
+            code:
+              entry.code ??
+              entry.subjectCode ??
+              entry.SubjectCode ??
+              entry.Code ??
+              null,
+            courseSubjectId:
+              entry.courseSubjectId ??
+              entry.CourseSubjectId ??
+              entry.CourseSubjectID ??
+              null,
+          }
+        );
+      });
+      return;
+    }
+
+    if (typeof collection === "object") {
+      Object.values(collection).forEach((entry) => {
+        if (!entry || typeof entry !== "object") {
+          return;
+        }
+
+        const rawId =
+          entry.subjectId ??
+          entry.SubjectID ??
+          entry.SubjectId ??
+          entry.subjectID ??
+          entry.SubjectID ??
+          entry.id ??
+          entry.Id ??
+          null;
+
+        registerOption(
+          rawId,
+          entry.name ?? entry.subjectName ?? entry.SubjectName,
+          {
+            code:
+              entry.code ??
+              entry.subjectCode ??
+              entry.SubjectCode ??
+              entry.Code ??
+              null,
+            courseSubjectId:
+              entry.courseSubjectId ??
+              entry.CourseSubjectId ??
+              entry.CourseSubjectID ??
+              null,
+          }
+        );
+      });
+    }
+  });
+
+  const pushSubjectCourseMatches = (subject) => {
+    if (!subject || typeof subject !== "object") {
+      return;
+    }
+
+    const normalizedSubjectId = normalizeIdString(
+      subject.id ??
+        subject.SubjectID ??
+        subject.subjectID ??
+        subject.SubjectId ??
+        subject.subjectId
+    );
+    if (!normalizedSubjectId) {
+      return;
+    }
+
+    const courseIdCandidates = new Set();
+    const addCandidate = (value) => {
+      if (Array.isArray(value)) {
+        value.forEach(addCandidate);
+        return;
+      }
+      const normalized = normalizeIdString(value);
+      if (normalized) {
+        courseIdCandidates.add(normalized);
+      }
+    };
+
+    addCandidate(subject.courseId);
+    addCandidate(subject.CourseID);
+    addCandidate(subject.CourseId);
+    addCandidate(subject.courseID);
+    addCandidate(subject.courseIds);
+    addCandidate(subject.CourseIDs);
+    addCandidate(subject.CourseIds);
+
+    if (Array.isArray(subject.courses)) {
+      subject.courses.forEach((course) => {
+        addCandidate(
+          course?.id ??
+            course?.CourseID ??
+            course?.courseID ??
+            course?.CourseId ??
+            course?.courseId
+        );
+      });
+    }
+
+    if (
+      normalizedCourseId &&
+      courseIdCandidates.size &&
+      !courseIdCandidates.has(normalizedCourseId)
+    ) {
+      return;
+    }
+
+    registerOption(normalizedSubjectId, subject.name ?? subject.SubjectName, {
+      code: subject.subjectCode ?? subject.code ?? subject.Code ?? null,
+    });
+  };
+
+  subjects.forEach(pushSubjectCourseMatches);
+
+  subjectScheduleMap.forEach((scheduleList, subjectId) => {
+    if (optionMap.has(subjectId)) {
+      return;
+    }
+
+    const firstSchedule = scheduleList.find(
+      (entry) => entry && typeof entry === "object"
+    );
+    registerOption(
+      subjectId,
+      firstSchedule?.subjectName ?? firstSchedule?.SubjectName,
+      {}
+    );
+  });
+
+  options.sort((a, b) => a.label.localeCompare(b.label));
+  return options;
 };
 
 const TeacherStudents = () => {
@@ -73,6 +463,13 @@ const TeacherStudents = () => {
   const [courseSelection, setCourseSelection] = useState([]);
   const [coursePickerSaving, setCoursePickerSaving] = useState(false);
   const [coursePickerError, setCoursePickerError] = useState("");
+  const [showClassPicker, setShowClassPicker] = useState(false);
+  const [classOptions, setClassOptions] = useState([]);
+  const [classSelection, setClassSelection] = useState([]);
+  const [classPickerLoading, setClassPickerLoading] = useState(false);
+  const [classPickerError, setClassPickerError] = useState("");
+  const [classPickerCourseName, setClassPickerCourseName] = useState("");
+  const [creationSaving, setCreationSaving] = useState(false);
   const teacherId = resolveTeacherId(user);
   const queryCourse = new URLSearchParams(location.search || "").get("course");
   const courseId = queryCourse
@@ -81,6 +478,9 @@ const TeacherStudents = () => {
     ? String(id).trim()
     : null;
   const defaultCourseSelection = courseId ? [String(courseId)] : [];
+  const subjectsCacheRef = useRef(null);
+  const classSchedulesCacheRef = useRef(null);
+  const classOptionsCacheRef = useRef(new Map());
 
   const refreshStudents = async () => {
     if (!teacherId) {
@@ -239,6 +639,11 @@ const TeacherStudents = () => {
     setPendingStudentData(null);
     setCourseSelection(defaultCourseSelection);
     setCoursePickerError("");
+    setShowClassPicker(false);
+    setClassOptions([]);
+    setClassSelection([]);
+    setClassPickerError("");
+    setClassPickerCourseName("");
   };
 
   const closeCreateModal = () => {
@@ -248,6 +653,11 @@ const TeacherStudents = () => {
     setPendingStudentData(null);
     setCourseSelection(defaultCourseSelection);
     setCoursePickerError("");
+    setShowClassPicker(false);
+    setClassOptions([]);
+    setClassSelection([]);
+    setClassPickerError("");
+    setClassPickerCourseName("");
   };
 
   const handleCreateSubmit = async (formData) => {
@@ -304,37 +714,155 @@ const TeacherStudents = () => {
     setPendingStudentData(null);
     setCoursePickerError("");
     setCourseSelection(defaultCourseSelection);
+    setShowClassPicker(false);
+    setClassOptions([]);
+    setClassSelection([]);
+    setClassPickerLoading(false);
+    setClassPickerError("");
+    setClassPickerCourseName("");
+    setCreationSaving(false);
   };
 
-  const handleCoursePickerProceed = async (selectedIds) => {
-    const ids = (selectedIds || []).map((id) => String(id));
-    setCourseSelection(ids);
-
-    if (!pendingStudentData) {
-      setShowCoursePicker(false);
-      setCourseSelection(defaultCourseSelection);
-      return;
+  const ensureSubjectsLoaded = async () => {
+    if (subjectsCacheRef.current) {
+      return subjectsCacheRef.current;
     }
 
-    setCoursePickerSaving(true);
-    setCoursePickerError("");
+    try {
+      const subjects = await getAllSubjects();
+      subjectsCacheRef.current = Array.isArray(subjects) ? subjects : [];
+    } catch (error) {
+      console.warn("Failed to load subjects list for class selection", error);
+      subjectsCacheRef.current = [];
+    }
+
+    return subjectsCacheRef.current;
+  };
+
+  const ensureSchedulesLoaded = async () => {
+    if (classSchedulesCacheRef.current) {
+      return classSchedulesCacheRef.current;
+    }
 
     try {
-      const photoToUpload =
-        pendingStudentData.ProfilePicture ||
-        pendingStudentData.profilepicture ||
-        null;
+      const schedules = await getAllClassSchedules();
+      classSchedulesCacheRef.current = Array.isArray(schedules)
+        ? schedules
+        : [];
+    } catch (error) {
+      console.warn("Failed to load class schedules for class selection", error);
+      classSchedulesCacheRef.current = [];
+    }
 
+    return classSchedulesCacheRef.current;
+  };
+
+  const loadClassOptionsForCourse = async (selectedCourseId) => {
+    const normalizedId = normalizeIdString(selectedCourseId);
+    if (!normalizedId) {
+      return { options: [], courseName: "" };
+    }
+
+    if (classOptionsCacheRef.current.has(normalizedId)) {
+      return classOptionsCacheRef.current.get(normalizedId);
+    }
+
+    let courseDetails = null;
+    try {
+      courseDetails = await getCourseDetails(normalizedId);
+    } catch (error) {
+      console.warn("Failed to load course details for class selection", error);
+    }
+
+    const courseNameCandidates = [
+      courseDetails?.name,
+      courseDetails?.CourseName,
+      courseDetails?.courseName,
+      courseDetails?.Title,
+      courseDetails?.title,
+    ];
+
+    let courseName = "";
+    for (const candidate of courseNameCandidates) {
+      if (typeof candidate === "string") {
+        const trimmed = candidate.trim();
+        if (trimmed) {
+          courseName = trimmed;
+          break;
+        }
+      }
+    }
+
+    const [subjects, schedules] = await Promise.all([
+      ensureSubjectsLoaded(),
+      ensureSchedulesLoaded(),
+    ]);
+
+    const options = deriveClassOptions(
+      courseDetails,
+      normalizedId,
+      subjects,
+      schedules
+    );
+    const payload = { options, courseName };
+    classOptionsCacheRef.current.set(normalizedId, payload);
+    return payload;
+  };
+
+  const finalizeStudentCreation = async (
+    selectedCourseIds,
+    selectedSubjectIds = []
+  ) => {
+    if (!pendingStudentData) {
+      throw new Error("Missing student details. Please restart the flow.");
+    }
+
+    const courseIds = Array.from(
+      new Set(
+        (selectedCourseIds || [])
+          .map((value) => normalizeIdString(value))
+          .filter(Boolean)
+      )
+    );
+
+    if (!courseIds.length) {
+      throw new Error("Select a course before continuing.");
+    }
+
+    const uniqueSubjectIds = Array.from(
+      new Set(
+        (selectedSubjectIds || [])
+          .map((value) => normalizeIdString(value))
+          .filter(Boolean)
+      )
+    );
+
+    const toApiId = (value) => {
+      if (value === null || value === undefined) {
+        return value;
+      }
+      const numeric = Number(value);
+      return Number.isNaN(numeric) ? value : numeric;
+    };
+
+    const photoToUpload =
+      pendingStudentData.ProfilePicture ||
+      pendingStudentData.profilepicture ||
+      null;
+
+    setCreationSaving(true);
+
+    try {
       const createdUser = await createUser({
         ...pendingStudentData,
-        CourseIDs: ids.map((cid) =>
-          Number.isNaN(Number(cid)) ? cid : Number(cid)
-        ),
+        CourseIDs: courseIds.map((cid) => {
+          const numeric = Number(cid);
+          return Number.isNaN(numeric) ? cid : numeric;
+        }),
         IsActive: true,
         ProfilePicture: null,
       });
 
-      // upload profile photo if provided
       if (
         photoToUpload &&
         typeof photoToUpload === "string" &&
@@ -350,6 +878,11 @@ const TeacherStudents = () => {
         }
       }
 
+      const enrollmentDateValue =
+        pendingStudentData.EnrollmentDate ??
+        pendingStudentData.enrollmentDate ??
+        null;
+
       const studentPayload = {
         UserID:
           createdUser.UserID ??
@@ -362,7 +895,7 @@ const TeacherStudents = () => {
           pendingStudentData.rollNumber ??
           pendingStudentData.idNumber ??
           undefined,
-        EnrollmentDate: pendingStudentData.EnrollmentDate ?? undefined,
+        EnrollmentDate: enrollmentDateValue ?? undefined,
         CurrentGrade:
           pendingStudentData.CurrentGrade ??
           pendingStudentData.Class ??
@@ -383,53 +916,221 @@ const TeacherStudents = () => {
           undefined,
       };
 
+      const cleanedStudentPayload = Object.fromEntries(
+        Object.entries(studentPayload).filter(
+          ([, value]) => value !== undefined
+        )
+      );
+
       let createdStudent = null;
       try {
-        createdStudent = await createStudent(
-          Object.fromEntries(
-            Object.entries(studentPayload).filter(
-              ([, value]) => value !== undefined
-            )
-          )
-        );
+        createdStudent = await createStudent(cleanedStudentPayload);
       } catch (studentErr) {
         console.error("Failed to create student record:", studentErr);
       }
 
-      const studentId =
-        createdStudent?.StudentID ??
-        createdStudent?.studentId ??
-        createdStudent?.UserID ??
-        createdStudent?.id ??
-        null;
+      const studentIdentifierCandidates = [
+        createdStudent?.StudentID,
+        createdStudent?.studentID,
+        createdStudent?.studentId,
+        createdStudent?.UserID,
+        createdStudent?.userID,
+        createdStudent?.userId,
+        createdStudent?.id,
+        createdUser?.StudentID,
+        createdUser?.studentID,
+        createdUser?.studentId,
+        createdUser?.UserID,
+        createdUser?.userID,
+        createdUser?.userId,
+        createdUser?.id,
+      ];
 
-      const numericCourseIds = ids
-        .map((cid) => Number(cid))
-        .filter((cid) => !Number.isNaN(cid));
+      let resolvedStudentId = null;
+      for (const candidate of studentIdentifierCandidates) {
+        if (candidate === undefined || candidate === null) {
+          continue;
+        }
+        const normalized = normalizeIdString(candidate);
+        if (!normalized) {
+          continue;
+        }
+        const asNumber = Number(normalized);
+        resolvedStudentId = Number.isNaN(asNumber) ? normalized : asNumber;
+        break;
+      }
 
-      if (studentId && numericCourseIds.length) {
-        try {
-          await createEnrollmentsForStudent(studentId, numericCourseIds, {
-            EnrollmentDate: studentPayload.EnrollmentDate || undefined,
+      if (resolvedStudentId !== null && resolvedStudentId !== undefined) {
+        const enrollmentDateIso =
+          enrollmentDateValue || new Date().toISOString();
+
+        const numericCourseIds = courseIds
+          .map((cid) => {
+            const numeric = Number(cid);
+            return Number.isNaN(numeric) ? null : numeric;
+          })
+          .filter((cid) => cid !== null);
+
+        const primaryCourseId = courseIds[0];
+        const numericPrimaryCourseId = Number(primaryCourseId);
+        const courseIdForApi = Number.isNaN(numericPrimaryCourseId)
+          ? primaryCourseId
+          : numericPrimaryCourseId;
+
+        if (uniqueSubjectIds.length) {
+          const optionMap = new Map(
+            (classOptions || []).map((option) => [
+              normalizeIdString(option.id),
+              option,
+            ])
+          );
+
+          const creationResults = await Promise.allSettled(
+            uniqueSubjectIds.map((subjectId) => {
+              const option = optionMap.get(subjectId) || null;
+              const payload = {
+                StudentID: toApiId(resolvedStudentId),
+                CourseID: toApiId(courseIdForApi),
+                SubjectID: toApiId(subjectId),
+                EnrollmentDate: enrollmentDateIso,
+                IsActive: true,
+              };
+
+              if (
+                option?.courseSubjectId !== null &&
+                option?.courseSubjectId !== undefined
+              ) {
+                payload.CourseSubjectID = toApiId(option.courseSubjectId);
+              }
+
+              return createEnrollment(payload);
+            })
+          );
+
+          const failures = creationResults.filter(
+            (result) => result.status === "rejected"
+          );
+
+          if (failures.length) {
+            const firstError = failures[0]?.reason;
+            throw new Error(
+              firstError?.message ||
+                "Failed to enroll student in the selected class."
+            );
+          }
+        } else if (numericCourseIds.length) {
+          await createEnrollmentsForStudent(
+            toApiId(resolvedStudentId),
+            numericCourseIds,
+            {
+              EnrollmentDate: enrollmentDateIso,
+              IsActive: true,
+            }
+          );
+        } else {
+          await createEnrollment({
+            StudentID: toApiId(resolvedStudentId),
+            CourseID: toApiId(courseIdForApi),
+            EnrollmentDate: enrollmentDateIso,
             IsActive: true,
           });
-        } catch (enrollErr) {
-          console.error("Failed to enroll student:", enrollErr);
         }
       }
 
       await refreshStudents();
       setShowCoursePicker(false);
+      setShowClassPicker(false);
       setPendingStudentData(null);
       setCourseSelection(defaultCourseSelection);
+      setClassSelection([]);
+      setClassOptions([]);
+      setClassPickerLoading(false);
+      setClassPickerError("");
+      setClassPickerCourseName("");
       setCoursePickerError("");
+    } catch (error) {
+      throw error;
+    } finally {
+      setCreationSaving(false);
+    }
+  };
+
+  const handleCoursePickerProceed = async (selectedIds) => {
+    const ids = (selectedIds || []).map((id) => String(id)).filter(Boolean);
+    setCourseSelection(ids);
+
+    if (!pendingStudentData) {
+      setShowCoursePicker(false);
+      setCourseSelection(defaultCourseSelection);
+      return;
+    }
+
+    if (!ids.length) {
+      setCoursePickerError("Select a course before continuing.");
+      return;
+    }
+
+    setCoursePickerSaving(true);
+    setCoursePickerError("");
+
+    try {
+      const primaryCourseId = ids[0] ?? null;
+      setClassPickerLoading(true);
+      const { options, courseName } = await loadClassOptionsForCourse(
+        primaryCourseId
+      );
+
+      setClassOptions(options);
+      setClassSelection(options.length === 1 ? [String(options[0].id)] : []);
+      setClassPickerCourseName(courseName || "");
+      setClassPickerError("");
+      setShowCoursePicker(false);
+      setShowClassPicker(true);
     } catch (err) {
-      console.error("Error creating student record:", err);
+      console.error("Failed to load class selection options:", err);
       setCoursePickerError(
-        err?.message || "Unable to create student. Please try again."
+        err?.message ||
+          "Unable to load classes for the selected course. Please try again."
       );
     } finally {
+      setClassPickerLoading(false);
       setCoursePickerSaving(false);
+    }
+  };
+
+  const handleClassPickerClose = () => {
+    if (creationSaving) {
+      return;
+    }
+    setShowClassPicker(false);
+    setClassPickerError("");
+    setClassPickerLoading(false);
+    setClassSelection([]);
+    setClassPickerCourseName("");
+    setClassOptions([]);
+    setCoursePickerSaving(false);
+    setCreationSaving(false);
+    if (pendingStudentData) {
+      setCoursePickerError("");
+      setShowCoursePicker(true);
+    }
+  };
+
+  const handleClassPickerProceed = async (selectedSubjectIds) => {
+    const normalized = Array.from(
+      new Set((selectedSubjectIds || []).map((value) => String(value)))
+    ).filter(Boolean);
+    setClassSelection(normalized);
+    setClassPickerError("");
+
+    try {
+      await finalizeStudentCreation(courseSelection, normalized);
+    } catch (err) {
+      console.error("Error finalizing student creation:", err);
+      setClassPickerError(
+        err?.message ||
+          "Unable to enroll the student in the selected class. Please try again."
+      );
     }
   };
 
@@ -776,9 +1477,34 @@ const TeacherStudents = () => {
         multiSelect={false}
         allowCreate={false}
         teacherId={teacherId}
-        saving={coursePickerSaving}
+        saving={coursePickerSaving || creationSaving}
         errorMessage={coursePickerError}
         onProceed={handleCoursePickerProceed}
+      />
+
+      <ClassPickerModal
+        isOpen={showClassPicker}
+        onClose={handleClassPickerClose}
+        options={classOptions}
+        initialSelected={classSelection}
+        title={
+          classPickerCourseName
+            ? `Select Class for ${classPickerCourseName}`
+            : "Select Class"
+        }
+        description={
+          classPickerCourseName
+            ? `Choose the class or section for ${classPickerCourseName}.`
+            : "Choose the class for the student."
+        }
+        saving={creationSaving}
+        loading={classPickerLoading}
+        errorMessage={classPickerError}
+        multiSelect={false}
+        requireSelection={classOptions.length > 0}
+        proceedLabel="Create Student"
+        cancelLabel="Back"
+        onProceed={handleClassPickerProceed}
       />
 
       {/* Edit Student Popup (admin-style multi-step modal) */}

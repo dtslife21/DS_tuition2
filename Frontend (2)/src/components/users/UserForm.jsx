@@ -136,6 +136,7 @@ const UserForm = ({
   showRoleFields = true,
   // New: override submit button label
   submitLabel,
+  additionalRoleContent = null,
 }) => {
   // support either `user` or `initialData` prop for backwards compatibility
   const initialUser = user || initialData || null;
@@ -1730,6 +1731,16 @@ const UserForm = ({
         allowCreate={false}
         teacherId={teacherId}
       />
+
+      {showRoleFields
+        ? typeof additionalRoleContent === "function"
+          ? additionalRoleContent({
+              userTypeID,
+              showCoreFields,
+              showRoleFields,
+            })
+          : additionalRoleContent || null
+        : null}
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
         <Button

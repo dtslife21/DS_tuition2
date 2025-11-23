@@ -65,6 +65,12 @@ const CourseView = () => {
   const [studentActionError, setStudentActionError] = useState("");
   const [studentsRefreshCounter, setStudentsRefreshCounter] = useState(0);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [registerStep, setRegisterStep] = useState(1);
+  const [pendingRegisterCore, setPendingRegisterCore] = useState(null);
+  const [registerSelectedSubjectIds, setRegisterSelectedSubjectIds] = useState(
+    []
+  );
+  const [registerSubjectError, setRegisterSubjectError] = useState("");
   const [showStudentMenu, setShowStudentMenu] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("success");
@@ -127,6 +133,15 @@ const CourseView = () => {
     id,
     normalizeIdString,
   ]);
+
+  useEffect(() => {
+    if (!showRegisterModal) {
+      setRegisterStep(1);
+      setPendingRegisterCore(null);
+      setRegisterSelectedSubjectIds([]);
+      setRegisterSubjectError("");
+    }
+  }, [showRegisterModal]);
 
   const normalizedCourseSubjectIdSet = useMemo(() => {
     const set = new Set();
@@ -1041,7 +1056,172 @@ const CourseView = () => {
     });
   }, [subjectStudentGroups, resolveEnrollmentActive]);
 
-  const handleExistingStudentConfirm = async (selectedIds = []) => {
+  const courseSubjectOptions = useMemo(() => {
+    const options = [];
+    const seen = new Set();
+
+    const pushOption = (rawId, nameCandidate, extra = {}) => {
+      const normalizedId = normalizeIdString(rawId);
+      if (!normalizedId || seen.has(normalizedId)) {
+        return;
+      }
+
+      const labelSources = [
+        nameCandidate,
+        extra.name,
+        extra.subjectName,
+        extra.SubjectName,
+        extra.title,
+        extra.Title,
+        extra.fallbackName,
+      ];
+
+      let label = "";
+      for (const candidate of labelSources) {
+        if (typeof candidate === "string") {
+          const trimmed = candidate.trim();
+          if (trimmed) {
+            label = trimmed;
+            break;
+          }
+        }
+      }
+
+      const codeSources = [
+        extra.code,
+        extra.subjectCode,
+        extra.SubjectCode,
+        extra.codeCandidate,
+        extra.courseSubjectCode,
+        extra.CourseSubjectCode,
+      ];
+
+      let code = "";
+      for (const candidate of codeSources) {
+        if (typeof candidate === "string") {
+          const trimmed = candidate.trim();
+          if (trimmed) {
+            code = trimmed;
+            break;
+          }
+        }
+      }
+
+      const courseSubjectIdRaw =
+        extra.courseSubjectId ??
+        extra.CourseSubjectId ??
+        extra.CourseSubjectID ??
+        null;
+
+      const normalizedCourseSubjectId =
+        courseSubjectIdRaw !== null && courseSubjectIdRaw !== undefined
+          ? normalizeIdString(courseSubjectIdRaw)
+          : null;
+
+      options.push({
+        id: normalizedId,
+        label: label || `Subject ${normalizedId}`,
+        code,
+        courseSubjectId: normalizedCourseSubjectId,
+      });
+      seen.add(normalizedId);
+    };
+
+    (subjectStudentGroups || []).forEach((group, index) => {
+      const rawId =
+        group?.subjectId ??
+        group?.SubjectID ??
+        group?.SubjectId ??
+        group?.id ??
+        group?.Id ??
+        null;
+
+      if (rawId === null || rawId === undefined) {
+        return;
+      }
+
+      pushOption(rawId, group?.subjectName ?? group?.SubjectName, {
+        code: group?.subjectCode ?? group?.SubjectCode,
+        courseSubjectId:
+          group?.courseSubjectId ??
+          group?.CourseSubjectId ??
+          group?.CourseSubjectID ??
+          null,
+        fallbackName: Array.isArray(course?.subjects)
+          ? course.subjects[index]
+          : undefined,
+      });
+    });
+
+    const detailSources = [
+      course?.subjectDetails,
+      course?.SubjectDetails,
+      course?.courseSubjects,
+      course?.CourseSubjects,
+    ];
+
+    detailSources.forEach((source) => {
+      if (!Array.isArray(source)) {
+        return;
+      }
+
+      source.forEach((entry) => {
+        if (!entry || typeof entry !== "object") {
+          return;
+        }
+
+        const rawId =
+          entry.subjectId ??
+          entry.SubjectID ??
+          entry.SubjectId ??
+          entry.subjectID ??
+          entry.id ??
+          entry.Id ??
+          null;
+
+        if (rawId === null || rawId === undefined) {
+          return;
+        }
+
+        pushOption(
+          rawId,
+          entry.name ??
+            entry.subjectName ??
+            entry.SubjectName ??
+            entry.title ??
+            entry.Title,
+          {
+            code:
+              entry.code ??
+              entry.subjectCode ??
+              entry.SubjectCode ??
+              entry.Code ??
+              null,
+            courseSubjectId:
+              entry.courseSubjectId ??
+              entry.CourseSubjectId ??
+              entry.CourseSubjectID ??
+              null,
+          }
+        );
+      });
+    });
+
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+  }, [course, normalizeIdString, subjectStudentGroups]);
+
+  const courseSubjectOptionMap = useMemo(() => {
+    const map = new Map();
+    courseSubjectOptions.forEach((option) => {
+      map.set(option.id, option);
+    });
+    return map;
+  }, [courseSubjectOptions]);
+
+  const handleExistingStudentConfirm = async (
+    selectedIds = [],
+    selectedSubjectIds = []
+  ) => {
     if (!Array.isArray(selectedIds) || !selectedIds.length) {
       setStudentActionError("Select at least one student to enroll.");
       return;
@@ -1050,13 +1230,30 @@ const CourseView = () => {
     const uniqueIds = Array.from(
       new Set(
         selectedIds
-          .map((id) => String(id || "").trim())
+          .map((id) => normalizeIdString(id))
           .filter((value) => Boolean(value))
       )
     );
 
     if (!uniqueIds.length) {
       setStudentActionError("Select at least one student to enroll.");
+      return;
+    }
+
+    const requireSubjects = courseSubjectOptions.length > 0;
+
+    const uniqueSubjectIds = Array.from(
+      new Set(
+        (Array.isArray(selectedSubjectIds) ? selectedSubjectIds : [])
+          .map((subjectId) => normalizeIdString(subjectId))
+          .filter((value) => Boolean(value))
+      )
+    );
+
+    if (requireSubjects && !uniqueSubjectIds.length) {
+      setStudentActionError(
+        "Select at least one class to enroll the students in."
+      );
       return;
     }
 
@@ -1075,46 +1272,276 @@ const CourseView = () => {
 
     const numericCourseId = Number(rawCourseId);
     const useNumericCourseId = !Number.isNaN(numericCourseId);
+    const courseIdForApi = useNumericCourseId ? numericCourseId : rawCourseId;
+
     const enrollmentOptions = {
       EnrollmentDate: new Date().toISOString(),
       IsActive: true,
+    };
+
+    const toApiId = (value) => {
+      if (value === null || value === undefined) {
+        return value;
+      }
+      const numeric = Number(value);
+      return Number.isNaN(numeric) ? value : numeric;
     };
 
     setAddingStudents(true);
     setStudentActionError("");
 
     try {
-      for (const studentId of uniqueIds) {
-        const numericStudentId = Number(studentId);
-        const resolvedStudentId = Number.isNaN(numericStudentId)
-          ? studentId
-          : numericStudentId;
+      if (!requireSubjects || !uniqueSubjectIds.length) {
+        for (const studentId of uniqueIds) {
+          const resolvedStudentId = toApiId(studentId);
 
-        if (useNumericCourseId) {
-          await createEnrollmentsForStudent(
-            resolvedStudentId,
-            [numericCourseId],
-            enrollmentOptions
-          );
-        } else {
-          await createEnrollment({
-            StudentID: resolvedStudentId,
-            CourseID: rawCourseId,
-            EnrollmentDate: enrollmentOptions.EnrollmentDate,
-            IsActive: enrollmentOptions.IsActive,
+          if (useNumericCourseId) {
+            await createEnrollmentsForStudent(
+              resolvedStudentId,
+              [numericCourseId],
+              enrollmentOptions
+            );
+          } else {
+            await createEnrollment({
+              StudentID: resolvedStudentId,
+              CourseID: rawCourseId,
+              EnrollmentDate: enrollmentOptions.EnrollmentDate,
+              IsActive: enrollmentOptions.IsActive,
+            });
+          }
+        }
+
+        setStudentActionError("");
+        setShowStudentPicker(false);
+        setStudentsRefreshCounter((prev) => prev + 1);
+        setToastType("success");
+        setToastMessage(
+          uniqueIds.length > 1
+            ? `Added ${uniqueIds.length} students to the course.`
+            : `Added 1 student to the course.`
+        );
+        return;
+      }
+
+      const existingEnrollmentMap = new Map();
+
+      const registerEnrollment = (entry) => {
+        if (!entry || typeof entry !== "object") {
+          return;
+        }
+
+        const studentIdValue = normalizeIdString(resolveStudentId(entry));
+        if (!studentIdValue) {
+          return;
+        }
+
+        const subjectCandidates = [
+          entry.SubjectID,
+          entry.subjectID,
+          entry.SubjectId,
+          entry.subjectId,
+          entry.CourseSubjectID,
+          entry.courseSubjectID,
+          entry.CourseSubjectId,
+          entry.courseSubjectId,
+        ];
+
+        let subjectIdValue = null;
+        for (const subjectCandidate of subjectCandidates) {
+          const normalizedSubjectId = normalizeIdString(subjectCandidate);
+          if (normalizedSubjectId) {
+            subjectIdValue = normalizedSubjectId;
+            break;
+          }
+        }
+
+        if (!subjectIdValue) {
+          return;
+        }
+
+        const key = `${studentIdValue}::${subjectIdValue}`;
+        if (existingEnrollmentMap.has(key)) {
+          return;
+        }
+
+        existingEnrollmentMap.set(key, {
+          entry,
+          enrollmentId: resolveEnrollmentId(entry),
+          isActive: resolveEnrollmentActive(entry),
+          studentId: studentIdValue,
+          subjectId: subjectIdValue,
+        });
+      };
+
+      (students || []).forEach(registerEnrollment);
+      (subjectStudentGroups || []).forEach((group) => {
+        (group?.students || []).forEach(registerEnrollment);
+      });
+
+      const plannedKeys = new Set();
+      const activations = [];
+      const creations = [];
+      const alreadyActive = [];
+
+      for (const studentId of uniqueIds) {
+        for (const subjectId of uniqueSubjectIds) {
+          const key = `${studentId}::${subjectId}`;
+          if (plannedKeys.has(key)) {
+            continue;
+          }
+          plannedKeys.add(key);
+
+          const existing = existingEnrollmentMap.get(key);
+          if (existing) {
+            if (existing.isActive) {
+              alreadyActive.push({ studentId, subjectId });
+              continue;
+            }
+
+            if (existing.enrollmentId) {
+              activations.push({
+                enrollmentId: existing.enrollmentId,
+                studentId,
+                subjectId,
+              });
+              continue;
+            }
+          }
+
+          const option = courseSubjectOptionMap.get(subjectId) || null;
+          creations.push({
+            studentId,
+            subjectId,
+            courseSubjectId: option?.courseSubjectId ?? null,
           });
         }
       }
 
-      setStudentActionError("");
-      setShowStudentPicker(false);
-      setStudentsRefreshCounter((prev) => prev + 1);
-      setToastType("success");
-      setToastMessage(
-        uniqueIds.length > 1
-          ? `Added ${uniqueIds.length} students to the course.`
-          : `Added 1 student to the course.`
+      const activationResults = await Promise.allSettled(
+        activations.map(({ enrollmentId, studentId, subjectId }) => {
+          const option = courseSubjectOptionMap.get(subjectId) || null;
+          const payload = {
+            StudentID: toApiId(studentId),
+            CourseID: courseIdForApi,
+            SubjectID: toApiId(subjectId),
+          };
+
+          if (
+            option?.courseSubjectId !== null &&
+            option?.courseSubjectId !== undefined
+          ) {
+            payload.CourseSubjectID = toApiId(option.courseSubjectId);
+          }
+
+          return setEnrollmentActiveStatus(enrollmentId, true, payload);
+        })
       );
+
+      const creationResults = await Promise.allSettled(
+        creations.map(({ studentId, subjectId, courseSubjectId }) => {
+          const payload = {
+            StudentID: toApiId(studentId),
+            CourseID: courseIdForApi,
+            SubjectID: toApiId(subjectId),
+            EnrollmentDate: enrollmentOptions.EnrollmentDate,
+            IsActive: enrollmentOptions.IsActive,
+          };
+
+          if (courseSubjectId !== null && courseSubjectId !== undefined) {
+            payload.CourseSubjectID = toApiId(courseSubjectId);
+          }
+
+          return createEnrollment(payload);
+        })
+      );
+
+      const activationFailures = activationResults.filter(
+        (result) => result.status === "rejected"
+      );
+      const creationFailures = creationResults.filter(
+        (result) => result.status === "rejected"
+      );
+
+      const reactivatedCount =
+        activationResults.length - activationFailures.length;
+      const createdCount = creationResults.length - creationFailures.length;
+      const alreadyActiveCount = alreadyActive.length;
+
+      if (!activationFailures.length && !creationFailures.length) {
+        setStudentActionError("");
+        setShowStudentPicker(false);
+        setStudentsRefreshCounter((prev) => prev + 1);
+
+        const changedCount = createdCount + reactivatedCount;
+        const segments = [];
+        if (createdCount) {
+          segments.push(`${createdCount} new`);
+        }
+        if (reactivatedCount) {
+          segments.push(`${reactivatedCount} reactivated`);
+        }
+
+        let toastText = "";
+
+        if (changedCount) {
+          toastText = `${segments.join(" and ")} enrollment${
+            changedCount === 1 ? "" : "s"
+          }.`;
+          if (alreadyActiveCount) {
+            toastText += ` ${alreadyActiveCount} already active.`;
+          }
+        } else if (alreadyActiveCount) {
+          toastText = `${alreadyActiveCount} enrollment${
+            alreadyActiveCount === 1 ? "" : "s"
+          } already active.`;
+        } else {
+          toastText = "No enrollment changes were required.";
+        }
+
+        setToastType("success");
+        setToastMessage(toastText);
+        return;
+      }
+
+      const failureMessages = [];
+      if (creationFailures.length) {
+        failureMessages.push(
+          `${creationFailures.length} new enrollment${
+            creationFailures.length === 1 ? "" : "s"
+          }`
+        );
+      }
+      if (activationFailures.length) {
+        failureMessages.push(
+          `${activationFailures.length} reactivation${
+            activationFailures.length === 1 ? "" : "s"
+          }`
+        );
+      }
+
+      setStudentActionError(
+        `Some enrollments could not be saved: ${failureMessages.join(
+          ", "
+        )}. Please try again.`
+      );
+
+      if (createdCount || reactivatedCount) {
+        setStudentsRefreshCounter((prev) => prev + 1);
+
+        const segments = [];
+        if (createdCount) {
+          segments.push(`${createdCount} created`);
+        }
+        if (reactivatedCount) {
+          segments.push(`${reactivatedCount} reactivated`);
+        }
+        if (alreadyActiveCount) {
+          segments.push(`${alreadyActiveCount} already active`);
+        }
+
+        setToastType("warning");
+        setToastMessage(`${segments.join(", ")}.`);
+      }
     } catch (error) {
       console.error("Failed to enroll selected students", error);
       setStudentActionError(
@@ -1519,7 +1946,19 @@ const CourseView = () => {
     }
   };
 
-  const handleCreateStudent = async (formData) => {
+  const handleRegisterModalClose = useCallback(() => {
+    if (addingStudents) {
+      return;
+    }
+    setShowRegisterModal(false);
+    setRegisterStep(1);
+    setPendingRegisterCore(null);
+    setRegisterSelectedSubjectIds([]);
+    setRegisterSubjectError("");
+    setStudentActionError("");
+  }, [addingStudents]);
+
+  const handleCreateStudent = async (formData, selectedSubjectIds = []) => {
     setStudentActionError("");
 
     const rawCourseId =
@@ -1531,6 +1970,22 @@ const CourseView = () => {
       id;
 
     try {
+      const uniqueSubjectIds = Array.from(
+        new Set(
+          (selectedSubjectIds || [])
+            .map((value) => normalizeIdString(value))
+            .filter(Boolean)
+        )
+      );
+
+      const toApiId = (value) => {
+        if (value === null || value === undefined) {
+          return value;
+        }
+        const numeric = Number(value);
+        return Number.isNaN(numeric) ? value : numeric;
+      };
+
       const userPayload = {
         ...formData,
         UserTypeID: 3,
@@ -1624,35 +2079,149 @@ const CourseView = () => {
         rawCourseId !== null
       ) {
         const numericCourseId = Number(rawCourseId);
-        if (!Number.isNaN(numericCourseId)) {
-          await createEnrollmentsForStudent(
-            resolvedStudentId,
-            [numericCourseId],
-            {
-              EnrollmentDate: enrollmentDateValue || undefined,
-              IsActive: true,
-            }
+        const useNumericCourseId = !Number.isNaN(numericCourseId);
+        const courseIdForApi = useNumericCourseId
+          ? numericCourseId
+          : rawCourseId;
+
+        const enrollmentDateIso =
+          enrollmentDateValue || new Date().toISOString();
+
+        if (uniqueSubjectIds.length) {
+          const creationResults = await Promise.allSettled(
+            uniqueSubjectIds.map((subjectId) => {
+              const option = courseSubjectOptionMap.get(subjectId) || null;
+              const payload = {
+                StudentID: toApiId(resolvedStudentId),
+                CourseID: courseIdForApi,
+                SubjectID: toApiId(subjectId),
+                EnrollmentDate: enrollmentDateIso,
+                IsActive: true,
+              };
+
+              if (
+                option?.courseSubjectId !== null &&
+                option?.courseSubjectId !== undefined
+              ) {
+                payload.CourseSubjectID = toApiId(option.courseSubjectId);
+              }
+
+              return createEnrollment(payload);
+            })
           );
+
+          const failures = creationResults.filter(
+            (result) => result.status === "rejected"
+          );
+
+          if (failures.length) {
+            const firstError = failures[0]?.reason;
+            throw new Error(
+              firstError?.message ||
+                "Failed to enroll student in the selected classes."
+            );
+          }
         } else {
-          await createEnrollment({
-            StudentID: resolvedStudentId,
-            CourseID: rawCourseId,
-            EnrollmentDate: enrollmentDateValue || new Date().toISOString(),
-            IsActive: true,
-          });
+          if (useNumericCourseId) {
+            await createEnrollmentsForStudent(
+              resolvedStudentId,
+              [numericCourseId],
+              {
+                EnrollmentDate: enrollmentDateIso,
+                IsActive: true,
+              }
+            );
+          } else {
+            await createEnrollment({
+              StudentID: toApiId(resolvedStudentId),
+              CourseID: courseIdForApi,
+              EnrollmentDate: enrollmentDateIso,
+              IsActive: true,
+            });
+          }
         }
       }
 
       setStudentActionError("");
       setStudentsRefreshCounter((prev) => prev + 1);
       setToastType("success");
-      setToastMessage("Student created and enrolled in the course.");
+      if (uniqueSubjectIds.length) {
+        const count = uniqueSubjectIds.length;
+        setToastMessage(
+          `Student created and enrolled in ${count} class${
+            count === 1 ? "" : "es"
+          }.`
+        );
+      } else {
+        setToastMessage("Student created and enrolled in the course.");
+      }
     } catch (error) {
       console.error("Failed to create student", error);
       const message =
         error?.message || "Failed to create student. Please try again.";
       setStudentActionError(message);
       throw error;
+    }
+  };
+
+  const handleRegisterStudentSubmit = async (formData) => {
+    if (registerStep === 1) {
+      setPendingRegisterCore({ ...formData });
+      setRegisterStep(2);
+      setStudentActionError("");
+      setRegisterSubjectError("");
+      return;
+    }
+
+    const mergedData = {
+      ...(pendingRegisterCore || {}),
+      ...formData,
+    };
+
+    if (
+      mergedData.UserTypeID === undefined &&
+      mergedData.userTypeID === undefined &&
+      mergedData.userTypeId === undefined
+    ) {
+      mergedData.UserTypeID = 3;
+    }
+
+    const requiresSubjectSelection = courseSubjectOptions.length > 0;
+    const normalizedSubjectSelection = Array.from(
+      new Set(
+        (registerSelectedSubjectIds || [])
+          .map((value) => normalizeIdString(value))
+          .filter(Boolean)
+      )
+    );
+
+    if (requiresSubjectSelection && !normalizedSubjectSelection.length) {
+      setRegisterSubjectError(
+        "Select at least one class to enroll the student in."
+      );
+      return;
+    }
+
+    setRegisterSubjectError("");
+
+    try {
+      setAddingStudents(true);
+      setStudentActionError("");
+      await handleCreateStudent(mergedData, normalizedSubjectSelection);
+      setShowRegisterModal(false);
+      setRegisterStep(1);
+      setPendingRegisterCore(null);
+      setRegisterSelectedSubjectIds([]);
+    } catch (error) {
+      // Errors are surfaced through studentActionError inside handleCreateStudent
+      if (normalizedSubjectSelection.length) {
+        setRegisterSubjectError(
+          error?.message ||
+            "Unable to enroll the student in the selected classes."
+        );
+      }
+    } finally {
+      setAddingStudents(false);
     }
   };
 
@@ -1972,6 +2541,10 @@ const CourseView = () => {
                         onClick={() => {
                           setShowStudentMenu(false);
                           setStudentActionError("");
+                          setRegisterStep(1);
+                          setPendingRegisterCore(null);
+                          setRegisterSelectedSubjectIds([]);
+                          setRegisterSubjectError("");
                           setShowRegisterModal(true);
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
@@ -2165,6 +2738,7 @@ const CourseView = () => {
         onConfirm={handleExistingStudentConfirm}
         initialSelected={[]}
         excludedIds={enrolledStudentIds}
+        subjectOptions={courseSubjectOptions}
         title="Add Existing Students"
         saving={addingStudents}
         errorMessage={studentActionError}
@@ -2172,27 +2746,94 @@ const CourseView = () => {
 
       <Modal
         isOpen={showRegisterModal}
-        onClose={() => setShowRegisterModal(false)}
+        onClose={handleRegisterModalClose}
         title="Register New Student"
         size="lg"
       >
         <UserForm
-          onSubmit={async (formData) => {
-            try {
-              setAddingStudents(true);
-              await handleCreateStudent(formData);
-              setShowRegisterModal(false);
-            } catch (e) {
-              // handleCreateStudent sets studentActionError
-            } finally {
-              setAddingStudents(false);
-            }
-          }}
-          loading={addingStudents}
+          onSubmit={handleRegisterStudentSubmit}
+          loading={registerStep === 2 && addingStudents}
           forceUserType={3}
-          showCoreFields={true}
-          showRoleFields={true}
-          submitLabel={addingStudents ? "Creating..." : "Create Student"}
+          showCoreFields={registerStep === 1}
+          showRoleFields={registerStep === 2}
+          submitLabel={registerStep === 1 ? "Next" : "Create Student"}
+          additionalRoleContent={({ userTypeID }) => {
+            if (String(userTypeID) !== "3") {
+              return null;
+            }
+
+            if (!courseSubjectOptions.length) {
+              return (
+                <div className="mt-4 rounded-md border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                  This course does not have any linked classes. The student will
+                  be enrolled at the course level.
+                </div>
+              );
+            }
+
+            return (
+              <div className="mt-4 space-y-3 rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                    Select classes for this student
+                  </p>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {registerSelectedSubjectIds.length} selected
+                  </span>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {courseSubjectOptions.map((option) => {
+                    const optionId = String(option.id);
+                    const checked =
+                      registerSelectedSubjectIds.includes(optionId);
+                    return (
+                      <label
+                        key={`reg-subject-${optionId}`}
+                        className="flex cursor-pointer items-start gap-3 rounded-lg border border-transparent bg-white px-3 py-2 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 dark:bg-gray-800 dark:hover:border-indigo-500/40 dark:hover:bg-gray-800/70"
+                      >
+                        <input
+                          type="checkbox"
+                          className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          checked={checked}
+                          disabled={registerStep === 2 && addingStudents}
+                          onChange={(event) => {
+                            const { checked: isChecked } = event.target;
+                            setRegisterSelectedSubjectIds((prev) => {
+                              const next = new Set(
+                                prev.map((id) => String(id))
+                              );
+                              if (isChecked) {
+                                next.add(optionId);
+                              } else {
+                                next.delete(optionId);
+                              }
+                              setRegisterSubjectError("");
+                              return Array.from(next);
+                            });
+                          }}
+                        />
+                        <span className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {option.label}
+                          </span>
+                          {option.code ? (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {option.code}
+                            </span>
+                          ) : null}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {registerSubjectError ? (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {registerSubjectError}
+                  </p>
+                ) : null}
+              </div>
+            );
+          }}
         />
       </Modal>
       <Toast
