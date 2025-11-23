@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   getAllSubjects,
   createSubject,
@@ -118,6 +118,7 @@ const AdminSubjects = () => {
   const [creatingSubject, setCreatingSubject] = useState(false);
   const [linkingCourse, setLinkingCourse] = useState(false);
   const [courseStepError, setCourseStepError] = useState("");
+  const location = useLocation();
   const navigate = useNavigate();
 
   const load = async () => {
@@ -738,7 +739,9 @@ const AdminSubjects = () => {
                   const target = ident ? encodeURIComponent(ident) : "";
                   if (target) {
                     // navigate to the shared subject view route
-                    navigate(`/subjects/${target}`);
+                    navigate(`/subjects/${target}`, {
+                      state: { backgroundLocation: location },
+                    });
                   } else {
                     // fallback to opening the modal when no identifier exists
                     openView(s);

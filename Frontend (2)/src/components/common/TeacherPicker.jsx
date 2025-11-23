@@ -62,6 +62,7 @@ const TeacherPicker = ({
   disabled = false,
   placeholder = "Select a teacher",
   allowClear = true,
+  showRefresh = true,
 }) => {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -316,14 +317,16 @@ const TeacherPicker = ({
           >
             + New
           </Button>
-          <button
-            type="button"
-            onClick={fetchTeachers}
-            disabled={loading}
-            className="w-full rounded-md border border-transparent bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-600 shadow-sm transition hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:bg-indigo-900/30 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
-          >
-            Refresh
-          </button>
+          {showRefresh && (
+            <button
+              type="button"
+              onClick={fetchTeachers}
+              disabled={loading}
+              className="w-full rounded-md border border-transparent bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-600 shadow-sm transition hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:bg-indigo-900/30 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
+            >
+              Refresh
+            </button>
+          )}
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   getTeacherCourses,
@@ -28,6 +29,30 @@ const resolveTeacherId = (user) => {
     user.userID ??
     user.userId ??
     user.id ??
+    null
+  );
+};
+
+const resolveStudentUserId = (student) => {
+  if (!student || typeof student !== "object") {
+    return null;
+  }
+
+  const nestedUser =
+    student.UserDetails ||
+    student.userDetails ||
+    student.User ||
+    student.user ||
+    {};
+
+  return (
+    student.UserID ??
+    student.userID ??
+    student.userId ??
+    student.UserId ??
+    nestedUser.UserID ??
+    nestedUser.userID ??
+    nestedUser.userId ??
     null
   );
 };
@@ -460,9 +485,35 @@ const TeacherDashboard = () => {
             Recent Students
           </h3>
           <div className="space-y-4">
-            {students.slice(0, 5).map((student) => (
-              <StudentCard key={student.id} user={student} />
-            ))}
+            {students.slice(0, 5).map((student, index) => {
+              const studentUserId = resolveStudentUserId(student);
+              const key =
+                studentUserId ??
+                student.id ??
+                student.StudentID ??
+                student.studentId ??
+                student.userId ??
+                index;
+              const card = <StudentCard user={student} />;
+
+              if (!studentUserId) {
+                return (
+                  <div key={String(key)} className="block">
+                    {card}
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={String(key)}
+                  to={`/teacher/students/${studentUserId}`}
+                  className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900 rounded-lg"
+                >
+                  {card}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>

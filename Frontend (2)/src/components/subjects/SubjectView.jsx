@@ -86,10 +86,32 @@ const getStudentKey = (student) => {
 /**
  * SubjectView — full-page subject details with tabs and improved UI
  */
-const SubjectView = () => {
+const SubjectView = ({ variant = "page", onClose }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const isModal = variant === "modal";
+  const fallbackSubjectsListRoute =
+    user?.userType === "teacher"
+      ? "/teacher/subjects"
+      : user?.userType === "student"
+      ? "/student/courses"
+      : "/admin/subjects";
+  const handleClose = () => {
+    if (typeof onClose === "function") {
+      onClose();
+      return;
+    }
+    navigate(-1);
+  };
+  const handleBackToSubjects = () => {
+    if (isModal) {
+      handleClose();
+      return;
+    }
+    navigate(fallbackSubjectsListRoute);
+  };
 
   const [subject, setSubject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -399,7 +421,7 @@ const SubjectView = () => {
       <EmptyState
         title="Error"
         description={error}
-        action={{ label: "Back", onClick: () => navigate(-1) }}
+        action={{ label: isModal ? "Close" : "Back", onClick: handleClose }}
       />
     );
 
@@ -409,8 +431,8 @@ const SubjectView = () => {
         title="Subject not found"
         description="The requested subject does not exist."
         action={{
-          label: "All Subjects",
-          onClick: () => navigate("/admin/subjects"),
+          label: isModal ? "Close" : "All Subjects",
+          onClick: handleBackToSubjects,
         }}
       />
     );
@@ -429,20 +451,32 @@ const SubjectView = () => {
       ? "/admin"
       : "/student";
 
+  const wrapperClass = isModal ? "space-y-5 sm:space-y-6 pr-1" : "space-y-8";
+  const heroPaddingClass = isModal ? "p-5 sm:p-6 md:p-8" : "p-6 md:p-8 lg:p-10";
+  const heroTitleClass = isModal
+    ? "text-xl sm:text-2xl font-extrabold tracking-tight text-white dark:text-white"
+    : "text-2xl md:text-3xl font-extrabold tracking-tight text-white dark:text-white";
+  const heroSubtextClass = isModal
+    ? "mt-1 text-xs sm:text-sm opacity-90"
+    : "mt-1 text-sm opacity-90";
+  const heroActionsClass = isModal
+    ? "flex flex-wrap sm:flex-nowrap sm:items-center justify-end gap-2 sm:gap-3"
+    : "flex gap-3 items-center";
+
   return (
-    <div className="space-y-8">
+    <div className={wrapperClass}>
       {/* Hero */}
       <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-indigo-600 to-indigo-400 text-white shadow-lg">
-        <div className="p-6 md:p-8 lg:p-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div
+          className={`${heroPaddingClass} flex flex-col md:flex-row md:items-center md:justify-between gap-6`}
+        >
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white dark:text-white">
-                {subject.name}
-              </h1>
-              <p className="mt-1 text-sm opacity-90">
+              <h1 className={heroTitleClass}>{subject.name}</h1>
+              <p className={heroSubtextClass}>
                 {subject.subjectCode || subject.code || "No code"}
               </p>
-              <p className="mt-1 text-sm opacity-90">
+              <p className={heroSubtextClass}>
                 {subjectCourseNames.length
                   ? `${
                       subjectCourseNames.length > 1 ? "Courses" : "Course"
@@ -451,34 +485,50 @@ const SubjectView = () => {
               </p>
             </div>
           </div>
-          <div className="flex gap-3 items-center">
+          <div className={heroActionsClass}>
             {/* <div className="text-right">
               <div className="text-xs opacity-90">Students</div>
               <div className="text-lg font-semibold">{totalStudentsCount}</div>
             </div> */}
             <div className="text-right">
-              <div className="text-xs opacity-90">Related Courses</div>
-              <div className="text-lg font-semibold">
+              <div className="text-xs sm:text-sm opacity-90">
+                Related Courses
+              </div>
+              <div className="text-base sm:text-lg font-semibold">
                 {relatedCourses.length}
               </div>
             </div>
-            <div>
-              <Button variant="primary" onClick={() => navigate(-1)}>
-                Back
+            {/* <div>
+              <Button
+                variant="primary"
+                onClick={handleClose}
+                className="w-full sm:w-auto"
+              >
+                {isModal ? "Close" : "Back"}
               </Button>
-            </div>
+            </div> */}
           </div>
         </div>
         {subject.description && (
-          <div className="px-6 pb-6 text-white/90">
+          <div
+            className={`${
+              isModal ? "px-5 sm:px-6 pb-5" : "px-6 pb-6"
+            } text-white/90 text-sm sm:text-base`}
+          >
             <p className="max-w-4xl">{subject.description}</p>
           </div>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+      <div
+        className={`${
+          isModal
+            ? "bg-white dark:bg-gray-800 rounded-2xl shadow p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+            : "bg-white dark:bg-gray-800 rounded-2xl shadow p-4 flex items-center justify-between"
+        }`}
+      >
+        <div className="flex items-center space-x-3 overflow-x-auto">
           <button
             onClick={() => setActiveTab("overview")}
             className={`px-3 py-2 rounded-md text-sm font-medium ${
@@ -511,12 +561,12 @@ const SubjectView = () => {
           </button>
         </div>
         {activeTab === "students" && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search students by name, email or roll"
-              className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-white"
+              className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-white w-full sm:w-64"
             />
             <Button variant="primary" onClick={() => setQuery("")}>
               Clear
@@ -527,14 +577,14 @@ const SubjectView = () => {
 
       {/* Tab content */}
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="p-6 lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
+          <Card className={`${isModal ? "p-5 sm:p-6" : "p-6"} lg:col-span-2`}>
             <h3 className="text-lg font-semibold mb-2">About this subject</h3>
-            <p className="text-gray-700 dark:text-gray-200 leading-relaxed">
+            <p className="text-gray-700 dark:text-gray-200 leading-relaxed text-sm sm:text-base">
               {subject.description || "No description provided."}
             </p>
           </Card>
-          <Card className="p-6">
+          <Card className={isModal ? "p-5 sm:p-6" : "p-6"}>
             {/* <h4 className="text-sm text-gray-500">Meta</h4> */}
             <div className="mt-4 space-y-3">
               <div className="flex justify-between text-sm">
@@ -559,7 +609,7 @@ const SubjectView = () => {
       {activeTab === "courses" && (
         <div>
           {relatedCourses.length ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {relatedCourses.map((c) => (
                 <Card
                   key={c.id || c.code}

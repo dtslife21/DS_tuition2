@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { getTeacherCourses } from "../../services/courseService";
 import Loader from "../../components/common/Loader";
@@ -47,6 +47,7 @@ const collectSubjectsFromCourses = (courses = []) => {
 const TeacherSubjects = () => {
   const { user } = useAuth();
   const { id } = useParams();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [courses, setCourses] = useState([]);
   const [error, setError] = useState(null);
@@ -141,6 +142,7 @@ const TeacherSubjects = () => {
               <div className="flex-shrink-0">
                 <Link
                   to={`/subjects/${encodeURIComponent(sub.id ?? sub.name)}`}
+                  state={{ backgroundLocation: location }}
                 >
                   <Button variant="primary">Details</Button>
                 </Link>

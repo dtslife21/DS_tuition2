@@ -27,6 +27,7 @@ import StudentCourses from "./pages/student/Courses";
 import StudentClassSchedule from "./pages/student/ClassSchedule";
 import CourseView from "./components/courses/CourseView";
 import SubjectView from "./components/subjects/SubjectView";
+import SubjectModal from "./components/subjects/SubjectModal";
 import StudentAttendance from "./pages/student/Attendance";
 import StudentMaterials from "./pages/student/Materials";
 import StudentComplaints from "./pages/student/Complaints";
@@ -185,6 +186,14 @@ const RoutesConfig = () => {
             element={
               <ProtectedRoute>
                 <ProfileModal />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/subjects/:id"
+            element={
+              <ProtectedRoute>
+                <SubjectModal />
               </ProtectedRoute>
             }
           />

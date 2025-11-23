@@ -741,79 +741,81 @@ const AdminClassSchedule = () => {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="flex flex-col">
                 <label className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                Course
-              </label>
-              <select
-                name="courseId"
-                value={formCourseId}
-                onChange={(e) => {
-                  setFormCourseId(e.target.value);
-                  setFormSubjectId("");
-                }}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-              >
-                <option value="">-- Select course --</option>
-                {coursesList.map((c) => (
-                  <option
-                    key={String(c.id || c.CourseID || c.CourseId || c.courseId)}
-                    value={String(
-                      c.id ?? c.CourseID ?? c.CourseId ?? c.courseId
-                    )}
-                  >
-                    {c.name || c.CourseName || c.title || c.courseName}
-                  </option>
-                ))}
-              </select>
-            </div>
-              <div className="flex flex-col">
-                <label className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                Class
-              </label>
-              <select
-                name="subjectId"
-                value={formSubjectId}
-                onChange={(e) => setFormSubjectId(e.target.value)}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-              >
-                <option value="">-- Select class --</option>
-                {(subjectsList || [])
-                  .filter((s) => {
-                    if (!formCourseId) return true;
-                    const cid = String(formCourseId);
-                    const ids = (
-                      s.courseIds ||
-                      s.CourseIDs ||
-                      s.courseIds ||
-                      []
-                    ).map((x) => String(x));
-                    // allow subjects that list the selected course or those that have no course restriction
-                    return ids.length ? ids.includes(cid) : true;
-                  })
-                  .map((s) => (
-                    <option key={String(s.id)} value={String(s.id)}>
-                      {s.name}
+                  Course
+                </label>
+                <select
+                  name="courseId"
+                  value={formCourseId}
+                  onChange={(e) => {
+                    setFormCourseId(e.target.value);
+                    setFormSubjectId("");
+                  }}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                >
+                  <option value="">-- Select course --</option>
+                  {coursesList.map((c) => (
+                    <option
+                      key={String(
+                        c.id || c.CourseID || c.CourseId || c.courseId
+                      )}
+                      value={String(
+                        c.id ?? c.CourseID ?? c.CourseId ?? c.courseId
+                      )}
+                    >
+                      {c.name || c.CourseName || c.title || c.courseName}
                     </option>
                   ))}
-              </select>
-            </div>
+                </select>
+              </div>
               <div className="flex flex-col">
                 <label className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                Day Of Week
-              </label>
-              <select
-                name="dayOfWeek"
-                value={formDayOfWeek}
-                onChange={(e) => setFormDayOfWeek(Number(e.target.value))}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-              >
-                {dayNames.map((d, i) => (
-                  <option value={i} key={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
+                  Class
+                </label>
+                <select
+                  name="subjectId"
+                  value={formSubjectId}
+                  onChange={(e) => setFormSubjectId(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                >
+                  <option value="">-- Select class --</option>
+                  {(subjectsList || [])
+                    .filter((s) => {
+                      if (!formCourseId) return true;
+                      const cid = String(formCourseId);
+                      const ids = (
+                        s.courseIds ||
+                        s.CourseIDs ||
+                        s.courseIds ||
+                        []
+                      ).map((x) => String(x));
+                      // allow subjects that list the selected course or those that have no course restriction
+                      return ids.length ? ids.includes(cid) : true;
+                    })
+                    .map((s) => (
+                      <option key={String(s.id)} value={String(s.id)}>
+                        {s.name}
+                      </option>
+                    ))}
+                </select>
               </div>
-            {/* <div className="flex flex-col">
+              <div className="flex flex-col">
+                <label className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  Day Of Week
+                </label>
+                <select
+                  name="dayOfWeek"
+                  value={formDayOfWeek}
+                  onChange={(e) => setFormDayOfWeek(Number(e.target.value))}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                >
+                  {dayNames.map((d, i) => (
+                    <option value={i} key={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* <div className="flex flex-col">
               <label className="text-xs font-medium mb-1 text-gray-500 uppercase tracking-wide">
                 Room
               </label>
@@ -831,42 +833,42 @@ const AdminClassSchedule = () => {
             </div> */}
               <div className="flex flex-col">
                 <label className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                Start Time
-              </label>
-              <input
-                type="time"
-                name="startTime"
-                value={formStartTime}
-                onChange={(e) => setFormStartTime(e.target.value)}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-              />
-              {formErrors.startTime && (
-                <div className="text-xs text-red-500 mt-1">
-                  {formErrors.startTime}
-                </div>
-              )}
+                  Start Time
+                </label>
+                <input
+                  type="time"
+                  name="startTime"
+                  value={formStartTime}
+                  onChange={(e) => setFormStartTime(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                />
+                {formErrors.startTime && (
+                  <div className="text-xs text-red-500 mt-1">
+                    {formErrors.startTime}
+                  </div>
+                )}
               </div>
               <div className="flex flex-col">
                 <label className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                End Time
-              </label>
-              <input
-                type="time"
-                name="endTime"
-                value={formEndTime}
-                onChange={(e) => setFormEndTime(e.target.value)}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-              />
-              {formErrors.endTime && (
-                <div className="text-xs text-red-500 mt-1">
-                  {formErrors.endTime}
-                </div>
-              )}
-              {formErrors.timeOrder && (
-                <div className="text-xs text-red-500 mt-1">
-                  {formErrors.timeOrder}
-                </div>
-              )}
+                  End Time
+                </label>
+                <input
+                  type="time"
+                  name="endTime"
+                  value={formEndTime}
+                  onChange={(e) => setFormEndTime(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                />
+                {formErrors.endTime && (
+                  <div className="text-xs text-red-500 mt-1">
+                    {formErrors.endTime}
+                  </div>
+                )}
+                {formErrors.timeOrder && (
+                  <div className="text-xs text-red-500 mt-1">
+                    {formErrors.timeOrder}
+                  </div>
+                )}
               </div>
               <div className="sm:col-span-2 lg:col-span-3">
                 <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-gray-700 dark:bg-gray-900/60 sm:flex-row sm:items-center sm:justify-between">
@@ -887,7 +889,8 @@ const AdminClassSchedule = () => {
                     </label>
                   </div>
                   <p className="text-[11px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                    Enable this option to automatically repeat the class every week.
+                    Enable this option to automatically repeat the class every
+                    week.
                   </p>
                 </div>
               </div>

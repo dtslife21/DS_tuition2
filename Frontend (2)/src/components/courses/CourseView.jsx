@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   getCourseDetails,
@@ -43,6 +43,7 @@ const CourseView = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [course, setCourse] = useState(null);
   const [materials, setMaterials] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -1381,6 +1382,7 @@ const CourseView = () => {
                       <li key={subjectName}>
                         <Link
                           to={`/subjects/${encodeURIComponent(subjectName)}`}
+                          state={{ backgroundLocation: location }}
                           className="text-indigo-600 dark:text-indigo-400 hover:underline hover:text-indigo-700"
                         >
                           {subjectName}
@@ -1460,7 +1462,7 @@ const CourseView = () => {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      {/* <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
           Study Materials
         </h3>
@@ -1470,7 +1472,7 @@ const CourseView = () => {
           </Button>
         )}
       </div>
-      <MaterialList materials={materials} />
+      <MaterialList materials={materials} /> */}
 
       {/* <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">

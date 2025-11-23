@@ -408,6 +408,7 @@ const CourseForm = ({
               onChange={(val) => field.onChange(val ?? "")}
               onBlur={field.onBlur}
               disabled={loading}
+              showRefresh={false}
             />
           )}
         />

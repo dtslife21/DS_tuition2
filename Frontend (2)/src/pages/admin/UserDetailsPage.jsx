@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { getUserById, updateUser } from "../../services/userService";
 import {
@@ -56,6 +56,7 @@ const UserDetailsPage = ({
 }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user: authUser } = useAuth();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -730,7 +731,7 @@ const UserDetailsPage = ({
             </Link>
           )}
         </div>
-        <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-md">
+        <div className="rounded-md bg-red-50 p-4 text-red-600 dark:bg-red-900/20 dark:text-red-300">
           {error}
         </div>
       </div>
@@ -953,7 +954,7 @@ const UserDetailsPage = ({
               Student Details
             </h2>
           </div>
-            <div className="rounded-lg border border-gray-200 bg-white/90 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900/70">
+          <div className="rounded-lg border border-gray-200 bg-white/90 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900/70">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <InfoRow
                 label="Student ID"
@@ -982,6 +983,7 @@ const UserDetailsPage = ({
                         <span key={s}>
                           <Link
                             to={`/subjects/${encodeURIComponent(s)}`}
+                            state={{ backgroundLocation: location }}
                             className="text-indigo-600 dark:text-indigo-400 hover:underline"
                           >
                             {s}
