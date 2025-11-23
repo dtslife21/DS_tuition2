@@ -138,6 +138,16 @@ export const setEnrollmentActiveStatus = async (
     payload.CourseID = courseId;
   }
 
+  const subjectId =
+    context.SubjectID ??
+    context.subjectID ??
+    context.subjectId ??
+    context.SubjectId ??
+    null;
+  if (subjectId !== null && subjectId !== undefined) {
+    payload.SubjectID = subjectId;
+  }
+
   const enrollmentDate =
     context.EnrollmentDate ?? context.enrollmentDate ?? null;
   if (enrollmentDate) {

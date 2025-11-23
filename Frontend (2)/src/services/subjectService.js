@@ -393,24 +393,60 @@ export const getStudentsBySubject = async (subjectId) => {
     return [];
   }
 
-  try {
-    const response = await axios.get(
-      `/Subjects/StudentsBySubject/${encodeURIComponent(trimmed)}`
+  const encoded = encodeURIComponent(trimmed);
+  const baseUrl = axios?.defaults?.baseURL ?? "";
+  const baseHasApiSuffix = /\/api\/?$/i.test(String(baseUrl));
+
+  const candidateEndpoints = new Set([
+    `/Subjects/StudentsBySubject/${encoded}`,
+    `/Subjects/StudentsBySubject?subjectId=${encoded}`,
+  ]);
+
+  if (!baseHasApiSuffix) {
+    candidateEndpoints.add(`/api/Subjects/StudentsBySubject/${encoded}`);
+    candidateEndpoints.add(
+      `/api/Subjects/StudentsBySubject?subjectId=${encoded}`
     );
-
-    if (Array.isArray(response.data)) {
-      return response.data;
-    }
-
-    if (Array.isArray(response.data?.students)) {
-      return response.data.students;
-    }
-
-    return [];
-  } catch (err) {
-    console.error(`Failed to fetch students for subject ${subjectId}`, err);
-    throw err;
   }
+
+  let lastError = null;
+
+  for (const endpoint of candidateEndpoints) {
+    try {
+      const response = await axios.get(endpoint);
+
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+
+      if (Array.isArray(response.data?.students)) {
+        return response.data.students;
+      }
+
+      if (
+        response.data &&
+        typeof response.data === "object" &&
+        Array.isArray(response.data?.data)
+      ) {
+        return response.data.data;
+      }
+
+      // If the endpoint succeeds but returns unexpected shape, continue to next
+    } catch (err) {
+      lastError = err;
+      continue;
+    }
+  }
+
+  if (lastError) {
+    console.error(
+      `Failed to fetch students for subject ${subjectId}`,
+      lastError
+    );
+    throw lastError;
+  }
+
+  return [];
 };
 
 // Update an existing subject

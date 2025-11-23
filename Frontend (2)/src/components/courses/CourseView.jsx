@@ -76,6 +76,95 @@ const CourseView = () => {
   // Ref for student menu wrapper to detect outside clicks
   const studentMenuRef = useRef(null);
 
+  const normalizeIdString = useCallback((value) => {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    const str = String(value).trim();
+    if (!str) {
+      return null;
+    }
+
+    if (/^-?\d+$/.test(str)) {
+      const asNumber = Number(str);
+      if (!Number.isNaN(asNumber)) {
+        return String(asNumber);
+      }
+    }
+
+    return str;
+  }, []);
+
+  const normalizedCourseId = useMemo(() => {
+    const candidates = [
+      course?.id,
+      course?.CourseID,
+      course?.courseID,
+      course?.CourseId,
+      course?.courseId,
+      course?.course?.id,
+      course?.Course?.id,
+      id,
+    ];
+
+    for (const candidate of candidates) {
+      const normalized = normalizeIdString(candidate);
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    return null;
+  }, [
+    course?.Course?.id,
+    course?.CourseID,
+    course?.CourseId,
+    course?.course?.id,
+    course?.courseID,
+    course?.courseId,
+    course?.id,
+    id,
+    normalizeIdString,
+  ]);
+
+  const belongsToCurrentCourse = useCallback(
+    (entry) => {
+      if (!normalizedCourseId) {
+        return true;
+      }
+
+      if (!entry || typeof entry !== "object") {
+        return false;
+      }
+
+      const candidates = [
+        entry.CourseID,
+        entry.courseID,
+        entry.CourseId,
+        entry.courseId,
+        entry?.Course?.CourseID,
+        entry?.Course?.courseID,
+        entry?.Course?.CourseId,
+        entry?.Course?.courseId,
+        entry?.course?.CourseID,
+        entry?.course?.courseID,
+        entry?.course?.CourseId,
+        entry?.course?.courseId,
+      ];
+
+      for (const candidate of candidates) {
+        const normalized = normalizeIdString(candidate);
+        if (normalized && normalized === normalizedCourseId) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+    [normalizeIdString, normalizedCourseId]
+  );
+
   const normalizedStatus = course
     ? typeof course.status === "string"
       ? course.status.trim().toLowerCase()
@@ -178,7 +267,9 @@ const CourseView = () => {
               const { students: scopedStudents } =
                 await getTeacherCourseStudents(teacherId, id);
               if (!isActive) return;
-              setStudents(scopedStudents || []);
+              setStudents(
+                (scopedStudents || []).filter(belongsToCurrentCourse)
+              );
               return;
             } catch (err) {
               // fallback to course-scoped students
@@ -208,7 +299,7 @@ const CourseView = () => {
               Array.isArray(teacherScopedStudents) &&
               teacherScopedStudents.length
             ) {
-              setStudents(teacherScopedStudents);
+              setStudents(teacherScopedStudents.filter(belongsToCurrentCourse));
               return;
             }
           } catch (err) {
@@ -235,10 +326,10 @@ const CourseView = () => {
                 if (studentCourseId === null || studentCourseId === undefined) {
                   return true;
                 }
-                return String(studentCourseId) === String(id);
+                return belongsToCurrentCourse({ CourseID: studentCourseId });
               })
             : [];
-          setStudents(filteredStudents);
+          setStudents(filteredStudents.filter(belongsToCurrentCourse));
 
           // Also try the course-specific students endpoint which may include
           // inactive enrollments depending on the backend. Merge results so
@@ -272,7 +363,9 @@ const CourseView = () => {
               (filteredStudents || []).forEach(pushEntry);
               courseScoped.forEach(pushEntry);
 
-              const merged = Array.from(map.values());
+              const merged = Array.from(map.values()).filter(
+                belongsToCurrentCourse
+              );
               setStudents(merged);
             }
           } catch (mergeErr) {
@@ -305,7 +398,14 @@ const CourseView = () => {
     return () => {
       isActive = false;
     };
-  }, [id, user, loading, course?.teacherId, studentsRefreshCounter]);
+  }, [
+    id,
+    user,
+    loading,
+    course?.teacherId,
+    studentsRefreshCounter,
+    belongsToCurrentCourse,
+  ]);
 
   useEffect(() => {
     if (loading) {
@@ -317,11 +417,37 @@ const CourseView = () => {
       return;
     }
 
-    const subjectCandidates = Array.isArray(course.subjectIds)
-      ? course.subjectIds
-      : Array.isArray(course.SubjectIDs)
-      ? course.SubjectIDs
-      : [];
+    const rawSubjectCandidates = [];
+
+    const appendCandidate = (candidate) => {
+      if (candidate === null || candidate === undefined) {
+        return;
+      }
+
+      if (Array.isArray(candidate)) {
+        candidate.forEach((item) => appendCandidate(item));
+        return;
+      }
+
+      rawSubjectCandidates.push(candidate);
+    };
+
+    appendCandidate(course.subjectIds);
+    appendCandidate(course.SubjectIDs);
+    appendCandidate(course.SubjectIds);
+    appendCandidate(course.subjectIDs);
+    appendCandidate(course.subjectId);
+    appendCandidate(course.subjectID);
+    appendCandidate(course.SubjectId);
+    appendCandidate(course.SubjectID);
+    appendCandidate(course.subjectDetails);
+    appendCandidate(course.SubjectDetails);
+    appendCandidate(course.subjects);
+    appendCandidate(course.Subjects);
+    appendCandidate(course.subjectList);
+    appendCandidate(course.SubjectList);
+
+    const subjectCandidates = rawSubjectCandidates;
 
     const normalizeSubjectValue = (value) => {
       if (value === null || value === undefined) return null;
@@ -337,7 +463,7 @@ const CourseView = () => {
           const parsed = Number(trimmed);
           if (!Number.isNaN(parsed)) return parsed;
         }
-        return trimmed;
+        return null;
       }
 
       return null;
@@ -415,27 +541,29 @@ const CourseView = () => {
               ? result.value.students
               : [];
 
-            const normalizedEntries = rawEntries.map((entry) => {
-              const subjectNameValue =
-                entry?.SubjectName ?? entry?.subjectName ?? fallbackName;
-              const subjectCodeValue =
-                entry?.SubjectCode ?? entry?.subjectCode ?? "";
-              const resolvedSubjectId =
-                entry?.SubjectID ??
-                entry?.subjectID ??
-                entry?.subjectId ??
-                subjectId;
+            const normalizedEntries = rawEntries
+              .map((entry) => {
+                const subjectNameValue =
+                  entry?.SubjectName ?? entry?.subjectName ?? fallbackName;
+                const subjectCodeValue =
+                  entry?.SubjectCode ?? entry?.subjectCode ?? "";
+                const resolvedSubjectId =
+                  entry?.SubjectID ??
+                  entry?.subjectID ??
+                  entry?.subjectId ??
+                  subjectId;
 
-              return {
-                ...entry,
-                SubjectID: resolvedSubjectId,
-                subjectId: resolvedSubjectId,
-                SubjectName: subjectNameValue,
-                subjectName: subjectNameValue,
-                SubjectCode: subjectCodeValue,
-                subjectCode: subjectCodeValue,
-              };
-            });
+                return {
+                  ...entry,
+                  SubjectID: resolvedSubjectId,
+                  subjectId: resolvedSubjectId,
+                  SubjectName: subjectNameValue,
+                  subjectName: subjectNameValue,
+                  SubjectCode: subjectCodeValue,
+                  subjectCode: subjectCodeValue,
+                };
+              })
+              .filter(belongsToCurrentCourse);
 
             const subjectNameValue =
               normalizedEntries[0]?.SubjectName ?? fallbackName;
@@ -466,7 +594,9 @@ const CourseView = () => {
 
         setSubjectStudentGroups(groups);
 
-        const flattened = groups.flatMap((group) => group.students || []);
+        const flattened = groups
+          .flatMap((group) => group.students || [])
+          .filter(belongsToCurrentCourse);
         if (flattened.length) {
           setStudents(flattened);
         }
@@ -502,6 +632,7 @@ const CourseView = () => {
     course?.SubjectIDs,
     course?.subjects,
     studentsRefreshCounter,
+    belongsToCurrentCourse,
   ]);
 
   useEffect(() => {
@@ -777,7 +908,65 @@ const CourseView = () => {
     }));
 
     try {
-      await setEnrollmentActiveStatus(enrollmentId, makeActive, studentEntry);
+      const resolveSubjectId = (entry) => {
+        if (!entry || typeof entry !== "object") {
+          return null;
+        }
+
+        const candidates = [
+          entry.SubjectID,
+          entry.subjectID,
+          entry.SubjectId,
+          entry.subjectId,
+        ];
+
+        for (const candidate of candidates) {
+          if (candidate === null || candidate === undefined) continue;
+          const normalized = normalizeIdString(candidate);
+          if (normalized) {
+            return normalized;
+          }
+        }
+
+        return null;
+      };
+
+      let resolvedSubjectId = resolveSubjectId(studentEntry);
+
+      if (!resolvedSubjectId) {
+        for (const group of subjectStudentGroups) {
+          const match = (group.students || []).find((candidate) => {
+            const cid = resolveEnrollmentId(candidate);
+            if (cid && String(cid) === String(enrollmentId)) {
+              return true;
+            }
+            const studentMatchId = resolveStudentId(candidate);
+            const entryStudentId = resolveStudentId(studentEntry);
+            return (
+              studentMatchId &&
+              entryStudentId &&
+              studentMatchId === entryStudentId
+            );
+          });
+
+          if (match) {
+            resolvedSubjectId = resolveSubjectId(match);
+            if (resolvedSubjectId) {
+              break;
+            }
+          }
+        }
+      }
+
+      const contextPayload = resolvedSubjectId
+        ? {
+            ...studentEntry,
+            SubjectID: resolvedSubjectId,
+            subjectId: resolvedSubjectId,
+          }
+        : studentEntry;
+
+      await setEnrollmentActiveStatus(enrollmentId, makeActive, contextPayload);
       const nextStatus = makeActive ? "active" : "inactive";
 
       setStudents((prev) =>
@@ -790,6 +979,20 @@ const CourseView = () => {
               enrollmentIsActive: makeActive,
               EnrollmentStatus: nextStatus,
               enrollmentStatus: nextStatus,
+              SubjectID:
+                resolvedSubjectId ??
+                studentItem.SubjectID ??
+                studentItem.subjectID ??
+                studentItem.subjectId ??
+                studentItem.SubjectId,
+              subjectID:
+                resolvedSubjectId ??
+                studentItem.subjectID ??
+                studentItem.SubjectID,
+              subjectId:
+                resolvedSubjectId ??
+                studentItem.subjectId ??
+                studentItem.SubjectID,
             };
           }
           return studentItem;
@@ -807,6 +1010,20 @@ const CourseView = () => {
                 enrollmentIsActive: makeActive,
                 EnrollmentStatus: nextStatus,
                 enrollmentStatus: nextStatus,
+                SubjectID:
+                  resolvedSubjectId ??
+                  studentItem.SubjectID ??
+                  studentItem.subjectID ??
+                  studentItem.subjectId ??
+                  studentItem.SubjectId,
+                subjectID:
+                  resolvedSubjectId ??
+                  studentItem.subjectID ??
+                  studentItem.SubjectID,
+                subjectId:
+                  resolvedSubjectId ??
+                  studentItem.subjectId ??
+                  studentItem.SubjectID,
               };
             }
             return studentItem;
@@ -908,7 +1125,7 @@ const CourseView = () => {
                     <div className="flex items-start">
                       <div className="flex-shrink-0">
                         <Avatar
-                          name={`${
+                          name={`$
                             studentEntry.FirstName ||
                             studentEntry.firstName ||
                             ""
