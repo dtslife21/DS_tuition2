@@ -12,6 +12,7 @@ namespace ClassSystemAPI.Models
         public int CourseID { get; set; }
 
         public int StudentID { get; set; }
+        public int SubjectID { get; set; }
 
 
         public DateTime EnrollmentDate { get; set; }
@@ -23,5 +24,8 @@ namespace ClassSystemAPI.Models
 
         [ForeignKey("StudentID")]
         public virtual Student Student { get; set; }
+
+        [ForeignKey("SubjectID")]
+        public virtual Subject Subject { get; set; }
     }
 }

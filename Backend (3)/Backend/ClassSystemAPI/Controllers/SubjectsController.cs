@@ -87,29 +87,31 @@ namespace ClassSystemAPI.Controllers
         [Route("api/Subjects/StudentsBySubject/{subjectId}")]
         public IHttpActionResult GetStudentsBySubject(int subjectId)
         {
-            var result = (from a in db.CourseSubjects
-                          join b in db.Subjects on a.SubjectID equals b.SubjectID
-                          join c in db.Enrollments on a.CourseID equals c.CourseID
-                          join d in db.Students on c.StudentID equals d.StudentID
-                          join e in db.Users on c.StudentID equals e.UserID
-                          where e.IsActive == true && c.IsActive == true && a.SubjectID == subjectId
+            var result = (from a in db.Enrollments
+                          join b in db.Courses on a.CourseID equals b.CourseID
+                          join c in db.Subjects on a.SubjectID equals c.SubjectID
+                          join d in db.Users on a.StudentID equals d.UserID
+                          where a.IsActive == true && a.SubjectID == subjectId
                           orderby a.SubjectID ascending
                           select new
-                          {
-                              CourseID = a.CourseID,
+                          {                          
+                              a.EnrollmentID,
+                              CourseID =  a.CourseID,
+                              b.CourseName,
                               SubjectID = a.SubjectID,
-                              b.SubjectName,
-                              b.SubjectCode,
-                              b.Description,
-                              d.StudentID,
-                              e.Username,
-                              e.FirstName,
-                              e.LastName,
-                              c.EnrollmentID,
-                              c.EnrollmentDate
+                              c.SubjectName,
+                              a.StudentID,
+                              d.Username,
+                              d.FirstName,
+                              d.LastName,
+                              a.EnrollmentDate,
+                              a.IsActive
                           }).ToList();
 
             return Ok(result);
         }
     }
 }
+
+
+
