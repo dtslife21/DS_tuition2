@@ -128,41 +128,272 @@ const CourseView = () => {
     normalizeIdString,
   ]);
 
-  const belongsToCurrentCourse = useCallback(
-    (entry) => {
-      if (!normalizedCourseId) {
-        return true;
+  const normalizedCourseSubjectIdSet = useMemo(() => {
+    const set = new Set();
+
+    const pushCandidate = (candidate) => {
+      if (candidate === null || candidate === undefined) {
+        return;
       }
 
+      if (Array.isArray(candidate)) {
+        candidate.forEach(pushCandidate);
+        return;
+      }
+
+      if (typeof candidate === "object") {
+        const fields = [
+          candidate.SubjectID,
+          candidate.subjectID,
+          candidate.SubjectId,
+          candidate.subjectId,
+          candidate.SubjectIDs,
+          candidate.subjectIDs,
+          candidate.SubjectIds,
+          candidate.subjectIds,
+          candidate.id,
+          candidate.Id,
+        ];
+
+        fields.forEach((value) => {
+          if (value === undefined || value === null) {
+            return;
+          }
+          if (Array.isArray(value) || typeof value === "object") {
+            pushCandidate(value);
+            return;
+          }
+          const normalized = normalizeIdString(value);
+          if (normalized) {
+            set.add(normalized);
+          }
+        });
+        return;
+      }
+
+      const normalized = normalizeIdString(candidate);
+      if (normalized) {
+        set.add(normalized);
+      }
+    };
+
+    if (course && typeof course === "object") {
+      const sources = [
+        course.subjectIds,
+        course.SubjectIDs,
+        course.SubjectIds,
+        course.subjectIDs,
+        course.subjectId,
+        course.SubjectID,
+        course.SubjectId,
+        course.subjectID,
+        course.subjectDetails,
+        course.SubjectDetails,
+        course.subjects,
+        course.Subjects,
+        course.subjectList,
+        course.SubjectList,
+      ];
+
+      sources.forEach(pushCandidate);
+    }
+
+    return set;
+  }, [course, normalizeIdString]);
+
+  const normalizedCourseSubjectNameSet = useMemo(() => {
+    const set = new Set();
+
+    const pushName = (candidate) => {
+      if (!candidate) {
+        return;
+      }
+
+      if (Array.isArray(candidate)) {
+        candidate.forEach(pushName);
+        return;
+      }
+
+      if (typeof candidate === "object") {
+        const fields = [
+          candidate.subjectName,
+          candidate.SubjectName,
+          candidate.name,
+          candidate.Name,
+          candidate.title,
+          candidate.Title,
+          candidate.SubjectTitle,
+          candidate.subjectTitle,
+        ];
+
+        fields.forEach((value) => {
+          if (typeof value === "string") {
+            const normalized = value.trim().toLowerCase();
+            if (normalized) {
+              set.add(normalized);
+            }
+            return;
+          }
+          if (Array.isArray(value) || typeof value === "object") {
+            pushName(value);
+          }
+        });
+        return;
+      }
+
+      if (typeof candidate === "string") {
+        const normalized = candidate.trim().toLowerCase();
+        if (normalized) {
+          set.add(normalized);
+        }
+      }
+    };
+
+    if (course && typeof course === "object") {
+      const sources = [
+        course.subjects,
+        course.Subjects,
+        course.subjectList,
+        course.SubjectList,
+        course.subjectNames,
+        course.SubjectNames,
+        course.subjectDetails,
+        course.SubjectDetails,
+        course.subject,
+        course.Subject,
+      ];
+
+      sources.forEach(pushName);
+    }
+
+    return set;
+  }, [course]);
+
+  const belongsToCurrentCourse = useCallback(
+    (entry) => {
       if (!entry || typeof entry !== "object") {
         return false;
       }
 
-      const candidates = [
-        entry.CourseID,
-        entry.courseID,
-        entry.CourseId,
-        entry.courseId,
-        entry?.Course?.CourseID,
-        entry?.Course?.courseID,
-        entry?.Course?.CourseId,
-        entry?.Course?.courseId,
-        entry?.course?.CourseID,
-        entry?.course?.courseID,
-        entry?.course?.CourseId,
-        entry?.course?.courseId,
+      let matchesCourse = !normalizedCourseId;
+
+      if (normalizedCourseId) {
+        const candidates = [
+          entry.CourseID,
+          entry.courseID,
+          entry.CourseId,
+          entry.courseId,
+          entry?.Course?.CourseID,
+          entry?.Course?.courseID,
+          entry?.Course?.CourseId,
+          entry?.Course?.courseId,
+          entry?.course?.CourseID,
+          entry?.course?.courseID,
+          entry?.course?.CourseId,
+          entry?.course?.courseId,
+        ];
+
+        for (const candidate of candidates) {
+          const normalized = normalizeIdString(candidate);
+          if (normalized && normalized === normalizedCourseId) {
+            matchesCourse = true;
+            break;
+          }
+        }
+
+        if (!matchesCourse) {
+          return false;
+        }
+      }
+
+      const subjectIdSetSize = normalizedCourseSubjectIdSet.size;
+      const subjectNameSetSize = normalizedCourseSubjectNameSet.size;
+
+      if (subjectIdSetSize === 0 && subjectNameSetSize === 0) {
+        return true;
+      }
+
+      let hasSubjectInfo = false;
+
+      const subjectIdCandidates = [
+        entry.SubjectID,
+        entry.subjectID,
+        entry.SubjectId,
+        entry.subjectId,
+        entry.CourseSubjectID,
+        entry.courseSubjectID,
+        entry.CourseSubjectId,
+        entry.courseSubjectId,
+        entry?.Subject?.SubjectID,
+        entry?.Subject?.subjectID,
+        entry?.Subject?.SubjectId,
+        entry?.Subject?.subjectId,
+        entry?.Subject?.id,
+        entry?.Subject?.Id,
+        entry?.subject?.SubjectID,
+        entry?.subject?.subjectID,
+        entry?.subject?.SubjectId,
+        entry?.subject?.subjectId,
+        entry?.subject?.id,
+        entry?.subject?.Id,
       ];
 
-      for (const candidate of candidates) {
+      for (const candidate of subjectIdCandidates) {
+        if (candidate === null || candidate === undefined) {
+          continue;
+        }
+        hasSubjectInfo = true;
         const normalized = normalizeIdString(candidate);
-        if (normalized && normalized === normalizedCourseId) {
+        if (normalized && normalizedCourseSubjectIdSet.has(normalized)) {
           return true;
         }
       }
 
+      const subjectNameCandidates = [
+        entry.SubjectName,
+        entry.subjectName,
+        entry.CourseSubjectName,
+        entry.courseSubjectName,
+        entry?.Subject?.SubjectName,
+        entry?.Subject?.subjectName,
+        entry?.Subject?.name,
+        entry?.Subject?.Name,
+        entry?.Subject?.Title,
+        entry?.Subject?.title,
+        entry?.subject?.SubjectName,
+        entry?.subject?.subjectName,
+        entry?.subject?.name,
+        entry?.subject?.Name,
+        entry?.subject?.Title,
+        entry?.subject?.title,
+      ];
+
+      for (const candidate of subjectNameCandidates) {
+        if (typeof candidate !== "string") {
+          continue;
+        }
+        const normalized = candidate.trim().toLowerCase();
+        if (!normalized) {
+          continue;
+        }
+        hasSubjectInfo = true;
+        if (normalizedCourseSubjectNameSet.has(normalized)) {
+          return true;
+        }
+      }
+
+      if (!hasSubjectInfo) {
+        return true;
+      }
+
       return false;
     },
-    [normalizeIdString, normalizedCourseId]
+    [
+      normalizeIdString,
+      normalizedCourseId,
+      normalizedCourseSubjectIdSet,
+      normalizedCourseSubjectNameSet,
+    ]
   );
 
   const normalizedStatus = course
@@ -1816,7 +2047,7 @@ const CourseView = () => {
                             : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200"
                         }`}
                       >
-                        All Subjects
+                        All Classes
                       </button>
                       {subjectGroupsWithStatus.map((g) => {
                         const sid = String(
