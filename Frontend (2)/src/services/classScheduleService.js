@@ -136,12 +136,16 @@ const normalizeDayForUi = (value) => {
 };
 
 const normalizeDayForApi = (value) => {
+  // Normalize incoming day values into 0..6 (Sunday=0..Saturday=6)
+  // Previously this function returned 1..7 which caused an off-by-one
+  // shift when the UI provided 0..6. Keep API payload consistent
+  // by sending 0..6 so the selected weekday is preserved.
   const num = toFiniteNumber(value);
   if (num === null) return null;
-  if (num >= 0 && num <= 6) return Math.trunc(num) + 1;
-  if (num >= 1 && num <= 7) return Math.trunc(num);
+  if (num >= 0 && num <= 6) return Math.trunc(num);
+  if (num >= 1 && num <= 7) return Math.trunc(num) - 1;
   const normalized = ((Math.trunc(num) % 7) + 7) % 7;
-  return normalized + 1;
+  return normalized;
 };
 
 const extractList = (payload) => {
