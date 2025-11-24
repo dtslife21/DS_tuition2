@@ -271,12 +271,25 @@ export const uploadProfilePhoto = async (userId, fileOrDataUrl) => {
 };
 
 export const createUser = async (userData) => {
+  // If caller provided a File/Blob or data URL for `ProfilePicture`,
+  // we must first create the user, then upload the photo using
+  // the `api/Users/UploadProfile` endpoint which expects `userId`.
+  const picture = userData?.ProfilePicture ?? userData?.profilePicture;
+
+  // Prepare payload for creation (omit heavy ProfilePicture data)
+  const createPayload = { ...userData };
+  if (picture && (typeof picture === "string" && picture.startsWith("data:") || picture instanceof Blob || picture instanceof File)) {
+    // Remove ProfilePicture from the initial JSON create to avoid sending data URL or File in JSON
+    delete createPayload.ProfilePicture;
+    delete createPayload.profilePicture;
+  }
+
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(userData),
+    body: JSON.stringify(createPayload),
   });
 
   if (!response.ok) {
@@ -284,7 +297,39 @@ export const createUser = async (userData) => {
   }
 
   const payload = await response.json();
-  return mapUser(payload) ?? payload;
+  const created = mapUser(payload) ?? payload;
+
+  // If there is a profile picture to upload, upload it now using the created user's id
+  try {
+    const createdId =
+      created?.id ?? created?.userId ?? created?.UserID ?? created?.userID ?? created?.User?.UserID ?? null;
+
+    if (createdId && picture) {
+      // If picture is a path (already uploaded URL), skip upload
+      const isDataUrl = typeof picture === "string" && picture.startsWith("data:");
+      const isFileLike = picture instanceof Blob || picture instanceof File;
+
+      if (isDataUrl || isFileLike) {
+        // perform upload; uploadProfilePhoto will return saved path (or null)
+        const uploadedPath = await uploadProfilePhoto(createdId, picture);
+        if (uploadedPath) {
+          // Ensure returned object reflects saved profile path
+          // Try to fetch fresh record from server to get the saved path
+          try {
+            const refreshed = await getUserById(createdId);
+            return refreshed || { ...created, ProfilePicture: uploadedPath };
+          } catch (e) {
+            return { ...created, ProfilePicture: uploadedPath };
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // If upload fails, don't block user creation — return the created user and log
+    console.warn("Profile upload failed during createUser:", e);
+  }
+
+  return created;
 };
 
 export const updateUser = async (userID, userData) => {
