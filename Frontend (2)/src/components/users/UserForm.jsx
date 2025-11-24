@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import Cropper from "react-easy-crop";
 import Button from "../common/Button";
+import Avatar from "../common/Avatar";
 import Modal from "../common/Modal";
 import CourseForm from "../courses/CourseForm";
 import {
@@ -221,7 +222,12 @@ const UserForm = ({
 
   const initialProfilePicture =
     initialUser?.ProfilePicture || initialUser?.profilePicture || "";
+  const initialProfileVersion =
+    initialUser?.ProfilePictureVersion ||
+    initialUser?.profilePictureVersion ||
+    null;
   const [photoPreview, setPhotoPreview] = useState(initialProfilePicture);
+  const [photoVersion, setPhotoVersion] = useState(initialProfileVersion);
   const [photoError, setPhotoError] = useState("");
   const [isPhotoEditorOpen, setIsPhotoEditorOpen] = useState(false);
   const [rawPhoto, setRawPhoto] = useState("");
@@ -311,6 +317,7 @@ const UserForm = ({
     setPhotoError("");
     setRawPhoto("");
     setEditorError("");
+    setPhotoVersion(Date.now());
   };
 
   const handleExistingPhotoEdit = () => {
@@ -364,6 +371,7 @@ const UserForm = ({
       setPhotoError("");
       setIsPhotoEditorOpen(false);
       setRawPhoto("");
+      setPhotoVersion(Date.now());
     } catch (error) {
       console.error("Failed to crop image", error);
       setEditorError("Could not process the selected area. Please try again.");
@@ -390,11 +398,18 @@ const UserForm = ({
       />
       <div className="mt-2 flex flex-wrap items-center gap-4">
         {photoPreview ? (
-          <img
-            src={photoPreview}
-            alt="Selected profile"
-            className="h-16 w-16 rounded-full border border-gray-200 object-cover shadow-sm dark:border-gray-700"
-          />
+          <div className="h-16 w-16 rounded-full overflow-hidden">
+            <Avatar
+              src={photoPreview}
+              user={{
+                ProfilePicture: photoPreview,
+                profilePictureVersion: photoVersion,
+                ProfilePictureVersion: photoVersion,
+              }}
+              size="lg"
+              className="h-16 w-16"
+            />
+          </div>
         ) : (
           <div className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-gray-300 bg-gray-50 text-xs text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
             No photo
@@ -545,6 +560,11 @@ const UserForm = ({
     const defaults = getDefaults(initialUser, forceUserType);
     reset(defaults);
     setPhotoPreview(defaults.ProfilePicture || "");
+    const nextVersion =
+      initialUser?.ProfilePictureVersion ||
+      initialUser?.profilePictureVersion ||
+      null;
+    setPhotoVersion(nextVersion);
     setValue("ProfilePicture", defaults.ProfilePicture || "", {
       shouldDirty: false,
       shouldValidate: false,

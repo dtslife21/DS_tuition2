@@ -716,10 +716,20 @@ const AdminUsers = () => {
         photoToUpload.startsWith("data:")
       ) {
         try {
-          await uploadProfilePhoto(
+          const uploadResult = await uploadProfilePhoto(
             createdUser.UserID || createdUser.id,
             photoToUpload
           );
+          const uploadedPath = uploadResult?.filePath;
+          const cacheBuster = uploadResult?.cacheBuster;
+          if (uploadedPath) {
+            createdUser.ProfilePicture = uploadedPath;
+            createdUser.profilepicture = uploadedPath;
+          }
+          if (cacheBuster) {
+            createdUser.ProfilePictureVersion = cacheBuster;
+            createdUser.profilePictureVersion = cacheBuster;
+          }
         } catch (uErr) {
           console.warn("Profile upload failed:", uErr);
         }
@@ -1066,13 +1076,19 @@ const AdminUsers = () => {
             photoToUpload.startsWith("data:")
           ) {
             try {
-              const uploadedPath = await uploadProfilePhoto(
+              const uploadResult = await uploadProfilePhoto(
                 createdAdmin.UserID || createdAdmin.id,
                 photoToUpload
               );
+              const uploadedPath = uploadResult?.filePath;
+              const cacheBuster = uploadResult?.cacheBuster;
               if (uploadedPath) {
                 createdAdmin.ProfilePicture = uploadedPath;
                 createdAdmin.profilePicture = uploadedPath;
+              }
+              if (cacheBuster) {
+                createdAdmin.ProfilePictureVersion = cacheBuster;
+                createdAdmin.profilePictureVersion = cacheBuster;
               }
             } catch (uErr) {
               console.warn("Profile upload failed:", uErr);
@@ -1200,13 +1216,19 @@ const AdminUsers = () => {
               photoToUpload.startsWith("data:")
             ) {
               try {
-                const uploadedPath = await uploadProfilePhoto(
+                const uploadResult = await uploadProfilePhoto(
                   createdUser.UserID || createdUser.id,
                   photoToUpload
                 );
+                const uploadedPath = uploadResult?.filePath;
+                const cacheBuster = uploadResult?.cacheBuster;
                 if (uploadedPath) {
                   merged.ProfilePicture = uploadedPath;
                   merged.profilePicture = uploadedPath;
+                }
+                if (cacheBuster) {
+                  merged.ProfilePictureVersion = cacheBuster;
+                  merged.profilePictureVersion = cacheBuster;
                 }
               } catch (uErr) {
                 console.warn("Profile upload failed:", uErr);
@@ -1232,13 +1254,19 @@ const AdminUsers = () => {
             photoToUpload.startsWith("data:")
           ) {
             try {
-              const uploadedPath = await uploadProfilePhoto(
+              const uploadResult = await uploadProfilePhoto(
                 createdUser.UserID || createdUser.id,
                 photoToUpload
               );
+              const uploadedPath = uploadResult?.filePath;
+              const cacheBuster = uploadResult?.cacheBuster;
               if (uploadedPath) {
                 createdUser.ProfilePicture = uploadedPath;
                 createdUser.profilepicture = uploadedPath;
+              }
+              if (cacheBuster) {
+                createdUser.ProfilePictureVersion = cacheBuster;
+                createdUser.profilePictureVersion = cacheBuster;
               }
             } catch (uErr) {
               console.warn("Profile upload failed:", uErr);
@@ -1267,14 +1295,20 @@ const AdminUsers = () => {
             photoToUpload.startsWith("data:")
           ) {
             try {
-              const uploadedPath = await uploadProfilePhoto(
+              const uploadResult = await uploadProfilePhoto(
                 userId,
                 photoToUpload
               );
+              const uploadedPath = uploadResult?.filePath;
+              const cacheBuster = uploadResult?.cacheBuster;
               if (uploadedPath) {
                 // reflect in the returned updatedUser and in local users list
                 updatedUser.ProfilePicture = uploadedPath;
                 updatedUser.profilePicture = uploadedPath;
+              }
+              if (cacheBuster) {
+                updatedUser.ProfilePictureVersion = cacheBuster;
+                updatedUser.profilePictureVersion = cacheBuster;
               }
             } catch (uErr) {
               console.warn("Profile upload failed:", uErr);

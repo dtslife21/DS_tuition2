@@ -114,6 +114,15 @@ const mapUser = (user) => {
     user.avatar ??
     null;
 
+  const profilePictureVersion =
+    user.ProfilePictureVersion ??
+    user.profilePictureVersion ??
+    user.ProfilePictureUpdatedAt ??
+    user.profilePictureUpdatedAt ??
+    user.ProfilePhotoVersion ??
+    user.profilePhotoVersion ??
+    null;
+
   const phone =
     user.Phone ??
     user.phone ??
@@ -151,6 +160,8 @@ const mapUser = (user) => {
     UserTypeID: userTypeId,
     profilePicture,
     ProfilePicture: profilePicture,
+    profilePictureVersion,
+    ProfilePictureVersion: profilePictureVersion,
     phone,
     Phone: phone,
     isActive,
@@ -261,12 +272,15 @@ export const uploadProfilePhoto = async (userId, fileOrDataUrl) => {
     );
   }
 
+  const cacheBuster = Date.now();
+
   try {
     const payload = await resp.json();
     // backend returns { filePath: "..." }
-    return payload?.filePath || null;
+    const filePath = payload?.filePath || null;
+    return { filePath, cacheBuster };
   } catch (e) {
-    return null;
+    return { filePath: null, cacheBuster };
   }
 };
 
@@ -322,15 +336,36 @@ export const createUser = async (userData) => {
 
       if (isDataUrl || isFileLike) {
         // perform upload; uploadProfilePhoto will return saved path (or null)
-        const uploadedPath = await uploadProfilePhoto(createdId, picture);
+        const uploadResult = await uploadProfilePhoto(createdId, picture);
+        const uploadedPath = uploadResult?.filePath;
+        const cacheBuster = uploadResult?.cacheBuster;
         if (uploadedPath) {
           // Ensure returned object reflects saved profile path
           // Try to fetch fresh record from server to get the saved path
           try {
             const refreshed = await getUserById(createdId);
-            return refreshed || { ...created, ProfilePicture: uploadedPath };
+            const enriched = refreshed || {
+              ...created,
+              ProfilePicture: uploadedPath,
+            };
+            if (cacheBuster) {
+              return {
+                ...enriched,
+                profilePictureVersion: cacheBuster,
+                ProfilePictureVersion: cacheBuster,
+              };
+            }
+            return enriched;
           } catch (e) {
-            return { ...created, ProfilePicture: uploadedPath };
+            const enriched = { ...created, ProfilePicture: uploadedPath };
+            if (cacheBuster) {
+              return {
+                ...enriched,
+                profilePictureVersion: cacheBuster,
+                ProfilePictureVersion: cacheBuster,
+              };
+            }
+            return enriched;
           }
         }
       }
@@ -344,6 +379,7 @@ export const createUser = async (userData) => {
 };
 
 export const updateUser = async (userID, userData) => {
+  let profilePhotoVersion = null;
   // If caller provided a data URL for the profile picture, upload it first
   if (
     userData &&
@@ -351,13 +387,15 @@ export const updateUser = async (userID, userData) => {
     userData.ProfilePicture.startsWith("data:")
   ) {
     try {
-      const uploadedPath = await uploadProfilePhoto(
+      const uploadResult = await uploadProfilePhoto(
         userID,
         userData.ProfilePicture
       );
+      const uploadedPath = uploadResult?.filePath;
       if (uploadedPath) {
         // replace data URL with server path so PUT persists it
         userData = { ...userData, ProfilePicture: uploadedPath };
+        profilePhotoVersion = uploadResult?.cacheBuster ?? Date.now();
       }
     } catch (uErr) {
       // upload failed — proceed without blocking the update, backend will keep existing picture
@@ -418,6 +456,7 @@ export const updateUser = async (userID, userData) => {
       merged.RemoveProfilePicture = true;
       // ensure ProfilePicture value is null so it's clear in the merged object
       merged.ProfilePicture = null;
+      profilePhotoVersion = profilePhotoVersion ?? Date.now();
     }
   } catch (e) {
     // ignore safety checks
@@ -438,16 +477,31 @@ export const updateUser = async (userID, userData) => {
   // Backend returns 204 No Content on success; handle gracefully
   if (response.status === 204) {
     // Return a combined view of base and userData
-    return mapUser({ ...base, ...merged });
+    const mapped = mapUser({ ...base, ...merged });
+    if (mapped && profilePhotoVersion) {
+      mapped.profilePictureVersion = profilePhotoVersion;
+      mapped.ProfilePictureVersion = profilePhotoVersion;
+    }
+    return mapped;
   }
 
   // Some implementations may return the updated entity
   try {
     const payload = await response.json();
-    return mapUser(payload) ?? payload;
+    const mapped = mapUser(payload) ?? payload;
+    if (mapped && profilePhotoVersion) {
+      mapped.profilePictureVersion = profilePhotoVersion;
+      mapped.ProfilePictureVersion = profilePhotoVersion;
+    }
+    return mapped;
   } catch {
     // Fallback
-    return mapUser({ ...base, ...merged });
+    const mapped = mapUser({ ...base, ...merged });
+    if (mapped && profilePhotoVersion) {
+      mapped.profilePictureVersion = profilePhotoVersion;
+      mapped.ProfilePictureVersion = profilePhotoVersion;
+    }
+    return mapped;
   }
 };
 

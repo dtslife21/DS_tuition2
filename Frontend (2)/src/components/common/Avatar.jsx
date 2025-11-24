@@ -73,6 +73,79 @@ const profileFieldCandidates = (target) => {
   ];
 };
 
+const getProfilePhotoVersion = (target) => {
+  if (!target || typeof target !== "object") {
+    return null;
+  }
+
+  const candidates = [
+    target.profilePictureVersion,
+    target.ProfilePictureVersion,
+    target.profilePictureUpdatedAt,
+    target.ProfilePictureUpdatedAt,
+    target.profilePhotoVersion,
+    target.ProfilePhotoVersion,
+    target.profile_photo_version,
+    target.profilephotoVersion,
+    target.profile_photo_updated_at,
+    target.ProfilePhotoUpdatedAt,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null) {
+      continue;
+    }
+    const trimmed = toTrimmed(candidate);
+    if (trimmed) {
+      return trimmed;
+    }
+  }
+
+  return null;
+};
+
+const appendCacheBuster = (url, cacheKey) => {
+  if (!url) {
+    return url;
+  }
+
+  if (cacheKey === undefined || cacheKey === null) {
+    return url;
+  }
+
+  if (/^(data:|blob:)/i.test(url)) {
+    return url;
+  }
+
+  const key = toTrimmed(cacheKey);
+  if (!key) {
+    return url;
+  }
+
+  const [basePart, fragmentPart] = url.split("#", 2);
+  const queryIndex = basePart.indexOf("?");
+  const path = queryIndex === -1 ? basePart : basePart.slice(0, queryIndex);
+  const query = queryIndex === -1 ? "" : basePart.slice(queryIndex + 1);
+
+  let params;
+  try {
+    params = new URLSearchParams(query);
+  } catch (err) {
+    params = null;
+  }
+
+  if (!params) {
+    const separator = path.includes("?") ? "&" : "?";
+    const rebuilt = `${path}${separator}cb=${encodeURIComponent(key)}`;
+    return fragmentPart !== undefined ? `${rebuilt}#${fragmentPart}` : rebuilt;
+  }
+
+  params.set("cb", key);
+  const queryString = params.toString();
+  const rebuilt = `${path}${queryString ? `?${queryString}` : ""}`;
+  return fragmentPart !== undefined ? `${rebuilt}#${fragmentPart}` : rebuilt;
+};
+
 const getServerBaseUrl = (() => {
   let memoized;
   return () => {
@@ -167,9 +240,10 @@ const normalizeToAbsoluteUrl = (value) => {
 };
 
 const resolvePhotoSource = (srcProp, user) => {
+  const userVersion = getProfilePhotoVersion(user);
   const direct = normalizeToAbsoluteUrl(srcProp);
   if (direct) {
-    return direct;
+    return appendCacheBuster(direct, userVersion);
   }
 
   const targets = [];
@@ -181,11 +255,12 @@ const resolvePhotoSource = (srcProp, user) => {
   }
 
   for (const target of targets) {
+    const targetVersion = getProfilePhotoVersion(target) ?? userVersion;
     const candidates = profileFieldCandidates(target);
     for (const candidate of candidates) {
       const resolved = normalizeToAbsoluteUrl(candidate);
       if (resolved) {
-        return resolved;
+        return appendCacheBuster(resolved, targetVersion);
       }
     }
   }

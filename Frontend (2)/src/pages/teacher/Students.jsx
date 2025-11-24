@@ -869,10 +869,20 @@ const TeacherStudents = () => {
         photoToUpload.startsWith("data:")
       ) {
         try {
-          await uploadProfilePhoto(
+          const uploadResult = await uploadProfilePhoto(
             createdUser.UserID || createdUser.id,
             photoToUpload
           );
+          const uploadedPath = uploadResult?.filePath;
+          const cacheBuster = uploadResult?.cacheBuster;
+          if (uploadedPath) {
+            createdUser.ProfilePicture = uploadedPath;
+            createdUser.profilepicture = uploadedPath;
+          }
+          if (cacheBuster) {
+            createdUser.ProfilePictureVersion = cacheBuster;
+            createdUser.profilePictureVersion = cacheBuster;
+          }
         } catch (uErr) {
           console.warn("Profile upload failed:", uErr);
         }
@@ -1154,10 +1164,16 @@ const TeacherStudents = () => {
           photoToUpload.startsWith("data:")
         ) {
           try {
-            const uploadedPath = await uploadProfilePhoto(uid, photoToUpload);
+            const uploadResult = await uploadProfilePhoto(uid, photoToUpload);
+            const uploadedPath = uploadResult?.filePath;
+            const cacheBuster = uploadResult?.cacheBuster;
             if (uploadedPath) {
               updatedUser.ProfilePicture = uploadedPath;
               updatedUser.profilepicture = uploadedPath;
+            }
+            if (cacheBuster) {
+              updatedUser.ProfilePictureVersion = cacheBuster;
+              updatedUser.profilePictureVersion = cacheBuster;
             }
           } catch (uErr) {
             console.warn("Profile upload failed:", uErr);
