@@ -222,7 +222,7 @@ const SubjectForm = ({
             setSubjectCodeError("");
             setCodeManuallyEdited(true);
           }}
-          placeholder="e.g. MATH101"
+          placeholder="e.g. WAT818"
           className="mt-1 block w-full rounded-md dark:bg-gray-700  border-gray-300 p-2"
         />
         {subjectCodeError ? (
@@ -237,7 +237,7 @@ const SubjectForm = ({
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Mathematics"
+          placeholder="e.g. Wattala Class-Mon"
           className="mt-1 block w-full rounded-md dark:bg-gray-700 border-gray-300 p-2"
         />
         {formError ? (
