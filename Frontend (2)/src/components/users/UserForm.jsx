@@ -642,6 +642,26 @@ const UserForm = ({
     showRoleFields,
     userTypeID,
   ]);
+
+  // When creating a new teacher, default JoiningDate to today if not provided
+  useEffect(() => {
+    try {
+      if (String(userTypeID) === "2" && showRoleFields && !initialUser) {
+        const current = (watch && typeof watch === "function" && watch("JoiningDate")) || "";
+        if (!current) {
+          const d = new Date();
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          const today = `${yyyy}-${mm}-${dd}`;
+          setValue("JoiningDate", today, { shouldValidate: true, shouldDirty: true });
+        }
+      }
+    } catch (e) {
+      // swallow — non-critical
+    }
+    // only run when these change
+  }, [userTypeID, showRoleFields, initialUser, setValue, watch]);
   // Courses state for teacher assignment
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);

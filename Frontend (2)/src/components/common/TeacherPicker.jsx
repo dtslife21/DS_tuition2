@@ -217,7 +217,10 @@ const TeacherPicker = ({
         Department: merged.Department ?? undefined,
         Qualification: merged.Qualification ?? undefined,
         JoiningDate:
-          merged.JoiningDate ?? merged.joiningDate ?? merged.JoinDate ?? undefined,
+          merged.JoiningDate ??
+          merged.joiningDate ??
+          merged.JoinDate ??
+          undefined,
         Bio: merged.Bio ?? undefined,
       };
 

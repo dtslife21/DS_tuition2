@@ -1162,18 +1162,25 @@ const AdminUsers = () => {
                 createdUser.userId,
               EmployeeID: mergedCreate.EmployeeID || undefined,
               Department: mergedCreate.Department || undefined,
-                Qualification: mergedCreate.Qualification || undefined,
-                JoiningDate: mergedCreate.JoiningDate ?? mergedCreate.joiningDate ?? mergedCreate.JoinDate ?? undefined,
+              Qualification: mergedCreate.Qualification || undefined,
+              JoiningDate:
+                mergedCreate.JoiningDate ??
+                mergedCreate.joiningDate ??
+                mergedCreate.JoinDate ??
+                undefined,
               Bio: mergedCreate.Bio || undefined,
             };
 
-              // Enforce JoiningDate for teachers
-              const joiningValue =
-                mergedCreate.JoiningDate ?? mergedCreate.joiningDate ?? mergedCreate.JoinDate ?? null;
-              if (!joiningValue) {
-                setFormError("Joining date is required for teachers");
-                return;
-              }
+            // Enforce JoiningDate for teachers
+            const joiningValue =
+              mergedCreate.JoiningDate ??
+              mergedCreate.joiningDate ??
+              mergedCreate.JoinDate ??
+              null;
+            if (!joiningValue) {
+              setFormError("Joining date is required for teachers");
+              return;
+            }
 
             const createdTeacher = await createTeacher(teacherPayload);
 
