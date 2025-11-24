@@ -216,9 +216,19 @@ const TeacherPicker = ({
         EmployeeID: merged.EmployeeID ?? undefined,
         Department: merged.Department ?? undefined,
         Qualification: merged.Qualification ?? undefined,
-        JoiningDate: merged.JoiningDate ?? undefined,
+        JoiningDate:
+          merged.JoiningDate ?? merged.joiningDate ?? merged.JoinDate ?? undefined,
         Bio: merged.Bio ?? undefined,
       };
+
+      // Require joining date when creating a teacher
+      const joiningValue =
+        merged.JoiningDate ?? merged.joiningDate ?? merged.JoinDate ?? null;
+      if (!joiningValue) {
+        setFormError("Joining date is required to create a teacher");
+        setIsSubmitting(false);
+        return;
+      }
 
       const createdTeacher = await createTeacher(
         Object.fromEntries(

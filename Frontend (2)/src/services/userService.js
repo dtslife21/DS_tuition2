@@ -278,7 +278,12 @@ export const createUser = async (userData) => {
 
   // Prepare payload for creation (omit heavy ProfilePicture data)
   const createPayload = { ...userData };
-  if (picture && (typeof picture === "string" && picture.startsWith("data:") || picture instanceof Blob || picture instanceof File)) {
+  if (
+    picture &&
+    ((typeof picture === "string" && picture.startsWith("data:")) ||
+      picture instanceof Blob ||
+      picture instanceof File)
+  ) {
     // Remove ProfilePicture from the initial JSON create to avoid sending data URL or File in JSON
     delete createPayload.ProfilePicture;
     delete createPayload.profilePicture;
@@ -302,11 +307,17 @@ export const createUser = async (userData) => {
   // If there is a profile picture to upload, upload it now using the created user's id
   try {
     const createdId =
-      created?.id ?? created?.userId ?? created?.UserID ?? created?.userID ?? created?.User?.UserID ?? null;
+      created?.id ??
+      created?.userId ??
+      created?.UserID ??
+      created?.userID ??
+      created?.User?.UserID ??
+      null;
 
     if (createdId && picture) {
       // If picture is a path (already uploaded URL), skip upload
-      const isDataUrl = typeof picture === "string" && picture.startsWith("data:");
+      const isDataUrl =
+        typeof picture === "string" && picture.startsWith("data:");
       const isFileLike = picture instanceof Blob || picture instanceof File;
 
       if (isDataUrl || isFileLike) {

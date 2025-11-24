@@ -1451,6 +1451,10 @@ const UserForm = ({
                 name="JoiningDate"
                 type="date"
                 {...register("JoiningDate", {
+                  required:
+                    String(userTypeID) === "2"
+                      ? "Joining date is required"
+                      : false,
                   validate: (v) =>
                     !v ||
                     new Date(v) <= new Date() ||
