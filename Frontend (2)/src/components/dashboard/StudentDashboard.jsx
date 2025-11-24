@@ -14,6 +14,7 @@ import StatsCard from "../common/StatsCard";
 import EmptyState from "../common/EmptyState";
 import { formatDate, getFileType } from "../../utils/helpers";
 import { getAllClassSchedules } from "../../services/classScheduleService";
+import { FaBookOpen, FaCalendarAlt, FaBan } from "react-icons/fa";
 
 const resolveStudentIdentifiers = (user) => {
   if (!user || typeof user !== "object") {
@@ -287,49 +288,18 @@ const StudentDashboard = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
         <StatsCard
-          icon={
-            <svg
-              className="w-8 h-8"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-            >
-              <path
-                d="M3 7h18M6 11h12M10 15h4"
-                stroke="#10B981"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          }
+          icon={<FaBookOpen size={28} className="text-green-500" />}
           title="Courses"
           value={totalCourses}
         />
 
         <StatsCard
           icon={
-            <svg
-              className="w-8 h-8"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-            >
-              <path
-                d="M12 20v-8"
-                stroke="#10B981"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M16 12l-4-4-4 4"
-                stroke="#10B981"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            scheduledClassesCount === 0 ? (
+              <FaBan size={28} className="text-gray-400" />
+            ) : (
+              <FaCalendarAlt size={28} className="text-purple-500" />
+            )
           }
           title="Scheduled classes"
           value={scheduledClassesCount}

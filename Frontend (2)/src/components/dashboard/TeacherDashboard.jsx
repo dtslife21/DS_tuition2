@@ -15,6 +15,13 @@ import Loader from "../common/Loader";
 import AnnouncementList from "../announcements/AnnouncementList";
 import { getAnnouncementsByTeacher } from "../../services/announcementService";
 import { useTheme } from "../../contexts/ThemeContext";
+import {
+  FaUserGraduate,
+  FaBookOpen,
+  FaBell,
+  FaCalendarAlt,
+  FaBan,
+} from "react-icons/fa";
 
 const resolveTeacherId = (user) => {
   if (!user || typeof user !== "object") {
@@ -192,6 +199,31 @@ const TeacherDashboard = () => {
   const totalHours = courses.reduce((sum, c) => sum + (c.totalHours || 0), 0);
   const scheduleCount = schedules.length;
 
+  const getTeacherIcon = (type, value) => {
+    const v = Number(value) || 0;
+    const size = 28;
+    switch (type) {
+      case "students":
+        if (v === 0) return <FaBan size={size} className="text-gray-400" />;
+        if (v < 10)
+          return <FaUserGraduate size={size} className="text-yellow-500" />;
+        return <FaUserGraduate size={size} className="text-green-500" />;
+      case "courses":
+        if (v === 0) return <FaBan size={size} className="text-gray-400" />;
+        if (v < 5)
+          return <FaBookOpen size={size} className="text-indigo-500" />;
+        return <FaBookOpen size={size} className="text-blue-600" />;
+      case "announcements":
+        if (v === 0) return <FaBell size={size} className="text-gray-400" />;
+        return <FaBell size={size} className="text-orange-500" />;
+      case "schedules":
+        if (v === 0) return <FaBan size={size} className="text-gray-400" />;
+        return <FaCalendarAlt size={size} className="text-purple-500" />;
+      default:
+        return <FaBookOpen size={size} className="text-gray-600" />;
+    }
+  };
+
   // Prepare announcements list based on search + sort
   const filteredAnnouncements = (announcements || [])
     .filter((a) => {
@@ -217,7 +249,7 @@ const TeacherDashboard = () => {
           <div className="flex items-center w-full justify-between">
             <div className="flex items-center space-x-4">
               <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
-                <span className="text-2xl">👨‍🎓</span>
+                {getTeacherIcon("students", students.length)}
               </div>
               <div>
                 <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
@@ -235,7 +267,7 @@ const TeacherDashboard = () => {
           <div className="flex items-center w-full justify-between">
             <div className="flex items-center space-x-4">
               <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
-                <span className="text-2xl">📚</span>
+                {getTeacherIcon("courses", courses.length)}
               </div>
               <div>
                 <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
@@ -253,7 +285,7 @@ const TeacherDashboard = () => {
           <div className="flex items-center w-full justify-between">
             <div className="flex items-center space-x-4">
               <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
-                <span className="text-2xl">🔔</span>
+                {getTeacherIcon("announcements", announcements.length)}
               </div>
               <div>
                 <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">
@@ -271,7 +303,7 @@ const TeacherDashboard = () => {
           <div className="flex items-center w-full justify-between">
             <div className="flex items-center space-x-4">
               <div className="bg-white/60 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
-                <span className="text-2xl">📆</span>
+                {getTeacherIcon("schedules", scheduleCount)}
               </div>
               <div>
                 <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">

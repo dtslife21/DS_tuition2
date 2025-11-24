@@ -13,6 +13,12 @@ import Avatar from "../common/Avatar";
 import StatsCard from "../common/StatsCard";
 import AnnouncementList from "../announcements/AnnouncementList";
 import { useTheme } from "../../contexts/ThemeContext";
+import {
+  FaGraduationCap,
+  FaBookOpen,
+  FaChalkboardTeacher,
+  FaBan,
+} from "react-icons/fa";
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -153,6 +159,31 @@ const AdminDashboard = () => {
     return s.charAt(0).toUpperCase() + s.slice(1);
   };
 
+  // Choose a react-icon element based on stat type and value
+  const getStatIcon = (type, value) => {
+    const v = Number(value) || 0;
+    const size = 28;
+    switch (type) {
+      case "students":
+        if (v === 0) return <FaBan size={size} className="text-gray-400" />;
+        if (v < 10)
+          return <FaGraduationCap size={size} className="text-yellow-500" />;
+        return <FaGraduationCap size={size} className="text-green-500" />;
+      case "courses":
+        if (v === 0) return <FaBan size={size} className="text-gray-400" />;
+        if (v < 5)
+          return <FaBookOpen size={size} className="text-indigo-500" />;
+        return <FaBookOpen size={size} className="text-blue-600" />;
+      case "teachers":
+        if (v === 0) return <FaBan size={size} className="text-gray-400" />;
+        if (v < 5)
+          return <FaChalkboardTeacher size={size} className="text-amber-500" />;
+        return <FaChalkboardTeacher size={size} className="text-purple-600" />;
+      default:
+        return <FaBookOpen size={size} className="text-gray-600" />;
+    }
+  };
+
   if (loading) {
     return <Loader className="py-12" />;
   }
@@ -161,9 +192,21 @@ const AdminDashboard = () => {
     <div className="space-y-8">
       {/* Stats header */}
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-3">
-        <StatsCard icon="🎓" title="Total Students" value={students.length} />
-        <StatsCard icon="�" title="Total Courses" value={courses.length} />
-        <StatsCard icon="🧑‍🏫" title="Total Teachers" value={teachers.length} />
+        <StatsCard
+          icon={getStatIcon("students", students.length)}
+          title="Total Students"
+          value={students.length}
+        />
+        <StatsCard
+          icon={getStatIcon("courses", courses.length)}
+          title="Total Courses"
+          value={courses.length}
+        />
+        <StatsCard
+          icon={getStatIcon("teachers", teachers.length)}
+          title="Total Teachers"
+          value={teachers.length}
+        />
         {/* <StatsCard icon="💵" title="Fees Collection" value={`Rs.${0}`} /> */}
       </div>
 
