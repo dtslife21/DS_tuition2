@@ -647,14 +647,18 @@ const UserForm = ({
   useEffect(() => {
     try {
       if (String(userTypeID) === "2" && showRoleFields && !initialUser) {
-        const current = (watch && typeof watch === "function" && watch("JoiningDate")) || "";
+        const current =
+          (watch && typeof watch === "function" && watch("JoiningDate")) || "";
         if (!current) {
           const d = new Date();
           const yyyy = d.getFullYear();
           const mm = String(d.getMonth() + 1).padStart(2, "0");
           const dd = String(d.getDate()).padStart(2, "0");
           const today = `${yyyy}-${mm}-${dd}`;
-          setValue("JoiningDate", today, { shouldValidate: true, shouldDirty: true });
+          setValue("JoiningDate", today, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
         }
       }
     } catch (e) {

@@ -13,12 +13,12 @@ const Sidebar = () => {
   const adminNavigation = [
     { name: "Dashboard", href: "/admin", icon: "home" },
     { name: "Courses", href: "/admin/courses", icon: "book" },
-    {
-      name: "Classes",
-      href: "/admin/subjects",
-      icon: "document-text",
-      matchPaths: ["/admin/subjects", "/subjects"],
-    },
+    // {
+    //   name: "Classes",
+    //   href: "/admin/subjects",
+    //   icon: "document-text",
+    //   matchPaths: ["/admin/subjects", "/subjects"],
+    // },
     { name: "Class Schedule", href: "/admin/class-schedule", icon: "calendar" },
     { name: "Users", href: "/admin/users", icon: "users" },
     { name: "Settings", href: "/admin/settings", icon: "cog" },
@@ -27,14 +27,14 @@ const Sidebar = () => {
   const teacherNavigation = [
     { name: "Dashboard", href: "/teacher", icon: "home" },
     { name: "Courses", href: "/teacher/courses", icon: "book" },
-    {
-      name: "Classes",
-      href: "/teacher/subjects",
-      icon: "document-text",
-      // also match the shared class view so that when user opens /subjects/:id
-      // the teacher "Classes" tab is highlighted
-      matchPaths: ["/teacher/subjects", "/subjects"],
-    },
+    // {
+    //   name: "Classes",
+    //   href: "/teacher/subjects",
+    //   icon: "document-text",
+    //   // also match the shared class view so that when user opens /subjects/:id
+    //   // the teacher "Classes" tab is highlighted
+    //   matchPaths: ["/teacher/subjects", "/subjects"],
+    // },
     {
       name: "Class Schedule",
       href: "/teacher/class-schedule",
