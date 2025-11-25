@@ -2397,13 +2397,19 @@ const CourseView = () => {
                   <ul className="list-disc list-inside space-y-1">
                     {subjects.map((subjectName) => (
                       <li key={subjectName}>
-                        <Link
-                          to={`/subjects/${encodeURIComponent(subjectName)}`}
-                          state={{ backgroundLocation: location }}
-                          className="text-indigo-600 dark:text-indigo-400 hover:underline hover:text-indigo-700"
-                        >
-                          {subjectName}
-                        </Link>
+                        {user?.userType === "student" ? (
+                          <span className="text-gray-900 dark:text-white">
+                            {subjectName}
+                          </span>
+                        ) : (
+                          <Link
+                            to={`/subjects/${encodeURIComponent(subjectName)}`}
+                            state={{ backgroundLocation: location }}
+                            className="text-indigo-600 dark:text-indigo-400 hover:underline hover:text-indigo-700"
+                          >
+                            {subjectName}
+                          </Link>
+                        )}
                       </li>
                     ))}
                   </ul>
