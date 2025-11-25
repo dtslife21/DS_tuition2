@@ -1594,6 +1594,12 @@ const TeacherStudents = () => {
                   showCoreFields={editStep === 1}
                   showRoleFields={editStep === 2}
                   submitLabel={editStep === 1 ? "Next" : "Update"}
+                  {...(editStep > 1
+                    ? {
+                        onBack: () =>
+                          setEditStep((s) => Math.max(1, (s || 1) - 1)),
+                      }
+                    : {})}
                 />
               </div>
             </motion.div>

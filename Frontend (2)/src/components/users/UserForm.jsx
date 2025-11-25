@@ -130,6 +130,7 @@ const UserForm = ({
   forceUserType,
   initialCourseSelection = [],
   onCancel,
+  onBack,
   // when provided, scope course lists/creation to this teacher id
   teacherId = null,
   // New: allow showing only core fields or only role-specific fields
@@ -1793,14 +1794,27 @@ const UserForm = ({
         : null}
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => reset()}
-          className="w-full justify-center sm:w-auto"
-        >
-          Reset
-        </Button>
+        {/* Reset button commented out per request; replaced with Back when provided */}
+        {false && (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => reset()}
+            className="w-full justify-center sm:w-auto"
+          >
+            Reset
+          </Button>
+        )}
+        {onBack ? (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => onBack()}
+            className="w-full justify-center sm:w-auto"
+          >
+            Back
+          </Button>
+        ) : null}
         {onCancel && (
           <Button
             type="button"
