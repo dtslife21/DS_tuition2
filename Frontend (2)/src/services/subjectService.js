@@ -556,48 +556,48 @@ export const updateSubject = async (subjectId, data) => {
 };
 
 // Fetch latest subject id from backend with flexible endpoint detection
-export const getLatestSubjectId = async () => {
-  const endpoints = [
-    "/Subjects/LatestId",
-    "/subjects/LatestId",
-    "/Subjects/latest",
-    "/api/Subjects/LatestId",
-  ];
+// export const getLatestSubjectId = async () => {
+//   const endpoints = [
+//     "/Subjects/LatestId",
+//     "/subjects/LatestId",
+//     "/Subjects/latest",
+//     "/api/Subjects/LatestId",
+//   ];
 
-  for (const ep of endpoints) {
-    try {
-      const resp = await axios.get(ep);
-      const data = resp?.data ?? {};
-      const id =
-        data.latestSubjectId ?? data.latestId ?? data.SubjectID ?? data.id;
-      if (id !== undefined && id !== null && String(id).trim() !== "") {
-        return Number(id);
-      }
-    } catch (_) {
-      // try next endpoint
-    }
-  }
+//   for (const ep of endpoints) {
+//     try {
+//       const resp = await axios.get(ep);
+//       const data = resp?.data ?? {};
+//       const id =
+//         data.latestSubjectId ?? data.latestId ?? data.SubjectID ?? data.id;
+//       if (id !== undefined && id !== null && String(id).trim() !== "") {
+//         return Number(id);
+//       }
+//     } catch (_) {
+//       // try next endpoint
+//     }
+//   }
 
-  // fallback: derive from subjects list
-  try {
-    const subjects = await getAllSubjects();
-    const maxId = Math.max(
-      0,
-      ...subjects
-        .map((s) => Number(s.id ?? s.SubjectID ?? s.subjectId ?? 0))
-        .filter((n) => !Number.isNaN(n))
-    );
-    return maxId || null;
-  } catch (_) {
-    return null;
-  }
-};
+//   // fallback: derive from subjects list
+//   try {
+//     const subjects = await getAllSubjects();
+//     const maxId = Math.max(
+//       0,
+//       ...subjects
+//         .map((s) => Number(s.id ?? s.SubjectID ?? s.subjectId ?? 0))
+//         .filter((n) => !Number.isNaN(n))
+//     );
+//     return maxId || null;
+//   } catch (_) {
+//     return null;
+//   }
+// };
 
 export default {
   getAllSubjects,
   createSubject,
   deleteSubject,
   getSubjectById,
-  getLatestSubjectId,
+  // getLatestSubjectId,
   updateSubject,
 };

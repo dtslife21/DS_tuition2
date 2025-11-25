@@ -4,7 +4,7 @@ import Button from "../common/Button";
 import Modal from "../common/Modal";
 import SubjectForm from "../admin/SubjectForm";
 import {
-  getLatestSubjectId,
+  // getLatestSubjectId,
   getAllSubjects,
   createSubject,
 } from "../../services/subjectService";
@@ -56,26 +56,26 @@ const CourseForm = ({
   const courseName = watch("name");
 
   // Auto-fill the Subject ID with the latest from backend if not provided
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      if (initialData && initialData.subjectId) return;
-      try {
-        const latest = await getLatestSubjectId();
-        // If backend returns the latest existing SubjectID, show the next available id (latest + 1)
-        if (!cancelled && typeof latest === "number" && !Number.isNaN(latest)) {
-          const nextId = latest + 1;
-          setValue("subjectId", String(nextId), { shouldValidate: true });
-        }
-      } catch (_) {
-        // ignore; user can type manually
-      }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [initialData, setValue]);
+  // useEffect(() => {
+  //   let cancelled = false;
+  //   const run = async () => {
+  //     if (initialData && initialData.subjectId) return;
+  //     try {
+  //       const latest = await getLatestSubjectId();
+  //       // If backend returns the latest existing SubjectID, show the next available id (latest + 1)
+  //       if (!cancelled && typeof latest === "number" && !Number.isNaN(latest)) {
+  //         const nextId = latest + 1;
+  //         setValue("subjectId", String(nextId), { shouldValidate: true });
+  //       }
+  //     } catch (_) {
+  //       // ignore; user can type manually
+  //     }
+  //   };
+  //   run();
+  //   return () => {
+  //     cancelled = true;
+  //   };
+  // }, [initialData, setValue]);
 
   // Initialize selectedSubjects from initialData if present
   useEffect(() => {
