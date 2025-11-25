@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { getUserById, updateUser } from "../../services/userService";
 import {
@@ -56,7 +56,6 @@ const UserDetailsPage = ({
 }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user: authUser } = useAuth();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -99,6 +98,39 @@ const UserDetailsPage = ({
     const roleName = String(user.userType || "").toLowerCase();
     return roleName === "student";
   }, [user]);
+
+  const isTeacherViewer = useMemo(() => {
+    if (!authUser) return false;
+    const roleId = String(authUser.UserTypeID || authUser.userTypeID || "").trim();
+    if (roleId === "2") return true;
+    const roleName = String(
+      authUser.userType || authUser.UserType || ""
+    ).toLowerCase();
+    return roleName === "teacher";
+  }, [authUser]);
+
+  const viewerTeacherId = useMemo(() => {
+    if (!isTeacherViewer) return null;
+    const candidates = [
+      authUser?.TeacherID,
+      authUser?.teacherID,
+      authUser?.teacherId,
+      authUser?.UserID,
+      authUser?.userID,
+      authUser?.userId,
+      authUser?.id,
+    ];
+
+    for (const value of candidates) {
+      if (value === undefined || value === null) continue;
+      const str = String(value).trim();
+      if (str.length) {
+        return str;
+      }
+    }
+
+    return null;
+  }, [authUser, isTeacherViewer]);
 
   const teacherIdentifier = useMemo(() => {
     const candidates = [
@@ -203,7 +235,42 @@ const UserDetailsPage = ({
           ? Number(rawStudentId)
           : rawStudentId;
         const list = await getStudentCourses(normalizedStudentId);
-        setCourses(Array.isArray(list) ? list : []);
+
+        let scopedCourses = Array.isArray(list) ? list : [];
+
+        if (isTeacherViewer && viewerTeacherId) {
+          const teacherIdStr = String(viewerTeacherId).trim();
+          const matchesViewerTeacher = (course) => {
+            if (!course) return false;
+            const potentials = [
+              course.teacherId,
+              course.teacherID,
+              course.TeacherId,
+              course.TeacherID,
+              course?.teacher?.teacherId,
+              course?.teacher?.teacherID,
+              course?.teacher?.TeacherId,
+              course?.teacher?.TeacherID,
+              course?.teacher?.id,
+              course?.teacher?.Id,
+              course?.teacher?.userId,
+              course?.teacher?.UserID,
+              course?.teacher?.user?.UserID,
+              course?.teacher?.user?.userID,
+              course?.teacher?.user?.userId,
+            ];
+
+            return potentials.some((value) => {
+              if (value === undefined || value === null) return false;
+              const candidate = String(value).trim();
+              return candidate.length && candidate === teacherIdStr;
+            });
+          };
+
+          scopedCourses = scopedCourses.filter(matchesViewerTeacher);
+        }
+
+        setCourses(scopedCourses);
 
         try {
           const enrolls = await getEnrollmentsByStudent(normalizedStudentId);
@@ -228,7 +295,14 @@ const UserDetailsPage = ({
     } finally {
       setCoursesLoading(false);
     }
-  }, [isStudentUser, isTeacherUser, teacherIdentifier, user]);
+  }, [
+    isStudentUser,
+    isTeacherUser,
+    teacherIdentifier,
+    user,
+    isTeacherViewer,
+    viewerTeacherId,
+  ]);
 
   useEffect(() => {
     loadCourses();
@@ -282,6 +356,54 @@ const UserDetailsPage = ({
 
     return Array.from(new Set(collected));
   }, [courses]);
+
+  const studentClassName = useMemo(() => {
+    const candidateFields = [
+      studentDetails?.Class,
+      studentDetails?.class,
+      studentDetails?.CurrentGrade,
+      studentDetails?.currentGrade,
+    ];
+
+    for (const value of candidateFields) {
+      if (value === undefined || value === null) continue;
+      const trimmed = String(value).trim();
+      if (trimmed) {
+        return trimmed;
+      }
+    }
+
+    if (studentSubjects && studentSubjects.length) {
+      const first = String(studentSubjects[0] || "").trim();
+      if (first) {
+        return first;
+      }
+    }
+
+    if (Array.isArray(courses) && courses.length) {
+      const firstCourse = courses.find(Boolean);
+      if (firstCourse) {
+        const courseCandidates = [
+          firstCourse.className,
+          firstCourse.ClassName,
+          firstCourse.section,
+          firstCourse.Section,
+          firstCourse.name,
+          firstCourse.CourseName,
+          firstCourse.courseName,
+        ];
+        for (const value of courseCandidates) {
+          if (value === undefined || value === null) continue;
+          const trimmed = String(value).trim();
+          if (trimmed) {
+            return trimmed;
+          }
+        }
+      }
+    }
+
+    return null;
+  }, [studentDetails, studentSubjects, courses]);
 
   const isAdminViewer = useMemo(() => {
     if (!authUser) return false;
@@ -972,31 +1094,7 @@ const UserDetailsPage = ({
                     : "-"
                 }
               />
-              <div>
-                <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                  Class
-                </span>
-                <div className="mt-1 text-sm text-gray-900 dark:text-gray-100 break-all">
-                  {studentSubjects && studentSubjects.length ? (
-                    <span>
-                      {studentSubjects.map((s, idx) => (
-                        <span key={s}>
-                          <Link
-                            to={`/subjects/${encodeURIComponent(s)}`}
-                            state={{ backgroundLocation: location }}
-                            className="text-indigo-600 dark:text-indigo-400 hover:underline"
-                          >
-                            {s}
-                          </Link>
-                          {idx < studentSubjects.length - 1 ? ", " : ""}
-                        </span>
-                      ))}
-                    </span>
-                  ) : (
-                    <span className="text-gray-500 dark:text-gray-400">-</span>
-                  )}
-                </div>
-              </div>
+              <InfoRow label="Class" value={studentClassName || "-"} />
               <InfoRow
                 label="Parent Name"
                 value={

@@ -549,7 +549,10 @@ const TeacherStudents = () => {
           const id = u.UserID || u.id || u.userID || u.userId || null;
           const updatedId =
             updated.UserID || updated.id || updated.userID || updated.userId;
-          return String(id) === String(updatedId) ? updated : u;
+          // Merge the updated data with existing data, ensuring IsActive is preserved
+          return String(id) === String(updatedId)
+            ? { ...u, ...updated, IsActive: true }
+            : u;
         })
       );
       setToastMessage("User activated.");
@@ -574,7 +577,10 @@ const TeacherStudents = () => {
           const id = u.UserID || u.id || u.userID || u.userId || null;
           const updatedId =
             updated.UserID || updated.id || updated.userID || updated.userId;
-          return String(id) === String(updatedId) ? updated : u;
+          // Merge the updated data with existing data, ensuring IsActive is preserved
+          return String(id) === String(updatedId)
+            ? { ...u, ...updated, IsActive: false }
+            : u;
         })
       );
       setToastMessage("User deactivated.");
@@ -1385,8 +1391,16 @@ const TeacherStudents = () => {
 
       <div className="bg-gradient-to-br from-white to-indigo-50/70 dark:from-gray-900/70 dark:to-indigo-950/20 backdrop-blur shadow-lg ring-1 ring-indigo-100 dark:ring-indigo-800 rounded-2xl p-4 sm:p-6">
         {(() => {
-          const isActiveFlag = (u) =>
-            Boolean(u?.IsActive ?? u?.isActive ?? true);
+          const isActiveFlag = (u) => {
+            // Explicitly check for IsActive property, don't default to true if it's false or 0
+            const activeValue =
+              u?.IsActive !== undefined && u?.IsActive !== null
+                ? u.IsActive
+                : u?.isActive !== undefined && u?.isActive !== null
+                ? u.isActive
+                : true;
+            return Boolean(activeValue);
+          };
           const activeStudents = (students || []).filter(isActiveFlag);
           const inactiveStudents = (students || []).filter(
             (u) => !isActiveFlag(u)

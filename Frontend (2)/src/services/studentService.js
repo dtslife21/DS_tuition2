@@ -53,7 +53,14 @@ const mapStudent = (student) => {
     LastName: student.LastName ?? user.LastName ?? user.lastName ?? "",
     Email: student.Email ?? user.Email ?? user.email ?? "",
     Username: student.Username ?? user.Username ?? user.username ?? "",
-    IsActive: student.IsActive !== undefined ? student.IsActive : (user.IsActive !== undefined ? user.IsActive : (user.isActive !== undefined ? user.isActive : true)),
+    IsActive:
+      student.IsActive !== undefined && student.IsActive !== null
+        ? student.IsActive
+        : user.IsActive !== undefined && user.IsActive !== null
+        ? user.IsActive
+        : user.isActive !== undefined && user.isActive !== null
+        ? user.isActive
+        : true,
     UserDetails: {
       UserID:
         user.UserID ??
@@ -66,7 +73,12 @@ const mapStudent = (student) => {
       Email: user.Email ?? student.Email ?? "",
       FirstName: user.FirstName ?? student.FirstName ?? "",
       LastName: user.LastName ?? student.LastName ?? "",
-      IsActive: user.IsActive !== undefined ? user.IsActive : (student.IsActive !== undefined ? student.IsActive : true),
+      IsActive:
+        user.IsActive !== undefined && user.IsActive !== null
+          ? user.IsActive
+          : student.IsActive !== undefined && student.IsActive !== null
+          ? student.IsActive
+          : true,
     },
   };
 
@@ -88,7 +100,6 @@ const mapStudent = (student) => {
   studentRecord.parentName = studentRecord.ParentName;
   studentRecord.parentContact = studentRecord.ParentContact;
   studentRecord.userTypeID = studentRecord.UserTypeID;
-  studentRecord.isActive = studentRecord.IsActive;
 
   return studentRecord;
 };

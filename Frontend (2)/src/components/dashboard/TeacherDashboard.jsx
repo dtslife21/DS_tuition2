@@ -486,11 +486,11 @@ const TeacherDashboard = () => {
               {/* Attachments tab removed: teacher dashboard shows only notices */}
             </div>
 
-            <div className="text-xs text-gray-500 dark:text-gray-300 sm:text-sm sm:text-right">
+            {/* <div className="text-xs text-gray-500 dark:text-gray-300 sm:text-sm sm:text-right">
               {announcements[0]
                 ? new Date(announcements[0].postDate).toLocaleString()
                 : ""}
-            </div>
+            </div> */}
           </div>
 
           <div className="min-h-[200px]">

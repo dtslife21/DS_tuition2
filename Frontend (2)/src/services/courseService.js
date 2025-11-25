@@ -794,8 +794,9 @@ const flattenCoursesStudentResponse = (courses) => {
       ) {
         const defaultActive = Boolean(
           studentEntry.enrollmentIsActive ??
-            (studentEntry.IsActive !== undefined ? studentEntry.IsActive : 
-              (studentEntry.isActive !== undefined ? studentEntry.isActive : true))
+            studentEntry.IsActive ??
+            studentEntry.isActive ??
+            true
         );
         studentEntry.EnrollmentIsActive = defaultActive;
         studentEntry.enrollmentIsActive = defaultActive;
