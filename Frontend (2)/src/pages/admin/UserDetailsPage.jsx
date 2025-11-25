@@ -101,7 +101,9 @@ const UserDetailsPage = ({
 
   const isTeacherViewer = useMemo(() => {
     if (!authUser) return false;
-    const roleId = String(authUser.UserTypeID || authUser.userTypeID || "").trim();
+    const roleId = String(
+      authUser.UserTypeID || authUser.userTypeID || ""
+    ).trim();
     if (roleId === "2") return true;
     const roleName = String(
       authUser.userType || authUser.UserType || ""
