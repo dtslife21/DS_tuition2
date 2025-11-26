@@ -586,7 +586,7 @@ const CourseView = () => {
             if (Array.isArray(courseScoped) && courseScoped.length) {
               // merge and dedupe by enrollment id (preferred) then student id
               const map = new Map();
-              const pushEntry = (e) => {
+              const pushEntry = (e, allowOverwrite = false) => {
                 const enrollId =
                   e?.EnrollmentID ?? e?.enrollmentID ?? e?.enrollmentId ?? null;
                 const studentId =
@@ -602,12 +602,21 @@ const CourseView = () => {
                   : `s:${String(studentId)}`;
                 if (!map.has(key)) {
                   map.set(key, e);
+                  return;
+                }
+
+                if (allowOverwrite) {
+                  const existing = map.get(key);
+                  map.set(key, {
+                    ...existing,
+                    ...e,
+                  });
                 }
               };
 
               // first add the already-fetched list so that courseScoped can overwrite
-              (filteredStudents || []).forEach(pushEntry);
-              courseScoped.forEach(pushEntry);
+              (filteredStudents || []).forEach((entry) => pushEntry(entry));
+              courseScoped.forEach((entry) => pushEntry(entry, true));
 
               const merged = Array.from(map.values()).filter(
                 belongsToCurrentCourse

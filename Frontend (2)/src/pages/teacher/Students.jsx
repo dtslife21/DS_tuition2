@@ -532,7 +532,9 @@ const TeacherStudents = () => {
   };
 
   const [membersTab, setMembersTab] = useState("active");
-  const [editCourseClassAssignments, setEditCourseClassAssignments] = useState({});
+  const [editCourseClassAssignments, setEditCourseClassAssignments] = useState(
+    {}
+  );
   const editCourseClassAssignmentsRef = useRef(editCourseClassAssignments);
   const [editClassPickerVisible, setEditClassPickerVisible] = useState(false);
   const [editClassPickerOptions, setEditClassPickerOptions] = useState([]);
@@ -950,10 +952,7 @@ const TeacherStudents = () => {
     }
   };
 
-  const handleStudentCourseSelectionChange = async (
-    nextIds,
-    prevIds = []
-  ) => {
+  const handleStudentCourseSelectionChange = async (nextIds, prevIds = []) => {
     const previous = toNormalizedIdArray(prevIds);
     const next = toNormalizedIdArray(nextIds);
 
@@ -1450,7 +1449,6 @@ const TeacherStudents = () => {
               merged.EnrollmentDate,
             StudentCourseIDs: courseIds,
           };
-
         } catch (prefillErr) {
           console.warn("Failed to preload student details", prefillErr);
         }
@@ -1554,20 +1552,17 @@ const TeacherStudents = () => {
             const assignmentEntries = (
               editCourseClassAssignmentsRef.current?.[courseIdStr] || []
             )
-              .map((entry) =>
-                entry && entry.subjectId ? { ...entry } : null
-              )
+              .map((entry) => (entry && entry.subjectId ? { ...entry } : null))
               .filter(Boolean);
 
             const targetSubjectIds = new Set(
               assignmentEntries.map((entry) => entry.subjectId)
             );
 
-            const currentEntry =
-              currentByCourse.get(courseIdStr) || {
-                subjects: new Map(),
-                courseOnly: null,
-              };
+            const currentEntry = currentByCourse.get(courseIdStr) || {
+              subjects: new Map(),
+              courseOnly: null,
+            };
 
             if (targetSubjectIds.size > 0) {
               for (const assignment of assignmentEntries) {
@@ -1575,15 +1570,13 @@ const TeacherStudents = () => {
                   continue;
                 }
 
-                const courseSubjectId =
-                  assignment.courseSubjectId ?? null;
+                const courseSubjectId = assignment.courseSubjectId ?? null;
 
                 await createEnrollment({
                   StudentID: toApiId(uid),
                   CourseID: toApiId(courseIdStr),
                   SubjectID: toApiId(assignment.subjectId),
-                  ...(courseSubjectId !== null &&
-                  courseSubjectId !== undefined
+                  ...(courseSubjectId !== null && courseSubjectId !== undefined
                     ? { CourseSubjectID: toApiId(courseSubjectId) }
                     : {}),
                   EnrollmentDate: enrollmentDate,
