@@ -139,6 +139,7 @@ const UserForm = ({
   // New: override submit button label
   submitLabel,
   additionalRoleContent = null,
+  onStudentCourseSelectionChange = null,
 }) => {
   // support either `user` or `initialData` prop for backwards compatibility
   const initialUser = user || initialData || null;
@@ -1772,8 +1773,58 @@ const UserForm = ({
         isOpen={showStudentCoursePicker}
         onClose={() => setShowStudentCoursePicker(false)}
         initialSelected={studentSelectedCourseIds}
-        onProceed={(ids) => {
-          setStudentSelectedCourseIds(ids.map((v) => String(v)));
+        onProceed={async (ids) => {
+          const dedupeIds = (list) =>
+            Array.from(
+              new Set(
+                (list || [])
+                  .map((value) => String(value))
+                  .map((value) => value.trim())
+                  .filter(Boolean)
+              )
+            );
+
+          const previousSelection = studentSelectedCourseIds;
+          const normalizedSelection = dedupeIds(ids);
+
+          let accepted = true;
+          let finalSelection = normalizedSelection;
+
+          if (typeof onStudentCourseSelectionChange === "function") {
+            try {
+              const result = await onStudentCourseSelectionChange(
+                [...normalizedSelection],
+                [...previousSelection]
+              );
+
+              if (Array.isArray(result)) {
+                finalSelection = dedupeIds(result);
+              } else if (result && typeof result === "object") {
+                if (result.accepted === false) {
+                  accepted = false;
+                }
+                if (Array.isArray(result.finalIds)) {
+                  finalSelection = dedupeIds(result.finalIds);
+                }
+              } else if (result === false) {
+                accepted = false;
+              }
+            } catch (handlerError) {
+              console.error(
+                "Student course selection handler failed",
+                handlerError
+              );
+              accepted = false;
+            }
+          }
+
+          if (!accepted) {
+            setStudentSelectedCourseIds([...(previousSelection || [])]);
+            setShowStudentCoursePicker(false);
+            return;
+          }
+
+          setStudentSelectedCourseIds(finalSelection);
           setShowStudentCoursePicker(false);
         }}
         title="Enroll Student in Courses"
