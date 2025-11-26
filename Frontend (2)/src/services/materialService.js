@@ -405,7 +405,7 @@ export const getAllMaterials = async () => {
   try {
     // Prefer explicit "all" endpoint if available on server
     try {
-      const response = await axios.get(`${RESOURCE_BASE}/all`);
+      const response = await axios.get(`${RESOURCE_BASE}`); //all
       const list = extractMaterials(response.data);
       return list;
     } catch (err) {
