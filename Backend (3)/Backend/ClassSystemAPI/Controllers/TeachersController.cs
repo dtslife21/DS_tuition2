@@ -128,7 +128,8 @@ namespace ClassSystemAPI.Controllers
                                     e.Student.User.Username,
                                     e.Student.User.FirstName,
                                     e.Student.User.LastName,
-                                    e.Student.User.Email
+                                    e.Student.User.Email,
+                                    e.Student.User.IsActive
                                 }
                             }
                         })

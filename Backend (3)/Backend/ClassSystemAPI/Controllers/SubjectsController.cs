@@ -91,12 +91,12 @@ namespace ClassSystemAPI.Controllers
                           join b in db.Courses on a.CourseID equals b.CourseID
                           join c in db.Subjects on a.SubjectID equals c.SubjectID
                           join d in db.Users on a.StudentID equals d.UserID
-                          where a.IsActive == true && a.SubjectID == subjectId
+                          where a.SubjectID == subjectId  
                           orderby a.SubjectID ascending
                           select new
-                          {                          
+                          {
                               a.EnrollmentID,
-                              CourseID =  a.CourseID,
+                              CourseID = a.CourseID,
                               b.CourseName,
                               SubjectID = a.SubjectID,
                               c.SubjectName,
@@ -107,7 +107,6 @@ namespace ClassSystemAPI.Controllers
                               a.EnrollmentDate,
                               a.IsActive
                           }).ToList();
-
             return Ok(result);
         }
     }
